@@ -77,6 +77,8 @@ export const insertStudentSchema = createInsertSchema(students).omit({
 
 export const insertLessonSchema = createInsertSchema(lessons).omit({
   id: true,
+}).extend({
+  dateTime: z.coerce.date(),
 });
 
 export const insertRecurringLessonSchema = createInsertSchema(recurringLessons).omit({

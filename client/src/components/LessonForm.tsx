@@ -10,9 +10,10 @@ import { Calendar, Clock, Save, X } from 'lucide-react';
 interface Student {
   id: string;
   firstName: string;
-  lastName: string;
+  lastName?: string | null;
   defaultSubject?: string;
-  defaultRate?: number;
+  defaultRate?: string | null;
+  defaultLink?: string | null;
 }
 
 interface LessonFormProps {
@@ -48,8 +49,9 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
       setFormData(prev => ({
         ...prev,
         studentId,
-        subject: prev.subject || student.defaultSubject || '',
-        pricePerHour: prev.pricePerHour === 50 ? (student.defaultRate || 50) : prev.pricePerHour,
+        subject: student.defaultSubject || prev.subject,
+        pricePerHour: student.defaultRate ? parseFloat(student.defaultRate) : prev.pricePerHour,
+        lessonLink: student.defaultLink || prev.lessonLink,
       }));
     }
   };

@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import CalendarView from "./components/CalendarView";
@@ -121,13 +122,18 @@ function CalendarPage() {
 
 function StudentsPage() {
   const [showStudentForm, setShowStudentForm] = useState(false);
+  const [showLessonForm, setShowLessonForm] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [selectedStudentForLesson, setSelectedStudentForLesson] = useState<any>(null);
+  const [studentToDelete, setStudentToDelete] = useState<any>(null);
   const { toast } = useToast();
   
   const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
   const createStudentMutation = useCreateStudent();
   const updateStudentMutation = useUpdateStudent();
   const deleteStudentMutation = useDeleteStudent();
+  const createLessonMutation = useCreateLesson();
 
   const handleEditStudent = (studentId: string) => {
     const student = (studentsData as any[]).find((s: any) => s.id === studentId);
@@ -136,13 +142,45 @@ function StudentsPage() {
   };
 
   const handleScheduleLesson = (studentId: string) => {
-    // TODO: This would open the lesson form with the student pre-selected
-    console.log('Schedule lesson for student:', studentId);
+    const student = (studentsData as any[]).find((s: any) => s.id === studentId);
+    setSelectedStudentForLesson(student);
+    setShowLessonForm(true);
   };
 
   const handleViewLessons = (studentId: string) => {
     // TODO: This would navigate to calendar filtered by student
     console.log('View lessons for student:', studentId);
+  };
+
+  const handleDeleteStudent = (studentId: string) => {
+    const student = (studentsData as any[]).find((s: any) => s.id === studentId);
+    setStudentToDelete(student);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteStudent = async () => {
+    if (!studentToDelete) return;
+    
+    try {
+      await deleteStudentMutation.mutateAsync(studentToDelete.id);
+      toast({ 
+        title: "Success", 
+        description: `Student ${studentToDelete.firstName} ${studentToDelete.lastName || ''} and all associated lessons have been deleted.` 
+      });
+      setShowDeleteDialog(false);
+      setStudentToDelete(null);
+    } catch (error) {
+      toast({ 
+        title: "Error", 
+        description: "Failed to delete student", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const cancelDeleteStudent = () => {
+    setShowDeleteDialog(false);
+    setStudentToDelete(null);
   };
 
   const handleStudentSubmit = async (studentData: any) => {
@@ -170,6 +208,28 @@ function StudentsPage() {
   const handleStudentCancel = () => {
     setShowStudentForm(false);
     setSelectedStudent(null);
+  };
+
+  const handleLessonSubmit = async (lessonData: any) => {
+    try {
+      const formattedData = {
+        ...lessonData,
+        dateTime: new Date(lessonData.dateTime).toISOString(),
+        pricePerHour: lessonData.pricePerHour.toString(),
+      };
+      
+      await createLessonMutation.mutateAsync(formattedData);
+      toast({ title: "Success", description: "Lesson scheduled successfully" });
+      setShowLessonForm(false);
+      setSelectedStudentForLesson(null);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to schedule lesson", variant: "destructive" });
+    }
+  };
+
+  const handleLessonCancel = () => {
+    setShowLessonForm(false);
+    setSelectedStudentForLesson(null);
   };
 
   if (studentsLoading) {
@@ -200,6 +260,7 @@ function StudentsPage() {
                   onEdit={handleEditStudent}
                   onScheduleLesson={handleScheduleLesson}
                   onViewLessons={handleViewLessons}
+                  onDelete={handleDeleteStudent}
                 />
               ))}
             </div>
@@ -222,6 +283,53 @@ function StudentsPage() {
           />
         </DialogContent>
       </Dialog>
+      
+      {/* Lesson Form Modal for Students Page */}
+      <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Schedule Lesson for {selectedStudentForLesson?.firstName} {selectedStudentForLesson?.lastName}</DialogTitle>
+          </DialogHeader>
+          <LessonForm
+            students={studentsData as any[]}
+            initialData={selectedStudentForLesson ? {
+              studentId: selectedStudentForLesson.id,
+              subject: selectedStudentForLesson.defaultSubject,
+              pricePerHour: selectedStudentForLesson.defaultRate ? parseFloat(selectedStudentForLesson.defaultRate) : 50,
+              lessonLink: selectedStudentForLesson.defaultLink,
+            } : undefined}
+            onSubmit={handleLessonSubmit}
+            onCancel={handleLessonCancel}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Student</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{studentToDelete?.firstName} {studentToDelete?.lastName}</strong>?
+              <br /><br />
+              <span className="text-destructive font-medium">
+                Warning: This will also permanently delete all lessons associated with this student.
+              </span>
+              <br /><br />
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDeleteStudent}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteStudent}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Student
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

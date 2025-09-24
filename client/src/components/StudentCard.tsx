@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Phone, BookOpen, DollarSign, Edit, Calendar } from 'lucide-react';
+import { Mail, Phone, BookOpen, DollarSign, Edit, Calendar, Trash2 } from 'lucide-react';
 
 interface StudentCardProps {
   student: {
@@ -19,9 +19,10 @@ interface StudentCardProps {
   onEdit: (studentId: string) => void;
   onScheduleLesson: (studentId: string) => void;
   onViewLessons: (studentId: string) => void;
+  onDelete: (studentId: string) => void;
 }
 
-export default function StudentCard({ student, onEdit, onScheduleLesson, onViewLessons }: StudentCardProps) {
+export default function StudentCard({ student, onEdit, onScheduleLesson, onViewLessons, onDelete }: StudentCardProps) {
   const firstName = student.firstName || 'Unknown';
   const lastName = student.lastName || '';
   
@@ -110,6 +111,15 @@ export default function StudentCard({ student, onEdit, onScheduleLesson, onViewL
             data-testid={`button-edit-student-${student.id}`}
           >
             <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onDelete(student.id)}
+            data-testid={`button-delete-student-${student.id}`}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </CardContent>
