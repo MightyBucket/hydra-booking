@@ -6,117 +6,76 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 import CalendarView from "./components/CalendarView";
 import Navigation from "./components/Navigation";
 import LessonForm from "./components/LessonForm";
 import StudentForm from "./components/StudentForm";
 import ThemeToggle from "./components/ThemeToggle";
 import StudentCard from "./components/StudentCard";
-import { addDays, addHours } from 'date-fns';
+import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent } from './hooks/useStudents';
+import { useLessons, useCreateLesson, useUpdateLesson, useDeleteLesson } from './hooks/useLessons';
+import { format } from 'date-fns';
 import NotFound from "@/pages/not-found";
 
-// todo: remove mock functionality
-const mockStudents = [
-  {
-    id: '1',
-    firstName: 'Alice',
-    lastName: 'Johnson',
-    email: 'alice.johnson@email.com',
-    phoneNumber: '+1 (555) 123-4567',
-    defaultSubject: 'Mathematics',
-    defaultRate: 75,
-    lessonCount: 12,
-    lastLessonDate: new Date('2024-01-10'),
-  },
-  {
-    id: '2',
-    firstName: 'Bob',
-    lastName: 'Smith',
-    email: 'bob.smith@email.com',
-    phoneNumber: '+1 (555) 234-5678',
-    defaultSubject: 'Physics',
-    defaultRate: 60,
-    lessonCount: 8,
-    lastLessonDate: new Date('2024-01-08'),
-  },
-  {
-    id: '3',
-    firstName: 'Carol',
-    lastName: 'Brown',
-    email: 'carol.brown@email.com',
-    phoneNumber: '+1 (555) 345-6789',
-    defaultSubject: 'Chemistry',
-    defaultRate: 55,
-    lessonCount: 15,
-    lastLessonDate: new Date('2024-01-12'),
-  },
-];
-
-// todo: remove mock functionality
-const mockLessons = [
-  {
-    id: '1',
-    subject: 'Advanced Mathematics',
-    dateTime: new Date(),
-    studentName: 'Alice Johnson',
-    duration: 60,
-    paymentStatus: 'paid' as const,
-    pricePerHour: 75,
-    lessonLink: 'https://zoom.us/j/123456789',
-  },
-  {
-    id: '2',
-    subject: 'Physics - Mechanics',
-    dateTime: addHours(new Date(), 2),
-    studentName: 'Bob Smith',
-    duration: 90,
-    paymentStatus: 'pending' as const,
-    pricePerHour: 60,
-    lessonLink: 'https://meet.google.com/abc-defg-hij',
-  },
-  {
-    id: '3',
-    subject: 'Organic Chemistry',
-    dateTime: addDays(new Date(), 1),
-    studentName: 'Carol Brown',
-    duration: 60,
-    paymentStatus: 'overdue' as const,
-    pricePerHour: 55,
-  },
-  {
-    id: '4',
-    subject: 'Calculus II',
-    dateTime: addDays(new Date(), 3),
-    studentName: 'Alice Johnson',
-    duration: 75,
-    paymentStatus: 'paid' as const,
-    pricePerHour: 75,
-    lessonLink: 'https://zoom.us/j/987654321',
-  },
-];
 
 function CalendarPage() {
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
+  const { toast } = useToast();
+  
+  const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
+  const { data: studentsData = [] } = useStudents();
+  const createLessonMutation = useCreateLesson();
+  const updateLessonMutation = useUpdateLesson();
+
+  // Transform lessons data for calendar display
+  const displayLessons = (lessonsData as any[]).map((lesson: any) => {
+    const student = (studentsData as any[]).find((s: any) => s.id === lesson.studentId);
+    return {
+      ...lesson,
+      dateTime: new Date(lesson.dateTime),
+      studentName: student ? `${student.firstName} ${student.lastName}` : 'Unknown Student',
+      pricePerHour: parseFloat(lesson.pricePerHour),
+    };
+  });
 
   const handleLessonClick = (lesson: any) => {
-    console.log('Lesson clicked:', lesson);
-    setSelectedLesson(lesson);
-    setShowLessonForm(true);
+    const originalLesson = (lessonsData as any[]).find((l: any) => l.id === lesson.id);
+    if (originalLesson) {
+      setSelectedLesson(originalLesson);
+      setShowLessonForm(true);
+    }
   };
 
   const handleDateClick = (date: Date) => {
-    console.log('Date clicked:', date);
     setSelectedDate(date);
     setShowLessonForm(true);
   };
 
-  const handleLessonSubmit = (lessonData: any) => {
-    console.log('Lesson form submitted:', lessonData);
-    setShowLessonForm(false);
-    setSelectedLesson(null);
-    setSelectedDate(null);
+  const handleLessonSubmit = async (lessonData: any) => {
+    try {
+      const formattedData = {
+        ...lessonData,
+        dateTime: new Date(lessonData.dateTime).toISOString(),
+        pricePerHour: lessonData.pricePerHour.toString(),
+      };
+
+      if (selectedLesson) {
+        await updateLessonMutation.mutateAsync({ id: selectedLesson.id, ...formattedData });
+        toast({ title: "Success", description: "Lesson updated successfully" });
+      } else {
+        await createLessonMutation.mutateAsync(formattedData);
+        toast({ title: "Success", description: "Lesson scheduled successfully" });
+      }
+      
+      setShowLessonForm(false);
+      setSelectedLesson(null);
+      setSelectedDate(null);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to save lesson", variant: "destructive" });
+    }
   };
 
   const handleLessonCancel = () => {
@@ -125,10 +84,14 @@ function CalendarPage() {
     setSelectedDate(null);
   };
 
+  if (lessonsLoading) {
+    return <div className="flex items-center justify-center h-64">Loading lessons...</div>;
+  }
+
   return (
     <>
       <CalendarView
-        lessons={mockLessons}
+        lessons={displayLessons}
         onLessonClick={handleLessonClick}
         onDateClick={handleDateClick}
       />
@@ -139,12 +102,11 @@ function CalendarPage() {
             <DialogTitle>{selectedLesson ? 'Edit Lesson' : 'Schedule New Lesson'}</DialogTitle>
           </DialogHeader>
           <LessonForm
-            students={mockStudents}
+            students={studentsData as any[]}
             initialData={selectedLesson ? {
               ...selectedLesson,
-              studentId: mockStudents.find(s => 
-                `${s.firstName} ${s.lastName}` === selectedLesson.studentName
-              )?.id
+              dateTime: new Date(selectedLesson.dateTime),
+              pricePerHour: parseFloat(selectedLesson.pricePerHour),
             } : selectedDate ? {
               dateTime: selectedDate
             } : undefined}
@@ -160,27 +122,49 @@ function CalendarPage() {
 function StudentsPage() {
   const [showStudentForm, setShowStudentForm] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const { toast } = useToast();
+  
+  const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
+  const createStudentMutation = useCreateStudent();
+  const updateStudentMutation = useUpdateStudent();
+  const deleteStudentMutation = useDeleteStudent();
 
   const handleEditStudent = (studentId: string) => {
-    const student = mockStudents.find(s => s.id === studentId);
+    const student = (studentsData as any[]).find((s: any) => s.id === studentId);
     setSelectedStudent(student);
     setShowStudentForm(true);
   };
 
   const handleScheduleLesson = (studentId: string) => {
+    // TODO: This would open the lesson form with the student pre-selected
     console.log('Schedule lesson for student:', studentId);
-    // In a real app, this would navigate to lesson form with student pre-selected
   };
 
   const handleViewLessons = (studentId: string) => {
+    // TODO: This would navigate to calendar filtered by student
     console.log('View lessons for student:', studentId);
-    // In a real app, this would filter calendar view by student
   };
 
-  const handleStudentSubmit = (studentData: any) => {
-    console.log('Student form submitted:', studentData);
-    setShowStudentForm(false);
-    setSelectedStudent(null);
+  const handleStudentSubmit = async (studentData: any) => {
+    try {
+      const formattedData = {
+        ...studentData,
+        defaultRate: studentData.defaultRate ? studentData.defaultRate.toString() : null,
+      };
+      
+      if (selectedStudent) {
+        await updateStudentMutation.mutateAsync({ id: selectedStudent.id, ...formattedData });
+        toast({ title: "Success", description: "Student updated successfully" });
+      } else {
+        await createStudentMutation.mutateAsync(formattedData);
+        toast({ title: "Success", description: "Student added successfully" });
+      }
+      
+      setShowStudentForm(false);
+      setSelectedStudent(null);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to save student", variant: "destructive" });
+    }
   };
 
   const handleStudentCancel = () => {
@@ -188,24 +172,38 @@ function StudentsPage() {
     setSelectedStudent(null);
   };
 
+  if (studentsLoading) {
+    return <div className="flex items-center justify-center h-64">Loading students...</div>;
+  }
+
   return (
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Students</CardTitle>
+          <CardTitle>Students ({(studentsData as any[]).length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mockStudents.map(student => (
-              <StudentCard
-                key={student.id}
-                student={student}
-                onEdit={handleEditStudent}
-                onScheduleLesson={handleScheduleLesson}
-                onViewLessons={handleViewLessons}
-              />
-            ))}
-          </div>
+          {(studentsData as any[]).length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No students added yet.</p>
+              <p>Click "Add Student" in the sidebar to get started.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(studentsData as any[]).map((student: any) => (
+                <StudentCard
+                  key={student.id}
+                  student={{
+                    ...student,
+                    defaultRate: student.defaultRate ? parseFloat(student.defaultRate) : undefined,
+                  }}
+                  onEdit={handleEditStudent}
+                  onScheduleLesson={handleScheduleLesson}
+                  onViewLessons={handleViewLessons}
+                />
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
       
@@ -215,7 +213,10 @@ function StudentsPage() {
             <DialogTitle>{selectedStudent ? 'Edit Student' : 'Add New Student'}</DialogTitle>
           </DialogHeader>
           <StudentForm
-            initialData={selectedStudent}
+            initialData={selectedStudent ? {
+              ...selectedStudent,
+              defaultRate: selectedStudent.defaultRate ? parseFloat(selectedStudent.defaultRate) : undefined,
+            } : undefined}
             onSubmit={handleStudentSubmit}
             onCancel={handleStudentCancel}
           />
@@ -263,9 +264,15 @@ function Router() {
   );
 }
 
-function App() {
+function AppContent() {
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [showStudentForm, setShowStudentForm] = useState(false);
+  
+  const { data: studentsData = [] } = useStudents();
+  const { data: lessonsData = [] } = useLessons();
+  const createLessonMutation = useCreateLesson();
+  const createStudentMutation = useCreateStudent();
+  const { toast } = useToast();
 
   const handleAddLesson = () => {
     setShowLessonForm(true);
@@ -275,66 +282,92 @@ function App() {
     setShowStudentForm(true);
   };
 
-  const handleLessonSubmit = (lessonData: any) => {
-    console.log('New lesson submitted:', lessonData);
-    setShowLessonForm(false);
+  const handleLessonSubmit = async (lessonData: any) => {
+    try {
+      const formattedData = {
+        ...lessonData,
+        dateTime: new Date(lessonData.dateTime).toISOString(),
+        pricePerHour: lessonData.pricePerHour.toString(),
+      };
+      
+      await createLessonMutation.mutateAsync(formattedData);
+      toast({ title: "Success", description: "Lesson scheduled successfully" });
+      setShowLessonForm(false);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to schedule lesson", variant: "destructive" });
+    }
   };
 
-  const handleStudentSubmit = (studentData: any) => {
-    console.log('New student submitted:', studentData);
-    setShowStudentForm(false);
+  const handleStudentSubmit = async (studentData: any) => {
+    try {
+      const formattedData = {
+        ...studentData,
+        defaultRate: studentData.defaultRate ? studentData.defaultRate.toString() : null,
+      };
+      
+      await createStudentMutation.mutateAsync(formattedData);
+      toast({ title: "Success", description: "Student added successfully" });
+      setShowStudentForm(false);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to add student", variant: "destructive" });
+    }
   };
 
   return (
+    <div className="flex h-screen bg-background">
+      <Navigation
+        onAddLesson={handleAddLesson}
+        onAddStudent={handleAddStudent}
+        lessonCount={(lessonsData as any[]).length}
+        studentCount={(studentsData as any[]).length}
+      />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="flex items-center justify-between p-4 border-b">
+          <div className="flex-1" />
+          <ThemeToggle />
+        </header>
+        
+        <main className="flex-1 overflow-auto p-6">
+          <Router />
+        </main>
+      </div>
+      
+      {/* Global Lesson Form Modal */}
+      <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Schedule New Lesson</DialogTitle>
+          </DialogHeader>
+          <LessonForm
+            students={studentsData as any[]}
+            onSubmit={handleLessonSubmit}
+            onCancel={() => setShowLessonForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Global Student Form Modal */}
+      <Dialog open={showStudentForm} onOpenChange={setShowStudentForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Student</DialogTitle>
+          </DialogHeader>
+          <StudentForm
+            onSubmit={handleStudentSubmit}
+            onCancel={() => setShowStudentForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="flex h-screen bg-background">
-          <Navigation
-            onAddLesson={handleAddLesson}
-            onAddStudent={handleAddStudent}
-            lessonCount={mockLessons.length}
-            studentCount={mockStudents.length}
-          />
-          
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <header className="flex items-center justify-between p-4 border-b">
-              <div className="flex-1" />
-              <ThemeToggle />
-            </header>
-            
-            <main className="flex-1 overflow-auto p-6">
-              <Router />
-            </main>
-          </div>
-        </div>
-        
-        {/* Global Lesson Form Modal */}
-        <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Schedule New Lesson</DialogTitle>
-            </DialogHeader>
-            <LessonForm
-              students={mockStudents}
-              onSubmit={handleLessonSubmit}
-              onCancel={() => setShowLessonForm(false)}
-            />
-          </DialogContent>
-        </Dialog>
-        
-        {/* Global Student Form Modal */}
-        <Dialog open={showStudentForm} onOpenChange={setShowStudentForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add New Student</DialogTitle>
-            </DialogHeader>
-            <StudentForm
-              onSubmit={handleStudentSubmit}
-              onCancel={() => setShowStudentForm(false)}
-            />
-          </DialogContent>
-        </Dialog>
-        
+        <AppContent />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
