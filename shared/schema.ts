@@ -21,7 +21,7 @@ export const lessons = pgTable("lessons", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   subject: text("subject").notNull(),
   dateTime: timestamp("date_time").notNull(),
-  studentId: varchar("student_id").notNull().references(() => students.id),
+  studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: 'cascade' }),
   lessonLink: text("lesson_link"),
   pricePerHour: decimal("price_per_hour", { precision: 10, scale: 2 }).notNull(),
   duration: integer("duration").notNull(), // duration in minutes
@@ -31,7 +31,7 @@ export const lessons = pgTable("lessons", {
 // Recurring lessons table
 export const recurringLessons = pgTable("recurring_lessons", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  templateLessonId: varchar("template_lesson_id").notNull().references(() => lessons.id),
+  templateLessonId: varchar("template_lesson_id").notNull().references(() => lessons.id, { onDelete: 'cascade' }),
   frequency: text("frequency").notNull(), // weekly, biweekly, monthly
   endDate: timestamp("end_date"),
 });
