@@ -15,7 +15,7 @@ import StudentForm from "./components/StudentForm";
 import ThemeToggle from "./components/ThemeToggle";
 import StudentCard from "./components/StudentCard";
 import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent } from './hooks/useStudents';
-import { useLessons, useCreateLesson, useUpdateLesson, useDeleteLesson } from './hooks/useLessons';
+import { useLessons, useCreateLesson, useUpdateLesson, useDeleteLesson, useCreateLessonWithRecurring } from './hooks/useLessons';
 import { format } from 'date-fns';
 import NotFound from "@/pages/not-found";
 
@@ -29,7 +29,9 @@ function CalendarPage() {
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
   const { data: studentsData = [] } = useStudents();
   const createLessonMutation = useCreateLesson();
+  const createLessonWithRecurringMutation = useCreateLessonWithRecurring();
   const updateLessonMutation = useUpdateLesson();
+  const deleteLessonMutation = useDeleteLesson();
 
   // Transform lessons data for calendar display
   const displayLessons = (lessonsData as any[]).map((lesson: any) => {
@@ -62,13 +64,31 @@ function CalendarPage() {
         dateTime: new Date(lessonData.dateTime).toISOString(),
         pricePerHour: lessonData.pricePerHour.toString(),
       };
+      
+      // Remove recurring fields from lesson data
+      const { isRecurring, frequency, endDate, ...lessonOnlyData } = formattedData;
 
       if (selectedLesson) {
-        await updateLessonMutation.mutateAsync({ id: selectedLesson.id, ...formattedData });
+        // Update existing lesson (no recurring for updates)
+        await updateLessonMutation.mutateAsync({ id: selectedLesson.id, ...lessonOnlyData });
         toast({ title: "Success", description: "Lesson updated successfully" });
       } else {
-        await createLessonMutation.mutateAsync(formattedData);
-        toast({ title: "Success", description: "Lesson scheduled successfully" });
+        // Create new lesson
+        if (isRecurring && endDate && endDate.trim() !== '') {
+          // Create lesson with recurring
+          await createLessonWithRecurringMutation.mutateAsync({
+            lesson: lessonOnlyData,
+            recurring: {
+              frequency: frequency === 'biweekly' ? 'biweekly' : 'weekly',
+              endDate: endDate
+            }
+          });
+          toast({ title: "Success", description: "Recurring lesson series created successfully" });
+        } else {
+          // Create single lesson
+          await createLessonMutation.mutateAsync(lessonOnlyData);
+          toast({ title: "Success", description: "Lesson scheduled successfully" });
+        }
       }
       
       setShowLessonForm(false);
@@ -85,6 +105,23 @@ function CalendarPage() {
     setSelectedDate(null);
   };
 
+  const handleJoinLesson = (lesson: any) => {
+    if (lesson.lessonLink) {
+      window.open(lesson.lessonLink, '_blank');
+    }
+  };
+
+  const handleDeleteLesson = async (lesson: any) => {
+    if (confirm('Are you sure you want to delete this lesson? This action cannot be undone.')) {
+      try {
+        await deleteLessonMutation.mutateAsync(lesson.id);
+        toast({ title: "Success", description: "Lesson deleted successfully" });
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to delete lesson", variant: "destructive" });
+      }
+    }
+  };
+
   if (lessonsLoading) {
     return <div className="flex items-center justify-center h-64">Loading lessons...</div>;
   }
@@ -95,6 +132,8 @@ function CalendarPage() {
         lessons={displayLessons}
         onLessonClick={handleLessonClick}
         onDateClick={handleDateClick}
+        onJoinLesson={handleJoinLesson}
+        onDeleteLesson={handleDeleteLesson}
       />
       
       <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>

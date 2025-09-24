@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, Save, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Calendar, Clock, Save, X, ChevronDown } from 'lucide-react';
 
 interface Student {
   id: string;
@@ -25,6 +27,7 @@ interface LessonFormProps {
     duration?: number;
     pricePerHour?: number;
     lessonLink?: string;
+    paymentStatus?: 'pending' | 'paid' | 'unpaid';
   };
   onSubmit: (lessonData: any) => void;
   onCancel: () => void;
@@ -40,7 +43,10 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
     duration: initialData?.duration || 60,
     pricePerHour: initialData?.pricePerHour || 50,
     lessonLink: initialData?.lessonLink || '',
-    paymentStatus: 'pending' as const,
+    paymentStatus: (initialData?.paymentStatus || 'pending') as 'pending' | 'paid' | 'unpaid',
+    isRecurring: false,
+    frequency: 'weekly' as 'weekly' | 'biweekly',
+    endDate: '',
   });
 
   const handleStudentChange = (studentId: string) => {
@@ -185,6 +191,89 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
               data-testid="input-lesson-link"
             />
           </div>
+
+          {/* Payment Status Section - Only show when editing */}
+          {initialData && (
+            <div className="space-y-2">
+              <Label htmlFor="paymentStatus">Payment Status</Label>
+              <Select 
+                value={formData.paymentStatus} 
+                onValueChange={(value: 'pending' | 'paid' | 'unpaid') => 
+                  setFormData(prev => ({ ...prev, paymentStatus: value }))
+                }
+              >
+                <SelectTrigger data-testid="select-payment-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="unpaid">Unpaid</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Recurring Lesson Section - Only show when creating new lessons */}
+          {!initialData && (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="make-recurring"
+                checked={formData.isRecurring}
+                onCheckedChange={(checked) => 
+                  setFormData(prev => ({ ...prev, isRecurring: !!checked }))
+                }
+                data-testid="checkbox-make-recurring"
+              />
+              <Label htmlFor="make-recurring" className="text-sm font-medium">
+                Make recurring
+              </Label>
+            </div>
+
+            <Collapsible open={formData.isRecurring}>
+              <CollapsibleContent className="space-y-4">
+                <div className="p-4 border rounded-md bg-muted/50 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="frequency">Frequency</Label>
+                      <Select 
+                        value={formData.frequency} 
+                        onValueChange={(value: 'weekly' | 'biweekly') => 
+                          setFormData(prev => ({ ...prev, frequency: value }))
+                        }
+                      >
+                        <SelectTrigger data-testid="select-frequency">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Every week</SelectItem>
+                          <SelectItem value="biweekly">Every other week</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="endDate">End date</Label>
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={formData.endDate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                        min={formData.dateTime ? formData.dateTime.split('T')[0] : undefined}
+                        data-testid="input-end-date"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground">
+                    <p>Recurring lessons will be created automatically based on the selected frequency until the end date.</p>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+          )}
 
           <div className="flex items-center justify-end gap-3 pt-4">
             <Button

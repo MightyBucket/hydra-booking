@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, ExternalLink, Trash2 } from 'lucide-react';
 import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from 'date-fns';
 
 interface Lesson {
@@ -11,17 +11,20 @@ interface Lesson {
   dateTime: Date;
   studentName: string;
   duration: number;
-  paymentStatus: 'pending' | 'paid' | 'overdue';
+  paymentStatus: 'pending' | 'paid' | 'unpaid';
   pricePerHour: number;
+  lessonLink?: string;
 }
 
 interface CalendarViewProps {
   lessons: Lesson[];
   onLessonClick: (lesson: Lesson) => void;
   onDateClick: (date: Date) => void;
+  onJoinLesson?: (lesson: Lesson) => void;
+  onDeleteLesson?: (lesson: Lesson) => void;
 }
 
-export default function CalendarView({ lessons, onLessonClick, onDateClick }: CalendarViewProps) {
+export default function CalendarView({ lessons, onLessonClick, onDateClick, onJoinLesson, onDeleteLesson }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week'>('month');
 
@@ -42,7 +45,7 @@ export default function CalendarView({ lessons, onLessonClick, onDateClick }: Ca
     switch (status) {
       case 'paid': return 'lesson-confirmed';
       case 'pending': return 'lesson-pending'; 
-      case 'overdue': return 'lesson-cancelled';
+      case 'unpaid': return 'lesson-cancelled';
       default: return 'secondary';
     }
   };
@@ -130,26 +133,64 @@ export default function CalendarView({ lessons, onLessonClick, onDateClick }: Ca
                   {dayLessons.slice(0, 3).map(lesson => (
                     <div
                       key={lesson.id}
-                      className="p-1 rounded text-xs cursor-pointer hover-elevate"
+                      className="p-1 rounded text-xs hover-elevate group"
                       style={{ backgroundColor: `hsl(var(--chart-2) / 0.1)` }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onLessonClick(lesson);
-                      }}
                       data-testid={`lesson-${lesson.id}`}
                     >
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span className="truncate">{format(lesson.dateTime, 'HH:mm')}</span>
-                      </div>
-                      <div className="truncate font-medium">{lesson.subject}</div>
-                      <div className="truncate text-muted-foreground">{lesson.studentName}</div>
-                      <Badge 
-                        variant="secondary" 
-                        className={`text-xs bg-${getPaymentStatusColor(lesson.paymentStatus)}`}
+                      <div 
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onLessonClick(lesson);
+                        }}
                       >
-                        {lesson.paymentStatus}
-                      </Badge>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span className="truncate">{format(lesson.dateTime, 'HH:mm')}</span>
+                        </div>
+                        <div className="truncate font-medium">{lesson.subject}</div>
+                        <div className="truncate text-muted-foreground">{lesson.studentName}</div>
+                        <Badge 
+                          variant="secondary" 
+                          className={`text-xs bg-${getPaymentStatusColor(lesson.paymentStatus)}`}
+                        >
+                          {lesson.paymentStatus}
+                        </Badge>
+                      </div>
+                      
+                      {/* Action buttons - shown on hover */}
+                      <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {onJoinLesson && lesson.lessonLink && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onJoinLesson(lesson);
+                            }}
+                            data-testid={`button-join-lesson-${lesson.id}`}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Join
+                          </Button>
+                        )}
+                        {onDeleteLesson && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-6 px-2 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteLesson(lesson);
+                            }}
+                            data-testid={`button-delete-lesson-${lesson.id}`}
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            Delete
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                   
