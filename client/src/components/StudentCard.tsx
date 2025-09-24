@@ -8,8 +8,8 @@ interface StudentCardProps {
   student: {
     id: string;
     firstName: string;
-    lastName: string;
-    email: string;
+    lastName?: string | null;
+    email?: string | null;
     phoneNumber?: string;
     defaultSubject?: string;
     defaultRate?: number;
@@ -22,8 +22,15 @@ interface StudentCardProps {
 }
 
 export default function StudentCard({ student, onEdit, onScheduleLesson, onViewLessons }: StudentCardProps) {
-  const initials = `${student.firstName.charAt(0)}${student.lastName.charAt(0)}`;
-  const fullName = `${student.firstName} ${student.lastName}`;
+  const firstName = student.firstName || 'Unknown';
+  const lastName = student.lastName || '';
+  
+  const initials = lastName 
+    ? `${firstName.charAt(0)}${lastName.charAt(0)}`
+    : firstName.charAt(0);
+  const fullName = lastName 
+    ? `${firstName} ${lastName}`
+    : firstName;
 
   return (
     <Card className="hover-elevate" data-testid={`student-card-${student.id}`}>
@@ -35,7 +42,7 @@ export default function StudentCard({ student, onEdit, onScheduleLesson, onViewL
         </Avatar>
         <div className="flex-1">
           <CardTitle className="text-lg">{fullName}</CardTitle>
-          <p className="text-sm text-muted-foreground">{student.email}</p>
+          {student.email && <p className="text-sm text-muted-foreground">{student.email}</p>}
         </div>
       </CardHeader>
 

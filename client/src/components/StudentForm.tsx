@@ -70,7 +70,6 @@ export default function StudentForm({ initialData, onSubmit, onCancel }: Student
                 value={formData.lastName}
                 onChange={(e) => handleInputChange('lastName', e.target.value)}
                 placeholder="Enter last name"
-                required
                 data-testid="input-last-name"
               />
             </div>
@@ -84,7 +83,6 @@ export default function StudentForm({ initialData, onSubmit, onCancel }: Student
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
               placeholder="student@example.com"
-              required
               data-testid="input-email"
             />
           </div>
@@ -103,18 +101,19 @@ export default function StudentForm({ initialData, onSubmit, onCancel }: Student
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="defaultSubject">Default Subject</Label>
+              <Label htmlFor="defaultSubject">Default Subject *</Label>
               <Input
                 id="defaultSubject"
                 value={formData.defaultSubject}
                 onChange={(e) => handleInputChange('defaultSubject', e.target.value)}
                 placeholder="e.g., Mathematics, Physics"
+                required
                 data-testid="input-default-subject"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="defaultRate">Default Rate ($/hour)</Label>
+              <Label htmlFor="defaultRate">Default Rate ($/hour) *</Label>
               <Input
                 id="defaultRate"
                 type="number"
@@ -123,19 +122,21 @@ export default function StudentForm({ initialData, onSubmit, onCancel }: Student
                 value={formData.defaultRate}
                 onChange={(e) => handleInputChange('defaultRate', parseFloat(e.target.value) || 0)}
                 placeholder="50.00"
+                required
                 data-testid="input-default-rate"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="defaultLink">Default Lesson Link</Label>
+            <Label htmlFor="defaultLink">Default Lesson Link *</Label>
             <Input
               id="defaultLink"
               type="url"
               value={formData.defaultLink}
               onChange={(e) => handleInputChange('defaultLink', e.target.value)}
               placeholder="https://zoom.us/j/your-room"
+              required
               data-testid="input-default-link"
             />
           </div>

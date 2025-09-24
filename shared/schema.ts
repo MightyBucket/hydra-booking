@@ -8,12 +8,12 @@ import { relations } from "drizzle-orm";
 export const students = pgTable("students", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  email: text("email").notNull().unique(),
+  lastName: text("last_name"),
+  email: text("email").unique(),
   phoneNumber: text("phone_number"),
-  defaultSubject: text("default_subject"),
-  defaultRate: decimal("default_rate", { precision: 10, scale: 2 }),
-  defaultLink: text("default_link"),
+  defaultSubject: text("default_subject").notNull(),
+  defaultRate: decimal("default_rate", { precision: 10, scale: 2 }).notNull(),
+  defaultLink: text("default_link").notNull(),
 });
 
 // Lessons table
@@ -56,9 +56,23 @@ export const recurringLessonsRelations = relations(recurringLessons, ({ one }) =
   }),
 }));
 
-// Insert schemas
+// Helper to transform empty strings to null
+const emptyStringToNull = z.string().transform(val => val === '' ? null : val).nullable().optional();
+
+// Insert schemas  
 export const insertStudentSchema = createInsertSchema(students).omit({
   id: true,
+}).extend({
+  firstName: z.string().min(1, "First name is required"),
+  defaultSubject: z.string().min(1, "Default subject is required"),
+  defaultRate: z.string().min(1, "Default rate is required"),
+  defaultLink: z.string().url("Default lesson link must be a valid URL"),
+  lastName: emptyStringToNull,
+  email: z.preprocess(
+    val => val === '' ? null : val,
+    z.string().email().nullable().optional()
+  ),
+  phoneNumber: emptyStringToNull,
 });
 
 export const insertLessonSchema = createInsertSchema(lessons).omit({
