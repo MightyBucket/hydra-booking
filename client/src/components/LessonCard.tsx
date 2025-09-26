@@ -60,7 +60,7 @@ export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson }: L
           
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <span>${lesson.pricePerHour}/hr (${totalPrice.toFixed(2)} total)</span>
+            <span>£{lesson.pricePerHour}/hr (£{totalPrice.toFixed(2)} total)</span>
           </div>
         </div>
 

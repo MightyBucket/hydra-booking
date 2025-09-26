@@ -113,7 +113,7 @@ export default function StudentForm({ initialData, onSubmit, onCancel }: Student
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="defaultRate">Default Rate ($/hour) *</Label>
+              <Label htmlFor="defaultRate">Default Rate (£/hour) *</Label>
               <Input
                 id="defaultRate"
                 type="number"

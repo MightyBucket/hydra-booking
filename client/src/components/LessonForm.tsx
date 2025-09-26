@@ -64,6 +64,29 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.dateTime) {
+      alert('Please select a date and time for the lesson.');
+      return;
+    }
+    
+    if (!formData.studentId) {
+      alert('Please select a student.');
+      return;
+    }
+    
+    if (!formData.subject) {
+      alert('Please enter a subject.');
+      return;
+    }
+    
+    // Validate recurring fields if recurring is enabled
+    if (formData.isRecurring && !formData.endDate) {
+      alert('Please select an end date for recurring lessons.');
+      return;
+    }
+    
     const lessonData = {
       ...formData,
       dateTime: new Date(formData.dateTime),
@@ -155,7 +178,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="pricePerHour">Price per Hour ($)</Label>
+              <Label htmlFor="pricePerHour">Price per Hour (£)</Label>
               <Input
                 id="pricePerHour"
                 type="number"
@@ -172,7 +195,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
               <Label htmlFor="total">Total Cost</Label>
               <Input
                 id="total"
-                value={`$${((formData.pricePerHour * formData.duration) / 60).toFixed(2)}`}
+                value={`£${((formData.pricePerHour * formData.duration) / 60).toFixed(2)}`}
                 disabled
                 className="bg-muted"
                 data-testid="text-total-cost"
@@ -261,6 +284,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
                         value={formData.endDate}
                         onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
                         min={formData.dateTime ? formData.dateTime.split('T')[0] : undefined}
+                        required={formData.isRecurring}
                         data-testid="input-end-date"
                       />
                     </div>

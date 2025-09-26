@@ -6,6 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import CalendarView from "./components/CalendarView";
@@ -24,6 +26,9 @@ function CalendarPage() {
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [lessonToDelete, setLessonToDelete] = useState<any>(null);
+  const [deleteAllFuture, setDeleteAllFuture] = useState(false);
   const { toast } = useToast();
   
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
@@ -54,7 +59,15 @@ function CalendarPage() {
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
+    setSelectedLesson(null);
     setShowLessonForm(true);
+  };
+
+  const getDefaultDateTime = () => {
+    const now = new Date();
+    // Set to next hour
+    now.setHours(now.getHours() + 1, 0, 0, 0);
+    return now;
   };
 
   const handleLessonSubmit = async (lessonData: any) => {
@@ -111,15 +124,53 @@ function CalendarPage() {
     }
   };
 
-  const handleDeleteLesson = async (lesson: any) => {
-    if (confirm('Are you sure you want to delete this lesson? This action cannot be undone.')) {
-      try {
-        await deleteLessonMutation.mutateAsync(lesson.id);
+  const handleDeleteLesson = (lesson: any) => {
+    setLessonToDelete(lesson);
+    setDeleteAllFuture(false);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteLesson = async () => {
+    if (!lessonToDelete) return;
+
+    try {
+      if (deleteAllFuture) {
+        // Find all lessons with same day of week and time in the future
+        const lessonDate = new Date(lessonToDelete.dateTime);
+        const dayOfWeek = lessonDate.getDay();
+        const timeString = lessonDate.toTimeString().substring(0, 8); // HH:MM:SS
+        
+        const futureRecurringLessons = (lessonsData as any[]).filter((lesson: any) => {
+          const lessonDateTime = new Date(lesson.dateTime);
+          return (
+            lessonDateTime >= lessonDate && // Same date or future
+            lessonDateTime.getDay() === dayOfWeek && // Same day of week
+            lessonDateTime.toTimeString().substring(0, 8) === timeString && // Same time
+            lesson.studentId === lessonToDelete.studentId // Same student
+          );
+        });
+
+        // Delete all future recurring lessons
+        for (const lesson of futureRecurringLessons) {
+          await deleteLessonMutation.mutateAsync(lesson.id);
+        }
+        
+        toast({ 
+          title: "Success", 
+          description: `Deleted ${futureRecurringLessons.length} lesson${futureRecurringLessons.length !== 1 ? 's' : ''} successfully` 
+        });
+      } else {
+        // Delete only this lesson
+        await deleteLessonMutation.mutateAsync(lessonToDelete.id);
         toast({ title: "Success", description: "Lesson deleted successfully" });
-      } catch (error) {
-        toast({ title: "Error", description: "Failed to delete lesson", variant: "destructive" });
       }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete lesson", variant: "destructive" });
     }
+    
+    setShowDeleteDialog(false);
+    setLessonToDelete(null);
+    setDeleteAllFuture(false);
   };
 
   if (lessonsLoading) {
@@ -149,12 +200,57 @@ function CalendarPage() {
               pricePerHour: parseFloat(selectedLesson.pricePerHour),
             } : selectedDate ? {
               dateTime: selectedDate
-            } : undefined}
+            } : {
+              dateTime: getDefaultDateTime()
+            }}
             onSubmit={handleLessonSubmit}
             onCancel={handleLessonCancel}
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Lesson</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this lesson? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="delete-all-future"
+                checked={deleteAllFuture}
+                onCheckedChange={(checked) => setDeleteAllFuture(!!checked)}
+                data-testid="checkbox-delete-all-future"
+              />
+              <Label htmlFor="delete-all-future" className="text-sm">
+                Delete all future lessons on the same day and time
+              </Label>
+            </div>
+            {deleteAllFuture && (
+              <p className="text-sm text-muted-foreground">
+                This will delete all future lessons for the same student that occur on the same day of the week at the same time.
+              </p>
+            )}
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteLesson}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              Delete {deleteAllFuture ? 'All Future Lessons' : 'Lesson'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -178,6 +274,13 @@ function StudentsPage() {
     const student = (studentsData as any[]).find((s: any) => s.id === studentId);
     setSelectedStudent(student);
     setShowStudentForm(true);
+  };
+
+  const getDefaultDateTime = () => {
+    const now = new Date();
+    // Set to next hour
+    now.setHours(now.getHours() + 1, 0, 0, 0);
+    return now;
   };
 
   const handleScheduleLesson = (studentId: string) => {
@@ -336,7 +439,10 @@ function StudentsPage() {
               subject: selectedStudentForLesson.defaultSubject,
               pricePerHour: selectedStudentForLesson.defaultRate ? parseFloat(selectedStudentForLesson.defaultRate) : 50,
               lessonLink: selectedStudentForLesson.defaultLink,
-            } : undefined}
+              dateTime: getDefaultDateTime(),
+            } : {
+              dateTime: getDefaultDateTime()
+            }}
             onSubmit={handleLessonSubmit}
             onCancel={handleLessonCancel}
           />
@@ -421,6 +527,13 @@ function AppContent() {
   const createStudentMutation = useCreateStudent();
   const { toast } = useToast();
 
+  const getDefaultDateTime = () => {
+    const now = new Date();
+    // Set to next hour
+    now.setHours(now.getHours() + 1, 0, 0, 0);
+    return now;
+  };
+
   const handleAddLesson = () => {
     setShowLessonForm(true);
   };
@@ -488,6 +601,9 @@ function AppContent() {
           </DialogHeader>
           <LessonForm
             students={studentsData as any[]}
+            initialData={{
+              dateTime: getDefaultDateTime()
+            }}
             onSubmit={handleLessonSubmit}
             onCancel={() => setShowLessonForm(false)}
           />

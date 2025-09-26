@@ -88,6 +88,33 @@ export function useCreateRecurringLesson() {
   });
 }
 
+// Helper function to calculate recurring lesson dates
+function calculateRecurringDates(startDate: Date, frequency: string, endDate: Date): Date[] {
+  const dates: Date[] = [];
+  const current = new Date(startDate);
+  
+  // Add the initial lesson date
+  dates.push(new Date(current));
+  
+  // Calculate interval based on frequency
+  const intervalDays = frequency === 'weekly' ? 7 : 14; // weekly or biweekly
+  
+  // Generate recurring dates until end date
+  while (true) {
+    // Create a new date by adding the interval in milliseconds
+    const nextDate = new Date(current.getTime() + (intervalDays * 24 * 60 * 60 * 1000));
+    
+    if (nextDate > endDate) {
+      break;
+    }
+    
+    dates.push(new Date(nextDate));
+    current.setTime(nextDate.getTime());
+  }
+  
+  return dates;
+}
+
 // Hook for creating lesson with recurring capability
 export function useCreateLessonWithRecurring() {
   const queryClient = useQueryClient();
@@ -97,22 +124,48 @@ export function useCreateLessonWithRecurring() {
       lesson: InsertLesson, 
       recurring?: { frequency: string, endDate?: string } 
     }) => {
-      // First create the lesson
-      const lessonRes = await apiRequest('POST', '/api/lessons', data.lesson);
-      const createdLesson = await lessonRes.json() as Lesson;
-      
-      // If recurring, create the recurring lesson record
-      if (data.recurring) {
-        const recurringData: InsertRecurringLesson = {
-          templateLessonId: createdLesson.id,
-          frequency: data.recurring.frequency,
-          endDate: data.recurring.endDate ? new Date(data.recurring.endDate + 'T23:59:59.999Z') : null,
-        };
+      // If recurring, create all lesson instances
+      if (data.recurring && data.recurring.endDate) {
+        const startDate = new Date(data.lesson.dateTime);
+        const endDate = new Date(data.recurring.endDate + 'T23:59:59.999Z');
+        const recurringDates = calculateRecurringDates(startDate, data.recurring.frequency, endDate);
         
-        await apiRequest('POST', '/api/recurring-lessons', recurringData);
+        const createdLessons: Lesson[] = [];
+        let firstLesson: Lesson | null = null;
+        
+        // Create individual lesson for each date
+        for (const date of recurringDates) {
+          const lessonData = {
+            ...data.lesson,
+            dateTime: date.toISOString()
+          };
+          
+          const lessonRes = await apiRequest('POST', '/api/lessons', lessonData);
+          const createdLesson = await lessonRes.json() as Lesson;
+          createdLessons.push(createdLesson);
+          
+          if (!firstLesson) {
+            firstLesson = createdLesson;
+          }
+        }
+        
+        // Create the recurring lesson record using the first lesson as template
+        if (firstLesson) {
+          const recurringData: InsertRecurringLesson = {
+            templateLessonId: firstLesson.id,
+            frequency: data.recurring.frequency,
+            endDate: endDate,
+          };
+          
+          await apiRequest('POST', '/api/recurring-lessons', recurringData);
+        }
+        
+        return firstLesson;
+      } else {
+        // Create single lesson
+        const lessonRes = await apiRequest('POST', '/api/lessons', data.lesson);
+        return await lessonRes.json() as Lesson;
       }
-      
-      return createdLesson;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/lessons'] });
