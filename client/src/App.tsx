@@ -518,6 +518,7 @@ function AppContent() {
   const { data: studentsData = [] } = useStudents();
   const { data: lessonsData = [] } = useLessons();
   const createLessonMutation = useCreateLesson();
+  const createLessonWithRecurringMutation = useCreateLessonWithRecurring();
   const createStudentMutation = useCreateStudent();
   const { toast } = useToast();
 
