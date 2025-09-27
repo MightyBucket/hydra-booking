@@ -198,11 +198,7 @@ function CalendarPage() {
               ...selectedLesson,
               dateTime: new Date(selectedLesson.dateTime),
               pricePerHour: parseFloat(selectedLesson.pricePerHour),
-            } : selectedDate ? {
-              dateTime: selectedDate
-            } : {
-              dateTime: getDefaultDateTime()
-            }}
+            } : undefined}
             onSubmit={handleLessonSubmit}
             onCancel={handleLessonCancel}
           />
@@ -440,9 +436,7 @@ function StudentsPage() {
               pricePerHour: selectedStudentForLesson.defaultRate ? parseFloat(selectedStudentForLesson.defaultRate) : 50,
               lessonLink: selectedStudentForLesson.defaultLink,
               dateTime: getDefaultDateTime(),
-            } : {
-              dateTime: getDefaultDateTime()
-            }}
+            } : undefined}
             onSubmit={handleLessonSubmit}
             onCancel={handleLessonCancel}
           />
@@ -601,9 +595,6 @@ function AppContent() {
           </DialogHeader>
           <LessonForm
             students={studentsData as any[]}
-            initialData={{
-              dateTime: getDefaultDateTime()
-            }}
             onSubmit={handleLessonSubmit}
             onCancel={() => setShowLessonForm(false)}
           />

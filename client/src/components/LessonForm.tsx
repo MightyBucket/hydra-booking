@@ -34,11 +34,20 @@ interface LessonFormProps {
 }
 
 export default function LessonForm({ students, initialData, onSubmit, onCancel }: LessonFormProps) {
+  const getDefaultDateTime = () => {
+    const now = new Date();
+    // Set to next hour
+    now.setHours(now.getHours() + 1, 0, 0, 0);
+    return now;
+  };
+
   const [formData, setFormData] = useState({
     subject: initialData?.subject || '',
     dateTime: initialData?.dateTime ? 
       new Date(initialData.dateTime.getTime() - (initialData.dateTime.getTimezoneOffset() * 60000))
-        .toISOString().slice(0, 16) : '',
+        .toISOString().slice(0, 16) : 
+      new Date(getDefaultDateTime().getTime() - (getDefaultDateTime().getTimezoneOffset() * 60000))
+        .toISOString().slice(0, 16),
     studentId: initialData?.studentId || '',
     duration: initialData?.duration || 60,
     pricePerHour: initialData?.pricePerHour || 50,
