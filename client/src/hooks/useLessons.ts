@@ -91,26 +91,28 @@ export function useCreateRecurringLesson() {
 // Helper function to calculate recurring lesson dates
 function calculateRecurringDates(startDate: Date, frequency: string, endDate: Date): Date[] {
   const dates: Date[] = [];
-  const current = new Date(startDate);
   
   // Add the initial lesson date
-  dates.push(new Date(current));
+  dates.push(new Date(startDate));
   
   // Calculate interval based on frequency
   const intervalDays = frequency === 'weekly' ? 7 : 14; // weekly or biweekly
   
   // Generate recurring dates until end date
+  let currentDate = new Date(startDate);
+  
   while (true) {
-    // Use setDate to add days instead of milliseconds to avoid timezone issues
-    const nextDate = new Date(current);
-    nextDate.setDate(nextDate.getDate() + intervalDays);
+    // Create a new date for the next occurrence
+    // Use setDate to add days while preserving time and avoiding timezone issues
+    const nextDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + intervalDays, currentDate.getHours(), currentDate.getMinutes(), currentDate.getSeconds(), currentDate.getMilliseconds());
     
     if (nextDate > endDate) {
       break;
     }
     
     dates.push(new Date(nextDate));
-    current.setTime(nextDate.getTime());
+    // Update currentDate to the next date for the next iteration
+    currentDate = nextDate;
   }
   
   return dates;
