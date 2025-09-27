@@ -83,6 +83,8 @@ export const insertLessonSchema = createInsertSchema(lessons).omit({
 
 export const insertRecurringLessonSchema = createInsertSchema(recurringLessons).omit({
   id: true,
+}).extend({
+  endDate: z.coerce.date(),
 });
 
 // Types

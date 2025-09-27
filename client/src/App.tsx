@@ -538,14 +538,42 @@ function AppContent() {
 
   const handleLessonSubmit = async (lessonData: any) => {
     try {
-      const formattedData = {
-        ...lessonData,
-        dateTime: new Date(lessonData.dateTime).toISOString(),
-        pricePerHour: lessonData.pricePerHour.toString(),
-      };
+      if (lessonData.isRecurring && lessonData.endDate) {
+        // Handle recurring lesson creation
+        const recurringData = {
+          lesson: {
+            subject: lessonData.subject,
+            dateTime: new Date(lessonData.dateTime),
+            studentId: lessonData.studentId,
+            lessonLink: lessonData.lessonLink,
+            pricePerHour: lessonData.pricePerHour.toString(),
+            duration: lessonData.duration,
+            paymentStatus: lessonData.paymentStatus || 'pending',
+          },
+          recurring: {
+            frequency: lessonData.frequency,
+            endDate: lessonData.endDate,
+          }
+        };
+        
+        await createLessonWithRecurringMutation.mutateAsync(recurringData);
+        toast({ title: "Success", description: "Recurring lessons scheduled successfully" });
+      } else {
+        // Handle single lesson creation
+        const formattedData = {
+          subject: lessonData.subject,
+          dateTime: new Date(lessonData.dateTime),
+          studentId: lessonData.studentId,
+          lessonLink: lessonData.lessonLink,
+          pricePerHour: lessonData.pricePerHour.toString(),
+          duration: lessonData.duration,
+          paymentStatus: lessonData.paymentStatus || 'pending',
+        };
+        
+        await createLessonMutation.mutateAsync(formattedData);
+        toast({ title: "Success", description: "Lesson scheduled successfully" });
+      }
       
-      await createLessonMutation.mutateAsync(formattedData);
-      toast({ title: "Success", description: "Lesson scheduled successfully" });
       setShowLessonForm(false);
     } catch (error) {
       toast({ title: "Error", description: "Failed to schedule lesson", variant: "destructive" });

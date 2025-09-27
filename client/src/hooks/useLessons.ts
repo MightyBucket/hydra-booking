@@ -101,8 +101,9 @@ function calculateRecurringDates(startDate: Date, frequency: string, endDate: Da
   
   // Generate recurring dates until end date
   while (true) {
-    // Create a new date by adding the interval in milliseconds
-    const nextDate = new Date(current.getTime() + (intervalDays * 24 * 60 * 60 * 1000));
+    // Use setDate to add days instead of milliseconds to avoid timezone issues
+    const nextDate = new Date(current);
+    nextDate.setDate(nextDate.getDate() + intervalDays);
     
     if (nextDate > endDate) {
       break;
@@ -127,7 +128,7 @@ export function useCreateLessonWithRecurring() {
       // If recurring, create all lesson instances
       if (data.recurring && data.recurring.endDate) {
         const startDate = new Date(data.lesson.dateTime);
-        const endDate = new Date(data.recurring.endDate + 'T23:59:59.999Z');
+        const endDate = new Date(data.recurring.endDate + 'T23:59:59');
         const recurringDates = calculateRecurringDates(startDate, data.recurring.frequency, endDate);
         
         const createdLessons: Lesson[] = [];
