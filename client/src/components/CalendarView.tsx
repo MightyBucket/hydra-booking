@@ -49,7 +49,10 @@ interface CalendarViewProps {
   onDateClick: (date: Date) => void;
   onJoinLesson?: (lesson: Lesson) => void;
   onDeleteLesson?: (lesson: Lesson) => void;
-  onUpdatePaymentStatus: (lessonId: string, status: Lesson["paymentStatus"]) => void;
+  onUpdatePaymentStatus: (
+    lessonId: string,
+    status: Lesson["paymentStatus"],
+  ) => void;
 }
 
 // Mock LessonCard component for demonstration purposes
@@ -65,7 +68,10 @@ const LessonCard = ({
   onEdit: () => void;
   onDelete: () => void;
   onJoinLesson?: () => void;
-  onUpdatePaymentStatus: (lessonId: string, status: Lesson["paymentStatus"]) => void;
+  onUpdatePaymentStatus: (
+    lessonId: string,
+    status: Lesson["paymentStatus"],
+  ) => void;
 }) => {
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
@@ -85,7 +91,7 @@ const LessonCard = ({
       className="p-1 rounded text-xs hover-elevate group border-l-2"
       style={{
         backgroundColor: `${lesson.studentColor}15`,
-        borderLeftColor: lesson.studentColor || '#3b82f6',
+        borderLeftColor: lesson.studentColor || "#3b82f6",
       }}
       data-testid={`lesson-${lesson.id}`}
     >
@@ -93,12 +99,16 @@ const LessonCard = ({
         <div className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
           <span className="truncate">
-            {format(lesson.dateTime, "HH:mm")}-{format(new Date(lesson.dateTime.getTime() + lesson.duration * 60000), "HH:mm")}
+            {format(lesson.dateTime, "HH:mm")}-
+            {format(
+              new Date(lesson.dateTime.getTime() + lesson.duration * 60000),
+              "HH:mm",
+            )}
           </span>
         </div>
         <div className="truncate text-muted-foreground">{lesson.subject}</div>
         <div className="truncate font-medium">{lesson.studentName}</div>
-        
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -116,9 +126,9 @@ const LessonCard = ({
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, 'pending');
+                onUpdatePaymentStatus(lesson.id, "pending");
               }}
-              className={lesson.paymentStatus === 'pending' ? 'bg-accent' : ''}
+              className={lesson.paymentStatus === "pending" ? "bg-accent" : ""}
               data-testid={`payment-option-pending-${lesson.id}`}
             >
               <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
@@ -127,9 +137,9 @@ const LessonCard = ({
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, 'paid');
+                onUpdatePaymentStatus(lesson.id, "paid");
               }}
-              className={lesson.paymentStatus === 'paid' ? 'bg-accent' : ''}
+              className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
               data-testid={`payment-option-paid-${lesson.id}`}
             >
               <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
@@ -138,9 +148,9 @@ const LessonCard = ({
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, 'unpaid');
+                onUpdatePaymentStatus(lesson.id, "unpaid");
               }}
-              className={lesson.paymentStatus === 'unpaid' ? 'bg-accent' : ''}
+              className={lesson.paymentStatus === "unpaid" ? "bg-accent" : ""}
               data-testid={`payment-option-unpaid-${lesson.id}`}
             >
               <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
@@ -182,7 +192,6 @@ const LessonCard = ({
     </div>
   );
 };
-
 
 export default function CalendarView({
   lessons,
@@ -336,9 +345,9 @@ export default function CalendarView({
                     <div
                       key={lesson.id}
                       className="p-1 rounded text-xs hover-elevate group border-l-2"
-                      style={{ 
+                      style={{
                         backgroundColor: `${lesson.studentColor}15`,
-                        borderLeftColor: lesson.studentColor || '#3b82f6'
+                        borderLeftColor: lesson.studentColor || "#3b82f6",
                       }}
                       data-testid={`lesson-${lesson.id}`}
                     >
@@ -352,7 +361,15 @@ export default function CalendarView({
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           <span className="truncate">
-                            {format(lesson.dateTime, "HH:mm")}-{format(new Date(lesson.dateTime.getTime() + lesson.duration * 60000), "HH:mm")} ()
+                            {format(lesson.dateTime, "HH:mm")}-
+                            {format(
+                              new Date(
+                                lesson.dateTime.getTime() +
+                                  lesson.duration * 60000,
+                              ),
+                              "HH:mm",
+                            )}{" "}
+                            ()
                           </span>
                         </div>
                         <div className="truncate text-muted-foreground">
@@ -366,21 +383,27 @@ export default function CalendarView({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-auto text-xs font-medium mt-1`}
+                              className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 text-xs font-small mt-1`}
                               onClick={(e) => e.stopPropagation()}
                               data-testid={`dropdown-payment-status-${lesson.id}`}
                             >
                               {lesson.paymentStatus}
-                              <ChevronDown className="ml-1 h-3 w-3" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="min-w-24">
+                          <DropdownMenuContent
+                            align="start"
+                            className="min-w-24"
+                          >
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onUpdatePaymentStatus(lesson.id, 'pending');
+                                onUpdatePaymentStatus(lesson.id, "pending");
                               }}
-                              className={lesson.paymentStatus === 'pending' ? 'bg-accent' : ''}
+                              className={
+                                lesson.paymentStatus === "pending"
+                                  ? "bg-accent"
+                                  : ""
+                              }
                               data-testid={`payment-option-pending-${lesson.id}`}
                             >
                               <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
@@ -389,9 +412,13 @@ export default function CalendarView({
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onUpdatePaymentStatus(lesson.id, 'paid');
+                                onUpdatePaymentStatus(lesson.id, "paid");
                               }}
-                              className={lesson.paymentStatus === 'paid' ? 'bg-accent' : ''}
+                              className={
+                                lesson.paymentStatus === "paid"
+                                  ? "bg-accent"
+                                  : ""
+                              }
                               data-testid={`payment-option-paid-${lesson.id}`}
                             >
                               <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
@@ -400,9 +427,13 @@ export default function CalendarView({
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onUpdatePaymentStatus(lesson.id, 'unpaid');
+                                onUpdatePaymentStatus(lesson.id, "unpaid");
                               }}
-                              className={lesson.paymentStatus === 'unpaid' ? 'bg-accent' : ''}
+                              className={
+                                lesson.paymentStatus === "unpaid"
+                                  ? "bg-accent"
+                                  : ""
+                              }
                               data-testid={`payment-option-unpaid-${lesson.id}`}
                             >
                               <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
