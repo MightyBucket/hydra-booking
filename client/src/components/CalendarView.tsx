@@ -380,14 +380,13 @@ export default function CalendarView({
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Badge
-                              variant="secondary"
-                              className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer text-xs mt-1`}
+                            <button
+                              className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
                               onClick={(e) => e.stopPropagation()}
                               data-testid={`dropdown-payment-status-${lesson.id}`}
                             >
                               {lesson.paymentStatus}
-                            </Badge>
+                            </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent
                             align="start"
