@@ -218,13 +218,13 @@ export default function CalendarView({
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case "paid":
-        return "lesson-confirmed";
+        return "bg-lesson-confirmed text-white";
       case "pending":
-        return "lesson-pending";
+        return "bg-lesson-pending text-black";
       case "unpaid":
-        return "lesson-cancelled";
+        return "bg-lesson-cancelled text-white";
       default:
-        return "secondary";
+        return "bg-secondary";
     }
   };
 
@@ -361,12 +361,55 @@ export default function CalendarView({
                         <div className="truncate font-medium">
                           {lesson.studentName}
                         </div>
-                        <Badge
-                          variant="secondary"
-                          className={`text-xs bg-${getPaymentStatusColor(lesson.paymentStatus)}`}
-                        >
-                          {lesson.paymentStatus}
-                        </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-auto text-xs font-medium mt-1`}
+                              onClick={(e) => e.stopPropagation()}
+                              data-testid={`dropdown-payment-status-${lesson.id}`}
+                            >
+                              {lesson.paymentStatus}
+                              <ChevronDown className="ml-1 h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="min-w-24">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdatePaymentStatus(lesson.id, 'pending');
+                              }}
+                              className={lesson.paymentStatus === 'pending' ? 'bg-accent' : ''}
+                              data-testid={`payment-option-pending-${lesson.id}`}
+                            >
+                              <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
+                              Pending
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdatePaymentStatus(lesson.id, 'paid');
+                              }}
+                              className={lesson.paymentStatus === 'paid' ? 'bg-accent' : ''}
+                              data-testid={`payment-option-paid-${lesson.id}`}
+                            >
+                              <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
+                              Paid
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdatePaymentStatus(lesson.id, 'unpaid');
+                              }}
+                              className={lesson.paymentStatus === 'unpaid' ? 'bg-accent' : ''}
+                              data-testid={`payment-option-unpaid-${lesson.id}`}
+                            >
+                              <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
+                              Unpaid
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
 
                       {/* Action buttons - shown on hover */}
