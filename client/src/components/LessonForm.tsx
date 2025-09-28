@@ -247,7 +247,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
           )}
 
           {/* Recurring Lesson Section - Only show when creating new lessons */}
-          {!initialData && (
+          {(!initialData || (!initialData.subject && !initialData.studentId)) && (
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Checkbox
