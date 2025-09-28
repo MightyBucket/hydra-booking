@@ -1,7 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, User, DollarSign, Link as LinkIcon, Edit, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Clock, User, DollarSign, Link as LinkIcon, Edit, Trash2, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface LessonCardProps {
@@ -18,9 +24,10 @@ interface LessonCardProps {
   onEdit: (lessonId: string) => void;
   onDelete: (lessonId: string) => void;
   onJoinLesson?: (link: string) => void;
+  onUpdatePaymentStatus?: (lessonId: string, status: 'pending' | 'paid' | 'overdue') => void;
 }
 
-export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson }: LessonCardProps) {
+export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson, onUpdatePaymentStatus }: LessonCardProps) {
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return 'bg-lesson-confirmed text-white';
@@ -36,9 +43,51 @@ export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson }: L
     <Card className="hover-elevate" data-testid={`lesson-card-${lesson.id}`}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
         <CardTitle className="text-lg font-semibold">{lesson.subject}</CardTitle>
-        <Badge className={getPaymentStatusColor(lesson.paymentStatus)}>
-          {lesson.paymentStatus}
-        </Badge>
+        {onUpdatePaymentStatus ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-3 py-1 h-auto text-xs font-medium`}
+                data-testid={`dropdown-payment-status-${lesson.id}`}
+              >
+                {lesson.paymentStatus}
+                <ChevronDown className="ml-1 h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => onUpdatePaymentStatus(lesson.id, 'pending')}
+                className={lesson.paymentStatus === 'pending' ? 'bg-accent' : ''}
+                data-testid={`payment-option-pending-${lesson.id}`}
+              >
+                <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
+                Pending
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onUpdatePaymentStatus(lesson.id, 'paid')}
+                className={lesson.paymentStatus === 'paid' ? 'bg-accent' : ''}
+                data-testid={`payment-option-paid-${lesson.id}`}
+              >
+                <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
+                Paid
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onUpdatePaymentStatus(lesson.id, 'overdue')}
+                className={lesson.paymentStatus === 'overdue' ? 'bg-accent' : ''}
+                data-testid={`payment-option-overdue-${lesson.id}`}
+              >
+                <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
+                Overdue
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Badge className={getPaymentStatusColor(lesson.paymentStatus)}>
+            {lesson.paymentStatus}
+          </Badge>
+        )}
       </CardHeader>
       
       <CardContent className="space-y-4">

@@ -175,6 +175,29 @@ function CalendarPage() {
     setShowDeleteDialog(true);
   };
 
+  const handleUpdatePaymentStatus = async (lessonId: string, status: 'pending' | 'paid' | 'unpaid') => {
+    try {
+      const lessonToUpdate = (lessonsData as any[]).find((l: any) => l.id === lessonId);
+      if (lessonToUpdate) {
+        await updateLessonMutation.mutateAsync({
+          id: lessonId,
+          ...lessonToUpdate,
+          paymentStatus: status,
+        });
+        toast({
+          title: "Success",
+          description: `Payment status updated to ${status}`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update payment status",
+        variant: "destructive",
+      });
+    }
+  };
+
   const confirmDeleteLesson = async () => {
     if (!lessonToDelete) return;
 
@@ -240,6 +263,7 @@ function CalendarPage() {
         onDateClick={handleDateClick}
         onJoinLesson={handleJoinLesson}
         onDeleteLesson={handleDeleteLesson}
+        onUpdatePaymentStatus={handleUpdatePaymentStatus}
       />
 
       <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
