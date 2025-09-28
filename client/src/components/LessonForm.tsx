@@ -154,33 +154,15 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="dateTime">Date & Time</Label>
               <Input
-                id="date"
-                type="date"
-                value={formData.dateTime.split('T')[0]}
-                onChange={(e) => {
-                  const time = formData.dateTime.split('T')[1] || '09:00';
-                  setFormData(prev => ({ ...prev, dateTime: `${e.target.value}T${time}` }));
-                }}
-                required
-                data-testid="input-date"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="time">Time</Label>
-              <Input
-                id="time"
-                type="time"
+                id="dateTime"
+                type="datetime-local"
                 step="300"
-                value={formData.dateTime.split('T')[1] || '09:00'}
-                onChange={(e) => {
-                  const date = formData.dateTime.split('T')[0];
-                  setFormData(prev => ({ ...prev, dateTime: `${date}T${e.target.value}` }));
-                }}
+                value={formData.dateTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, dateTime: e.target.value }))}
                 required
-                data-testid="input-time"
+                data-testid="input-datetime"
               />
             </div>
 
