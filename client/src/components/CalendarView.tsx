@@ -210,10 +210,10 @@ export default function CalendarView({
                             {format(lesson.dateTime, "HH:mm")}
                           </span>
                         </div>
-                        <div className="truncate font-medium">
+                        <div className="truncate text-muted-foreground">
                           {lesson.subject}
                         </div>
-                        <div className="truncate text-muted-foreground">
+                        <div className="truncate font-medium">
                           {lesson.studentName}
                         </div>
                         <Badge
@@ -230,7 +230,7 @@ export default function CalendarView({
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-6 px-2 text-xs"
+                            //className="h-6 px-2 text-xs"
                             onClick={(e) => {
                               e.stopPropagation();
                               onJoinLesson(lesson);
@@ -238,7 +238,6 @@ export default function CalendarView({
                             data-testid={`button-join-lesson-${lesson.id}`}
                           >
                             <ExternalLink className="h-3 w-3 mr-1" />
-                            Join
                           </Button>
                         )}
                         {onDeleteLesson && (
@@ -253,7 +252,6 @@ export default function CalendarView({
                             data-testid={`button-delete-lesson-${lesson.id}`}
                           >
                             <Trash2 className="h-3 w-3 mr-1" />
-                            Delete
                           </Button>
                         )}
                       </div>
