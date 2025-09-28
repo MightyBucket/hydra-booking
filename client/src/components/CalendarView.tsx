@@ -103,25 +103,24 @@ const LessonCard = ({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              size="sm"
-              className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-auto text-xs font-medium mt-1`}
+              className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-1.5 py-0 h-5 text-xs font-medium mt-0.5 rounded-sm`}
               onClick={(e) => e.stopPropagation()}
               data-testid={`dropdown-payment-status-${lesson.id}`}
             >
               {lesson.paymentStatus}
-              <ChevronDown className="ml-1 h-3 w-3" />
+              <ChevronDown className="ml-0.5 h-2.5 w-2.5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-24">
+          <DropdownMenuContent align="start" className="min-w-20 p-1">
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
                 onUpdatePaymentStatus(lesson.id, 'pending');
               }}
-              className={lesson.paymentStatus === 'pending' ? 'bg-accent' : ''}
+              className={`px-2 py-1 text-xs ${lesson.paymentStatus === 'pending' ? 'bg-accent' : ''}`}
               data-testid={`payment-option-pending-${lesson.id}`}
             >
-              <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
+              <span className="w-2 h-2 rounded-full bg-lesson-pending mr-1.5"></span>
               Pending
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -129,10 +128,10 @@ const LessonCard = ({
                 e.stopPropagation();
                 onUpdatePaymentStatus(lesson.id, 'paid');
               }}
-              className={lesson.paymentStatus === 'paid' ? 'bg-accent' : ''}
+              className={`px-2 py-1 text-xs ${lesson.paymentStatus === 'paid' ? 'bg-accent' : ''}`}
               data-testid={`payment-option-paid-${lesson.id}`}
             >
-              <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
+              <span className="w-2 h-2 rounded-full bg-lesson-confirmed mr-1.5"></span>
               Paid
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -140,10 +139,10 @@ const LessonCard = ({
                 e.stopPropagation();
                 onUpdatePaymentStatus(lesson.id, 'unpaid');
               }}
-              className={lesson.paymentStatus === 'unpaid' ? 'bg-accent' : ''}
+              className={`px-2 py-1 text-xs ${lesson.paymentStatus === 'unpaid' ? 'bg-accent' : ''}`}
               data-testid={`payment-option-unpaid-${lesson.id}`}
             >
-              <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
+              <span className="w-2 h-2 rounded-full bg-lesson-cancelled mr-2"></span>
               Unpaid
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -365,25 +364,24 @@ export default function CalendarView({
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="sm"
-                              className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-auto text-xs font-medium mt-1`}
+                              className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-1.5 py-0 h-5 text-xs font-medium mt-0.5 rounded-sm`}
                               onClick={(e) => e.stopPropagation()}
                               data-testid={`dropdown-payment-status-${lesson.id}`}
                             >
                               {lesson.paymentStatus}
-                              <ChevronDown className="ml-1 h-3 w-3" />
+                              <ChevronDown className="ml-0.5 h-2.5 w-2.5" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="min-w-24">
+                          <DropdownMenuContent align="start" className="min-w-20 p-1">
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onUpdatePaymentStatus(lesson.id, 'pending');
                               }}
-                              className={lesson.paymentStatus === 'pending' ? 'bg-accent' : ''}
+                              className={`px-2 py-1 text-xs ${lesson.paymentStatus === 'pending' ? 'bg-accent' : ''}`}
                               data-testid={`payment-option-pending-${lesson.id}`}
                             >
-                              <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
+                              <span className="w-2 h-2 rounded-full bg-lesson-pending mr-1.5"></span>
                               Pending
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -391,10 +389,10 @@ export default function CalendarView({
                                 e.stopPropagation();
                                 onUpdatePaymentStatus(lesson.id, 'paid');
                               }}
-                              className={lesson.paymentStatus === 'paid' ? 'bg-accent' : ''}
+                              className={`px-2 py-1 text-xs ${lesson.paymentStatus === 'paid' ? 'bg-accent' : ''}`}
                               data-testid={`payment-option-paid-${lesson.id}`}
                             >
-                              <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
+                              <span className="w-2 h-2 rounded-full bg-lesson-confirmed mr-1.5"></span>
                               Paid
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -402,10 +400,10 @@ export default function CalendarView({
                                 e.stopPropagation();
                                 onUpdatePaymentStatus(lesson.id, 'unpaid');
                               }}
-                              className={lesson.paymentStatus === 'unpaid' ? 'bg-accent' : ''}
+                              className={`px-2 py-1 text-xs ${lesson.paymentStatus === 'unpaid' ? 'bg-accent' : ''}`}
                               data-testid={`payment-option-unpaid-${lesson.id}`}
                             >
-                              <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
+                              <span className="w-2 h-2 rounded-full bg-lesson-cancelled mr-1.5"></span>
                               Unpaid
                             </DropdownMenuItem>
                           </DropdownMenuContent>
