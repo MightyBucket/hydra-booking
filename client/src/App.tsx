@@ -257,6 +257,10 @@ function CalendarPage() {
                     dateTime: new Date(selectedLesson.dateTime),
                     pricePerHour: parseFloat(selectedLesson.pricePerHour),
                   }
+                : selectedDate
+                ? {
+                    dateTime: selectedDate,
+                  }
                 : undefined
             }
             onSubmit={handleLessonSubmit}
