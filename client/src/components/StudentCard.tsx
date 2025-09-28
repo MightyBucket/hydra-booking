@@ -1,8 +1,16 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Mail, Phone, BookOpen, DollarSign, Edit, Calendar, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Mail,
+  Phone,
+  BookOpen,
+  DollarSign,
+  Edit,
+  Calendar,
+  Trash2,
+} from "lucide-react";
 
 interface StudentCardProps {
   student: {
@@ -22,16 +30,20 @@ interface StudentCardProps {
   onDelete: (studentId: string) => void;
 }
 
-export default function StudentCard({ student, onEdit, onScheduleLesson, onViewLessons, onDelete }: StudentCardProps) {
-  const firstName = student.firstName || 'Unknown';
-  const lastName = student.lastName || '';
-  
-  const initials = lastName 
+export default function StudentCard({
+  student,
+  onEdit,
+  onScheduleLesson,
+  onViewLessons,
+  onDelete,
+}: StudentCardProps) {
+  const firstName = student.firstName || "Unknown";
+  const lastName = student.lastName || "";
+
+  const initials = lastName
     ? `${firstName.charAt(0)}${lastName.charAt(0)}`
     : firstName.charAt(0);
-  const fullName = lastName 
-    ? `${firstName} ${lastName}`
-    : firstName;
+  const fullName = lastName ? `${firstName} ${lastName}` : firstName;
 
   return (
     <Card className="hover-elevate" data-testid={`student-card-${student.id}`}>
@@ -43,7 +55,9 @@ export default function StudentCard({ student, onEdit, onScheduleLesson, onViewL
         </Avatar>
         <div className="flex-1">
           <CardTitle className="text-lg">{fullName}</CardTitle>
-          {student.email && <p className="text-sm text-muted-foreground">{student.email}</p>}
+          {student.email && (
+            <p className="text-sm text-muted-foreground">{student.email}</p>
+          )}
         </div>
       </CardHeader>
 
@@ -55,18 +69,18 @@ export default function StudentCard({ student, onEdit, onScheduleLesson, onViewL
               <span>{student.phoneNumber}</span>
             </div>
           )}
-          
+
           {student.defaultSubject && (
             <div className="flex items-center gap-2 text-sm">
               <BookOpen className="h-4 w-4 text-muted-foreground" />
               <span>{student.defaultSubject}</span>
             </div>
           )}
-          
+
           {student.defaultRate && (
             <div className="flex items-center gap-2 text-sm">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span>${student.defaultRate}/hour</span>
+              <span>£{student.defaultRate}/hour</span>
             </div>
           )}
         </div>
@@ -74,9 +88,7 @@ export default function StudentCard({ student, onEdit, onScheduleLesson, onViewL
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {student.lessonCount !== undefined && (
-              <Badge variant="secondary">
-                {student.lessonCount} lessons
-              </Badge>
+              <Badge variant="secondary">{student.lessonCount} lessons</Badge>
             )}
             {student.lastLessonDate && (
               <span className="text-xs text-muted-foreground">

@@ -1,11 +1,25 @@
-import { useState } from 'react';
+import { useState } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,11 +30,21 @@ import LessonForm from "./components/LessonForm";
 import StudentForm from "./components/StudentForm";
 import ThemeToggle from "./components/ThemeToggle";
 import StudentCard from "./components/StudentCard";
-import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent } from './hooks/useStudents';
-import { useLessons, useCreateLesson, useUpdateLesson, useDeleteLesson, useCreateLessonWithRecurring } from './hooks/useLessons';
-import { format } from 'date-fns';
+import {
+  useStudents,
+  useCreateStudent,
+  useUpdateStudent,
+  useDeleteStudent,
+} from "./hooks/useStudents";
+import {
+  useLessons,
+  useCreateLesson,
+  useUpdateLesson,
+  useDeleteLesson,
+  useCreateLessonWithRecurring,
+} from "./hooks/useLessons";
+import { format } from "date-fns";
 import NotFound from "@/pages/not-found";
-
 
 function CalendarPage() {
   const [showLessonForm, setShowLessonForm] = useState(false);
@@ -30,7 +54,7 @@ function CalendarPage() {
   const [lessonToDelete, setLessonToDelete] = useState<any>(null);
   const [deleteAllFuture, setDeleteAllFuture] = useState(false);
   const { toast } = useToast();
-  
+
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
   const { data: studentsData = [] } = useStudents();
   const createLessonMutation = useCreateLesson();
@@ -40,17 +64,23 @@ function CalendarPage() {
 
   // Transform lessons data for calendar display
   const displayLessons = (lessonsData as any[]).map((lesson: any) => {
-    const student = (studentsData as any[]).find((s: any) => s.id === lesson.studentId);
+    const student = (studentsData as any[]).find(
+      (s: any) => s.id === lesson.studentId,
+    );
     return {
       ...lesson,
       dateTime: new Date(lesson.dateTime),
-      studentName: student ? `${student.firstName} ${student.lastName}` : 'Unknown Student',
+      studentName: student
+        ? `${student.firstName} ${student.lastName || ""}`
+        : "Unknown Student",
       pricePerHour: parseFloat(lesson.pricePerHour),
     };
   });
 
   const handleLessonClick = (lesson: any) => {
-    const originalLesson = (lessonsData as any[]).find((l: any) => l.id === lesson.id);
+    const originalLesson = (lessonsData as any[]).find(
+      (l: any) => l.id === lesson.id,
+    );
     if (originalLesson) {
       setSelectedLesson(originalLesson);
       setShowLessonForm(true);
@@ -77,38 +107,52 @@ function CalendarPage() {
         dateTime: new Date(lessonData.dateTime).toISOString(),
         pricePerHour: lessonData.pricePerHour.toString(),
       };
-      
+
       // Remove recurring fields from lesson data
-      const { isRecurring, frequency, endDate, ...lessonOnlyData } = formattedData;
+      const { isRecurring, frequency, endDate, ...lessonOnlyData } =
+        formattedData;
 
       if (selectedLesson) {
         // Update existing lesson (no recurring for updates)
-        await updateLessonMutation.mutateAsync({ id: selectedLesson.id, ...lessonOnlyData });
+        await updateLessonMutation.mutateAsync({
+          id: selectedLesson.id,
+          ...lessonOnlyData,
+        });
         toast({ title: "Success", description: "Lesson updated successfully" });
       } else {
         // Create new lesson
-        if (isRecurring && endDate && endDate.trim() !== '') {
+        if (isRecurring && endDate && endDate.trim() !== "") {
           // Create lesson with recurring
           await createLessonWithRecurringMutation.mutateAsync({
             lesson: lessonOnlyData,
             recurring: {
-              frequency: frequency === 'biweekly' ? 'biweekly' : 'weekly',
-              endDate: endDate
-            }
+              frequency: frequency === "biweekly" ? "biweekly" : "weekly",
+              endDate: endDate,
+            },
           });
-          toast({ title: "Success", description: "Recurring lesson series created successfully" });
+          toast({
+            title: "Success",
+            description: "Recurring lesson series created successfully",
+          });
         } else {
           // Create single lesson
           await createLessonMutation.mutateAsync(lessonOnlyData);
-          toast({ title: "Success", description: "Lesson scheduled successfully" });
+          toast({
+            title: "Success",
+            description: "Lesson scheduled successfully",
+          });
         }
       }
-      
+
       setShowLessonForm(false);
       setSelectedLesson(null);
       setSelectedDate(null);
     } catch (error) {
-      toast({ title: "Error", description: "Failed to save lesson", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to save lesson",
+        variant: "destructive",
+      });
     }
   };
 
@@ -120,7 +164,7 @@ function CalendarPage() {
 
   const handleJoinLesson = (lesson: any) => {
     if (lesson.lessonLink) {
-      window.open(lesson.lessonLink, '_blank');
+      window.open(lesson.lessonLink, "_blank");
     }
   };
 
@@ -139,25 +183,27 @@ function CalendarPage() {
         const lessonDate = new Date(lessonToDelete.dateTime);
         const dayOfWeek = lessonDate.getDay();
         const timeString = lessonDate.toTimeString().substring(0, 8); // HH:MM:SS
-        
-        const futureRecurringLessons = (lessonsData as any[]).filter((lesson: any) => {
-          const lessonDateTime = new Date(lesson.dateTime);
-          return (
-            lessonDateTime >= lessonDate && // Same date or future
-            lessonDateTime.getDay() === dayOfWeek && // Same day of week
-            lessonDateTime.toTimeString().substring(0, 8) === timeString && // Same time
-            lesson.studentId === lessonToDelete.studentId // Same student
-          );
-        });
+
+        const futureRecurringLessons = (lessonsData as any[]).filter(
+          (lesson: any) => {
+            const lessonDateTime = new Date(lesson.dateTime);
+            return (
+              lessonDateTime >= lessonDate && // Same date or future
+              lessonDateTime.getDay() === dayOfWeek && // Same day of week
+              lessonDateTime.toTimeString().substring(0, 8) === timeString && // Same time
+              lesson.studentId === lessonToDelete.studentId // Same student
+            );
+          },
+        );
 
         // Delete all future recurring lessons
         for (const lesson of futureRecurringLessons) {
           await deleteLessonMutation.mutateAsync(lesson.id);
         }
-        
-        toast({ 
-          title: "Success", 
-          description: `Deleted ${futureRecurringLessons.length} lesson${futureRecurringLessons.length !== 1 ? 's' : ''} successfully` 
+
+        toast({
+          title: "Success",
+          description: `Deleted ${futureRecurringLessons.length} lesson${futureRecurringLessons.length !== 1 ? "s" : ""} successfully`,
         });
       } else {
         // Delete only this lesson
@@ -165,16 +211,24 @@ function CalendarPage() {
         toast({ title: "Success", description: "Lesson deleted successfully" });
       }
     } catch (error) {
-      toast({ title: "Error", description: "Failed to delete lesson", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to delete lesson",
+        variant: "destructive",
+      });
     }
-    
+
     setShowDeleteDialog(false);
     setLessonToDelete(null);
     setDeleteAllFuture(false);
   };
 
   if (lessonsLoading) {
-    return <div className="flex items-center justify-center h-64">Loading lessons...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading lessons...
+      </div>
+    );
   }
 
   return (
@@ -186,19 +240,25 @@ function CalendarPage() {
         onJoinLesson={handleJoinLesson}
         onDeleteLesson={handleDeleteLesson}
       />
-      
+
       <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{selectedLesson ? 'Edit Lesson' : 'Schedule New Lesson'}</DialogTitle>
+            <DialogTitle>
+              {selectedLesson ? "Edit Lesson" : "Schedule New Lesson"}
+            </DialogTitle>
           </DialogHeader>
           <LessonForm
             students={studentsData as any[]}
-            initialData={selectedLesson ? {
-              ...selectedLesson,
-              dateTime: new Date(selectedLesson.dateTime),
-              pricePerHour: parseFloat(selectedLesson.pricePerHour),
-            } : undefined}
+            initialData={
+              selectedLesson
+                ? {
+                    ...selectedLesson,
+                    dateTime: new Date(selectedLesson.dateTime),
+                    pricePerHour: parseFloat(selectedLesson.pricePerHour),
+                  }
+                : undefined
+            }
             onSubmit={handleLessonSubmit}
             onCancel={handleLessonCancel}
           />
@@ -210,10 +270,11 @@ function CalendarPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Lesson</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this lesson? This action cannot be undone.
+              Are you sure you want to delete this lesson? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          
+
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -228,7 +289,8 @@ function CalendarPage() {
             </div>
             {deleteAllFuture && (
               <p className="text-sm text-muted-foreground">
-                This will delete all future lessons for the same student that occur on the same day of the week at the same time.
+                This will delete all future lessons for the same student that
+                occur on the same day of the week at the same time.
               </p>
             )}
           </div>
@@ -237,12 +299,12 @@ function CalendarPage() {
             <AlertDialogCancel data-testid="button-cancel-delete">
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDeleteLesson}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               data-testid="button-confirm-delete"
             >
-              Delete {deleteAllFuture ? 'All Future Lessons' : 'Lesson'}
+              Delete {deleteAllFuture ? "All Future Lessons" : "Lesson"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -256,10 +318,11 @@ function StudentsPage() {
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
-  const [selectedStudentForLesson, setSelectedStudentForLesson] = useState<any>(null);
+  const [selectedStudentForLesson, setSelectedStudentForLesson] =
+    useState<any>(null);
   const [studentToDelete, setStudentToDelete] = useState<any>(null);
   const { toast } = useToast();
-  
+
   const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
   const createStudentMutation = useCreateStudent();
   const updateStudentMutation = useUpdateStudent();
@@ -267,7 +330,9 @@ function StudentsPage() {
   const createLessonMutation = useCreateLesson();
 
   const handleEditStudent = (studentId: string) => {
-    const student = (studentsData as any[]).find((s: any) => s.id === studentId);
+    const student = (studentsData as any[]).find(
+      (s: any) => s.id === studentId,
+    );
     setSelectedStudent(student);
     setShowStudentForm(true);
   };
@@ -280,38 +345,42 @@ function StudentsPage() {
   };
 
   const handleScheduleLesson = (studentId: string) => {
-    const student = (studentsData as any[]).find((s: any) => s.id === studentId);
+    const student = (studentsData as any[]).find(
+      (s: any) => s.id === studentId,
+    );
     setSelectedStudentForLesson(student);
     setShowLessonForm(true);
   };
 
   const handleViewLessons = (studentId: string) => {
     // TODO: This would navigate to calendar filtered by student
-    console.log('View lessons for student:', studentId);
+    console.log("View lessons for student:", studentId);
   };
 
   const handleDeleteStudent = (studentId: string) => {
-    const student = (studentsData as any[]).find((s: any) => s.id === studentId);
+    const student = (studentsData as any[]).find(
+      (s: any) => s.id === studentId,
+    );
     setStudentToDelete(student);
     setShowDeleteDialog(true);
   };
 
   const confirmDeleteStudent = async () => {
     if (!studentToDelete) return;
-    
+
     try {
       await deleteStudentMutation.mutateAsync(studentToDelete.id);
-      toast({ 
-        title: "Success", 
-        description: `Student ${studentToDelete.firstName} ${studentToDelete.lastName || ''} and all associated lessons have been deleted.` 
+      toast({
+        title: "Success",
+        description: `Student ${studentToDelete.firstName} ${studentToDelete.lastName || ""} and all associated lessons have been deleted.`,
       });
       setShowDeleteDialog(false);
       setStudentToDelete(null);
     } catch (error) {
-      toast({ 
-        title: "Error", 
-        description: "Failed to delete student", 
-        variant: "destructive" 
+      toast({
+        title: "Error",
+        description: "Failed to delete student",
+        variant: "destructive",
       });
     }
   };
@@ -325,21 +394,33 @@ function StudentsPage() {
     try {
       const formattedData = {
         ...studentData,
-        defaultRate: studentData.defaultRate ? studentData.defaultRate.toString() : null,
+        defaultRate: studentData.defaultRate
+          ? studentData.defaultRate.toString()
+          : null,
       };
-      
+
       if (selectedStudent) {
-        await updateStudentMutation.mutateAsync({ id: selectedStudent.id, ...formattedData });
-        toast({ title: "Success", description: "Student updated successfully" });
+        await updateStudentMutation.mutateAsync({
+          id: selectedStudent.id,
+          ...formattedData,
+        });
+        toast({
+          title: "Success",
+          description: "Student updated successfully",
+        });
       } else {
         await createStudentMutation.mutateAsync(formattedData);
         toast({ title: "Success", description: "Student added successfully" });
       }
-      
+
       setShowStudentForm(false);
       setSelectedStudent(null);
     } catch (error) {
-      toast({ title: "Error", description: "Failed to save student", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to save student",
+        variant: "destructive",
+      });
     }
   };
 
@@ -355,13 +436,17 @@ function StudentsPage() {
         dateTime: new Date(lessonData.dateTime).toISOString(),
         pricePerHour: lessonData.pricePerHour.toString(),
       };
-      
+
       await createLessonMutation.mutateAsync(formattedData);
       toast({ title: "Success", description: "Lesson scheduled successfully" });
       setShowLessonForm(false);
       setSelectedStudentForLesson(null);
     } catch (error) {
-      toast({ title: "Error", description: "Failed to schedule lesson", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to schedule lesson",
+        variant: "destructive",
+      });
     }
   };
 
@@ -371,7 +456,11 @@ function StudentsPage() {
   };
 
   if (studentsLoading) {
-    return <div className="flex items-center justify-center h-64">Loading students...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading students...
+      </div>
+    );
   }
 
   return (
@@ -393,7 +482,9 @@ function StudentsPage() {
                   key={student.id}
                   student={{
                     ...student,
-                    defaultRate: student.defaultRate ? parseFloat(student.defaultRate) : undefined,
+                    defaultRate: student.defaultRate
+                      ? parseFloat(student.defaultRate)
+                      : undefined,
                   }}
                   onEdit={handleEditStudent}
                   onScheduleLesson={handleScheduleLesson}
@@ -405,62 +496,88 @@ function StudentsPage() {
           )}
         </CardContent>
       </Card>
-      
+
       <Dialog open={showStudentForm} onOpenChange={setShowStudentForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{selectedStudent ? 'Edit Student' : 'Add New Student'}</DialogTitle>
+            <DialogTitle>
+              {selectedStudent ? "Edit Student" : "Add New Student"}
+            </DialogTitle>
           </DialogHeader>
           <StudentForm
-            initialData={selectedStudent ? {
-              ...selectedStudent,
-              defaultRate: selectedStudent.defaultRate ? parseFloat(selectedStudent.defaultRate) : undefined,
-            } : undefined}
+            initialData={
+              selectedStudent
+                ? {
+                    ...selectedStudent,
+                    defaultRate: selectedStudent.defaultRate
+                      ? parseFloat(selectedStudent.defaultRate)
+                      : undefined,
+                  }
+                : undefined
+            }
             onSubmit={handleStudentSubmit}
             onCancel={handleStudentCancel}
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Lesson Form Modal for Students Page */}
       <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Schedule Lesson for {selectedStudentForLesson?.firstName} {selectedStudentForLesson?.lastName}</DialogTitle>
+            <DialogTitle>
+              Schedule Lesson for {selectedStudentForLesson?.firstName}{" "}
+              {selectedStudentForLesson?.lastName || ""}
+            </DialogTitle>
           </DialogHeader>
           <LessonForm
             students={studentsData as any[]}
-            initialData={selectedStudentForLesson ? {
-              studentId: selectedStudentForLesson.id,
-              subject: selectedStudentForLesson.defaultSubject,
-              pricePerHour: selectedStudentForLesson.defaultRate ? parseFloat(selectedStudentForLesson.defaultRate) : 50,
-              lessonLink: selectedStudentForLesson.defaultLink,
-              dateTime: getDefaultDateTime(),
-            } : undefined}
+            initialData={
+              selectedStudentForLesson
+                ? {
+                    studentId: selectedStudentForLesson.id,
+                    subject: selectedStudentForLesson.defaultSubject,
+                    pricePerHour: selectedStudentForLesson.defaultRate
+                      ? parseFloat(selectedStudentForLesson.defaultRate)
+                      : 50,
+                    lessonLink: selectedStudentForLesson.defaultLink,
+                    dateTime: getDefaultDateTime(),
+                  }
+                : undefined
+            }
             onSubmit={handleLessonSubmit}
             onCancel={handleLessonCancel}
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Student</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{studentToDelete?.firstName} {studentToDelete?.lastName}</strong>?
-              <br /><br />
+              Are you sure you want to delete{" "}
+              <strong>
+                {studentToDelete?.firstName} {studentToDelete?.lastName || ""}
+              </strong>
+              ?
+              <br />
+              <br />
               <span className="text-destructive font-medium">
-                Warning: This will also permanently delete all lessons associated with this student.
+                Warning: This will also permanently delete all lessons
+                associated with this student.
               </span>
-              <br /><br />
+              <br />
+              <br />
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDeleteStudent}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogCancel onClick={cancelDeleteStudent}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
               onClick={confirmDeleteStudent}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
@@ -480,7 +597,9 @@ function AnalyticsPage() {
         <CardTitle>Analytics</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-muted-foreground">Analytics dashboard coming soon...</p>
+        <p className="text-muted-foreground">
+          Analytics dashboard coming soon...
+        </p>
       </CardContent>
     </Card>
   );
@@ -514,7 +633,7 @@ function Router() {
 function AppContent() {
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [showStudentForm, setShowStudentForm] = useState(false);
-  
+
   const { data: studentsData = [] } = useStudents();
   const { data: lessonsData = [] } = useLessons();
   const createLessonMutation = useCreateLesson();
@@ -549,16 +668,19 @@ function AppContent() {
             lessonLink: lessonData.lessonLink,
             pricePerHour: lessonData.pricePerHour.toString(),
             duration: lessonData.duration,
-            paymentStatus: lessonData.paymentStatus || 'pending',
+            paymentStatus: lessonData.paymentStatus || "pending",
           },
           recurring: {
             frequency: lessonData.frequency,
             endDate: lessonData.endDate,
-          }
+          },
         };
-        
+
         await createLessonWithRecurringMutation.mutateAsync(recurringData);
-        toast({ title: "Success", description: "Recurring lessons scheduled successfully" });
+        toast({
+          title: "Success",
+          description: "Recurring lessons scheduled successfully",
+        });
       } else {
         // Handle single lesson creation
         const formattedData = {
@@ -568,16 +690,23 @@ function AppContent() {
           lessonLink: lessonData.lessonLink,
           pricePerHour: lessonData.pricePerHour.toString(),
           duration: lessonData.duration,
-          paymentStatus: lessonData.paymentStatus || 'pending',
+          paymentStatus: lessonData.paymentStatus || "pending",
         };
-        
+
         await createLessonMutation.mutateAsync(formattedData);
-        toast({ title: "Success", description: "Lesson scheduled successfully" });
+        toast({
+          title: "Success",
+          description: "Lesson scheduled successfully",
+        });
       }
-      
+
       setShowLessonForm(false);
     } catch (error) {
-      toast({ title: "Error", description: "Failed to schedule lesson", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to schedule lesson",
+        variant: "destructive",
+      });
     }
   };
 
@@ -585,14 +714,20 @@ function AppContent() {
     try {
       const formattedData = {
         ...studentData,
-        defaultRate: studentData.defaultRate ? studentData.defaultRate.toString() : null,
+        defaultRate: studentData.defaultRate
+          ? studentData.defaultRate.toString()
+          : null,
       };
-      
+
       await createStudentMutation.mutateAsync(formattedData);
       toast({ title: "Success", description: "Student added successfully" });
       setShowStudentForm(false);
     } catch (error) {
-      toast({ title: "Error", description: "Failed to add student", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to add student",
+        variant: "destructive",
+      });
     }
   };
 
@@ -604,18 +739,18 @@ function AppContent() {
         lessonCount={(lessonsData as any[]).length}
         studentCount={(studentsData as any[]).length}
       />
-      
+
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="flex items-center justify-between p-4 border-b">
           <div className="flex-1" />
           <ThemeToggle />
         </header>
-        
+
         <main className="flex-1 overflow-auto p-6">
           <Router />
         </main>
       </div>
-      
+
       {/* Global Lesson Form Modal */}
       <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -629,7 +764,7 @@ function AppContent() {
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Global Student Form Modal */}
       <Dialog open={showStudentForm} onOpenChange={setShowStudentForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
