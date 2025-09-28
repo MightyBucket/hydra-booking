@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, Calendar, Clock, ExternalLink, Trash2 } from 'lucide-react';
-import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from 'date-fns';
+import { format, startOfWeek, endOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameMonth } from 'date-fns';
 
 interface Lesson {
   id: string;
@@ -30,7 +30,12 @@ export default function CalendarView({ lessons, onLessonClick, onDateClick, onJo
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  // For month view, calculate the full calendar grid including days from previous/next months
+  const calendarStart = startOfWeek(monthStart);
+  
+  // Generate exactly 42 days (6 weeks) to ensure a complete calendar grid
+  const monthDays = Array.from({ length: 42 }, (_, index) => addDays(calendarStart, index));
 
   const weekStart = startOfWeek(currentDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -114,6 +119,7 @@ export default function CalendarView({ lessons, onLessonClick, onDateClick, onJo
           {days.map(day => {
             const dayLessons = getLessonsForDate(day);
             const isToday = isSameDay(day, new Date());
+            const isCurrentMonth = isSameMonth(day, currentDate);
             
             return (
               <div
@@ -121,6 +127,7 @@ export default function CalendarView({ lessons, onLessonClick, onDateClick, onJo
                 className={`
                   min-h-24 p-2 border rounded-md cursor-pointer hover-elevate
                   ${isToday ? 'bg-accent' : 'bg-card'}
+                  ${!isCurrentMonth ? 'opacity-40' : ''}
                 `}
                 onClick={() => onDateClick(day)}
                 data-testid={`calendar-day-${format(day, 'yyyy-MM-dd')}`}
