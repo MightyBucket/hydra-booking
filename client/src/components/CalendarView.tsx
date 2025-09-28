@@ -31,7 +31,7 @@ interface Lesson {
   studentName: string;
   studentColor?: string;
   duration: number;
-  paymentStatus: "pending" | "paid" | "overdue";
+  paymentStatus: "pending" | "paid" | "unpaid";
   pricePerHour: number;
   lessonLink?: string;
 }
@@ -45,7 +45,125 @@ interface CalendarViewProps {
   onUpdatePaymentStatus: (lessonId: string, status: Lesson["paymentStatus"]) => void;
 }
 
-import LessonCard from "./LessonCard";
+// Mock LessonCard component for demonstration purposes
+// In a real scenario, this would be imported from "@/components/LessonCard"
+const LessonCard = ({
+  lesson,
+  onEdit,
+  onDelete,
+  onJoinLesson,
+  onUpdatePaymentStatus,
+}: {
+  lesson: Lesson;
+  onEdit: () => void;
+  onDelete: () => void;
+  onJoinLesson?: () => void;
+  onUpdatePaymentStatus: (lessonId: string, status: Lesson["paymentStatus"]) => void;
+}) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const handleStatusChange = (newStatus: Lesson["paymentStatus"]) => {
+    onUpdatePaymentStatus(lesson.id, newStatus);
+    setIsDropdownOpen(false);
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case "paid":
+        return "lesson-confirmed";
+      case "pending":
+        return "lesson-pending";
+      case "unpaid":
+        return "lesson-cancelled";
+      default:
+        return "secondary";
+    }
+  };
+
+  return (
+    <div
+      className="p-1 rounded text-xs hover-elevate group border-l-2"
+      style={{
+        backgroundColor: `${lesson.studentColor}15`,
+        borderLeftColor: lesson.studentColor || '#3b82f6',
+      }}
+      data-testid={`lesson-${lesson.id}`}
+    >
+      <div className="cursor-pointer" onClick={onEdit}>
+        <div className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          <span className="truncate">
+            {format(lesson.dateTime, "HH:mm")}-{format(new Date(lesson.dateTime.getTime() + lesson.duration * 60000), "HH:mm")}
+          </span>
+        </div>
+        <div className="truncate text-muted-foreground">{lesson.subject}</div>
+        <div className="truncate font-medium">{lesson.studentName}</div>
+        <div
+          className={`cursor-pointer p-0.5 rounded text-xs bg-${getPaymentStatusColor(lesson.paymentStatus)}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsDropdownOpen(!isDropdownOpen);
+          }}
+        >
+          {lesson.paymentStatus}
+        </div>
+      </div>
+
+      {isDropdownOpen && (
+        <div className="absolute bg-white shadow-lg rounded mt-1 p-2 z-10">
+          <div
+            className="cursor-pointer hover:bg-gray-100 p-1"
+            onClick={() => handleStatusChange("pending")}
+          >
+            Pending
+          </div>
+          <div
+            className="cursor-pointer hover:bg-gray-100 p-1"
+            onClick={() => handleStatusChange("paid")}
+          >
+            Paid
+          </div>
+          <div
+            className="cursor-pointer hover:bg-gray-100 p-1"
+            onClick={() => handleStatusChange("unpaid")}
+          >
+            Unpaid
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {onJoinLesson && lesson.lessonLink && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              onJoinLesson();
+            }}
+            data-testid={`button-join-lesson-${lesson.id}`}
+          >
+            <ExternalLink className="h-3 w-3 mr-1" />
+          </Button>
+        )}
+        {onDelete && (
+          <Button
+            size="sm"
+            variant="destructive"
+            className="h-6 px-2 text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            data-testid={`button-delete-lesson-${lesson.id}`}
+          >
+            <Trash2 className="h-3 w-3 mr-1" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
 
 
 export default function CalendarView({
@@ -85,7 +203,7 @@ export default function CalendarView({
         return "lesson-confirmed";
       case "pending":
         return "lesson-pending";
-      case "overdue":
+      case "unpaid":
         return "lesson-cancelled";
       default:
         return "secondary";
@@ -196,30 +314,80 @@ export default function CalendarView({
                 </div>
 
                 <div className="space-y-1">
-                  {dayLessons.slice(0, 2).map((lesson) => (
-                    <div key={lesson.id} className="relative">
-                      <LessonCard
-                        lesson={{
-                          id: lesson.id,
-                          subject: lesson.subject,
-                          dateTime: lesson.dateTime,
-                          studentName: lesson.studentName,
-                          duration: lesson.duration,
-                          paymentStatus: lesson.paymentStatus as 'pending' | 'paid' | 'overdue',
-                          pricePerHour: lesson.pricePerHour,
-                          lessonLink: lesson.lessonLink,
+                  {dayLessons.slice(0, 3).map((lesson) => (
+                    <div
+                      key={lesson.id}
+                      className="p-1 rounded text-xs hover-elevate group border-l-2"
+                      style={{ 
+                        backgroundColor: `${lesson.studentColor}15`,
+                        borderLeftColor: lesson.studentColor || '#3b82f6'
+                      }}
+                      data-testid={`lesson-${lesson.id}`}
+                    >
+                      <div
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onLessonClick(lesson);
                         }}
-                        onEdit={() => onLessonClick(lesson)}
-                        onDelete={() => onDeleteLesson?.(lesson)}
-                        onJoinLesson={lesson.lessonLink ? () => onJoinLesson?.(lesson) : undefined}
-                        onUpdatePaymentStatus={onUpdatePaymentStatus}
-                      />
+                      >
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span className="truncate">
+                            {format(lesson.dateTime, "HH:mm")}-{format(new Date(lesson.dateTime.getTime() + lesson.duration * 60000), "HH:mm")} ()
+                          </span>
+                        </div>
+                        <div className="truncate text-muted-foreground">
+                          {lesson.subject}
+                        </div>
+                        <div className="truncate font-medium">
+                          {lesson.studentName}
+                        </div>
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs bg-${getPaymentStatusColor(lesson.paymentStatus)}`}
+                        >
+                          {lesson.paymentStatus}
+                        </Badge>
+                      </div>
+
+                      {/* Action buttons - shown on hover */}
+                      <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {onJoinLesson && lesson.lessonLink && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            //className="h-6 px-2 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onJoinLesson(lesson);
+                            }}
+                            data-testid={`button-join-lesson-${lesson.id}`}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                          </Button>
+                        )}
+                        {onDeleteLesson && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-6 px-2 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteLesson(lesson);
+                            }}
+                            data-testid={`button-delete-lesson-${lesson.id}`}
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
 
-                  {dayLessons.length > 2 && (
-                    <div className="text-xs text-muted-foreground p-1">
-                      +{dayLessons.length - 2} more
+                  {dayLessons.length > 3 && (
+                    <div className="text-xs text-muted-foreground">
+                      +{dayLessons.length - 3} more
                     </div>
                   )}
                 </div>
