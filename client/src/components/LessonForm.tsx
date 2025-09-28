@@ -158,6 +158,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
               <Input
                 id="dateTime"
                 type="datetime-local"
+                step="300"
                 value={formData.dateTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, dateTime: e.target.value }))}
                 required
