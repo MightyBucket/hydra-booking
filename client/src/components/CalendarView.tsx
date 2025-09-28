@@ -3,12 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   ChevronLeft,
   ChevronRight,
   Calendar,
   Clock,
   ExternalLink,
   Trash2,
+  ChevronDown,
 } from "lucide-react";
 import {
   format,
@@ -60,23 +67,16 @@ const LessonCard = ({
   onJoinLesson?: () => void;
   onUpdatePaymentStatus: (lessonId: string, status: Lesson["paymentStatus"]) => void;
 }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const handleStatusChange = (newStatus: Lesson["paymentStatus"]) => {
-    onUpdatePaymentStatus(lesson.id, newStatus);
-    setIsDropdownOpen(false);
-  };
-
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case "paid":
-        return "lesson-confirmed";
+        return "bg-lesson-confirmed text-white";
       case "pending":
-        return "lesson-pending";
+        return "bg-lesson-pending text-black";
       case "unpaid":
-        return "lesson-cancelled";
+        return "bg-lesson-cancelled text-white";
       default:
-        return "secondary";
+        return "bg-secondary";
     }
   };
 
@@ -98,39 +98,57 @@ const LessonCard = ({
         </div>
         <div className="truncate text-muted-foreground">{lesson.subject}</div>
         <div className="truncate font-medium">{lesson.studentName}</div>
-        <div
-          className={`cursor-pointer p-0.5 rounded text-xs bg-${getPaymentStatusColor(lesson.paymentStatus)}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsDropdownOpen(!isDropdownOpen);
-          }}
-        >
-          {lesson.paymentStatus}
-        </div>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-auto text-xs font-medium mt-1`}
+              onClick={(e) => e.stopPropagation()}
+              data-testid={`dropdown-payment-status-${lesson.id}`}
+            >
+              {lesson.paymentStatus}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-24">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdatePaymentStatus(lesson.id, 'pending');
+              }}
+              className={lesson.paymentStatus === 'pending' ? 'bg-accent' : ''}
+              data-testid={`payment-option-pending-${lesson.id}`}
+            >
+              <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
+              Pending
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdatePaymentStatus(lesson.id, 'paid');
+              }}
+              className={lesson.paymentStatus === 'paid' ? 'bg-accent' : ''}
+              data-testid={`payment-option-paid-${lesson.id}`}
+            >
+              <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
+              Paid
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdatePaymentStatus(lesson.id, 'unpaid');
+              }}
+              className={lesson.paymentStatus === 'unpaid' ? 'bg-accent' : ''}
+              data-testid={`payment-option-unpaid-${lesson.id}`}
+            >
+              <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
+              Unpaid
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-
-      {isDropdownOpen && (
-        <div className="absolute bg-white shadow-lg rounded mt-1 p-2 z-10">
-          <div
-            className="cursor-pointer hover:bg-gray-100 p-1"
-            onClick={() => handleStatusChange("pending")}
-          >
-            Pending
-          </div>
-          <div
-            className="cursor-pointer hover:bg-gray-100 p-1"
-            onClick={() => handleStatusChange("paid")}
-          >
-            Paid
-          </div>
-          <div
-            className="cursor-pointer hover:bg-gray-100 p-1"
-            onClick={() => handleStatusChange("unpaid")}
-          >
-            Unpaid
-          </div>
-        </div>
-      )}
 
       <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {onJoinLesson && lesson.lessonLink && (
