@@ -29,6 +29,7 @@ interface Lesson {
   subject: string;
   dateTime: Date;
   studentName: string;
+  studentColor?: string;
   duration: number;
   paymentStatus: "pending" | "paid" | "unpaid";
   pricePerHour: number;
@@ -193,8 +194,11 @@ export default function CalendarView({
                   {dayLessons.slice(0, 3).map((lesson) => (
                     <div
                       key={lesson.id}
-                      className="p-1 rounded text-xs hover-elevate group"
-                      style={{ backgroundColor: `hsl(var(--chart-2) / 0.1)` }}
+                      className="p-1 rounded text-xs hover-elevate group border-l-2"
+                      style={{ 
+                        backgroundColor: `${lesson.studentColor}15`,
+                        borderLeftColor: lesson.studentColor || '#3b82f6'
+                      }}
                       data-testid={`lesson-${lesson.id}`}
                     >
                       <div

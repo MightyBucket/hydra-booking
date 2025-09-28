@@ -14,6 +14,7 @@ interface StudentFormProps {
     defaultSubject?: string;
     defaultRate?: number;
     defaultLink?: string;
+    defaultColor?: string;
   };
   onSubmit: (studentData: any) => void;
   onCancel: () => void;
@@ -28,6 +29,7 @@ export default function StudentForm({ initialData, onSubmit, onCancel }: Student
     defaultSubject: initialData?.defaultSubject || '',
     defaultRate: initialData?.defaultRate || 50,
     defaultLink: initialData?.defaultLink || '',
+    defaultColor: initialData?.defaultColor || '#ffffff', // Default color set to white
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -139,6 +141,23 @@ export default function StudentForm({ initialData, onSubmit, onCancel }: Student
               required
               data-testid="input-default-link"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="defaultColor">Student Color</Label>
+            <div className="flex items-center gap-3">
+              <Input
+                id="defaultColor"
+                type="color"
+                value={formData.defaultColor}
+                onChange={(e) => handleInputChange('defaultColor', e.target.value)}
+                className="w-20 h-10 p-1 border rounded"
+                data-testid="input-default-color"
+              />
+              <span className="text-sm text-muted-foreground">
+                This color will be used for lesson cards in the calendar
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4">

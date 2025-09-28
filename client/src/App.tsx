@@ -73,6 +73,7 @@ function CalendarPage() {
       studentName: student
         ? `${student.firstName} ${student.lastName || ""}`
         : "Unknown Student",
+      studentColor: student?.defaultColor || '#3b82f6',
       pricePerHour: parseFloat(lesson.pricePerHour),
     };
   });

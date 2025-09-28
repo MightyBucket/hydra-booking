@@ -14,6 +14,7 @@ export const students = pgTable("students", {
   defaultSubject: text("default_subject").notNull(),
   defaultRate: decimal("default_rate", { precision: 10, scale: 2 }).notNull(),
   defaultLink: text("default_link").notNull(),
+  defaultColor: text("default_color").notNull().default("#3b82f6"), // Default blue color
 });
 
 // Lessons table
@@ -67,6 +68,7 @@ export const insertStudentSchema = createInsertSchema(students).omit({
   defaultSubject: z.string().min(1, "Default subject is required"),
   defaultRate: z.string().min(1, "Default rate is required"),
   defaultLink: z.string().url("Default lesson link must be a valid URL"),
+  defaultColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Color must be a valid hex color"),
   lastName: emptyStringToNull,
   email: z.preprocess(
     val => val === '' ? null : val,

@@ -12,18 +12,21 @@ import {
   Trash2,
 } from "lucide-react";
 
+interface Student {
+  id: string;
+  firstName: string;
+  lastName?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
+  defaultSubject?: string;
+  defaultRate?: number;
+  defaultColor?: string;
+  lessonCount?: number;
+  lastLessonDate?: Date;
+}
+
 interface StudentCardProps {
-  student: {
-    id: string;
-    firstName: string;
-    lastName?: string | null;
-    email?: string | null;
-    phoneNumber?: string;
-    defaultSubject?: string;
-    defaultRate?: number;
-    lessonCount?: number;
-    lastLessonDate?: Date;
-  };
+  student: Student;
   onEdit: (studentId: string) => void;
   onScheduleLesson: (studentId: string) => void;
   onViewLessons: (studentId: string) => void;
@@ -47,18 +50,23 @@ export default function StudentCard({
 
   return (
     <Card className="hover-elevate" data-testid={`student-card-${student.id}`}>
-      <CardHeader className="flex flex-row items-center space-y-0 pb-3">
-        <Avatar className="h-12 w-12 mr-4">
-          <AvatarFallback className="text-lg font-semibold">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-          <CardTitle className="text-lg">{fullName}</CardTitle>
-          {student.email && (
-            <p className="text-sm text-muted-foreground">{student.email}</p>
-          )}
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
+        <div className="flex items-center gap-3">
+          <div 
+            className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+            style={{ backgroundColor: student.defaultColor || '#3b82f6' }}
+            title="Student color"
+          />
+          <CardTitle className="text-lg font-semibold">
+            {student.firstName} {student.lastName || ''}
+          </CardTitle>
         </div>
+        {student.email && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Mail className="h-4 w-4" />
+            <span className="truncate">{student.email}</span>
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="space-y-4">
