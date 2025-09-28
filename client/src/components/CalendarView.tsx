@@ -207,7 +207,7 @@ export default function CalendarView({
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           <span className="truncate">
-                            {format(lesson.dateTime, "HH:mm")}-{format(new Date(lesson.dateTime.getTime() + lesson.duration * 60000), "HH:mm")}
+                            {format(lesson.dateTime, "HH:mm")}-{format(new Date(lesson.dateTime.getTime() + lesson.duration * 60000), "HH:mm")} ()
                           </span>
                         </div>
                         <div className="truncate text-muted-foreground">
