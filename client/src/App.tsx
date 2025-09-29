@@ -806,13 +806,26 @@ function SchedulePage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {Object.entries(groupedLessons).map(([dateKey, lessons]: [string, any]) => {
+              {Object.entries(groupedLessons).map(([dateKey, lessons]: [string, any], index: number) => {
                 const date = new Date(dateKey);
                 const isToday = format(new Date(), 'yyyy-MM-dd') === dateKey;
                 const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
                 
+                // Check if this is the first lesson of a new month
+                const isFirstLessonOfMonth = index === 0 || 
+                  format(date, 'yyyy-MM') !== format(new Date(Object.keys(groupedLessons)[index - 1]), 'yyyy-MM');
+                
                 return (
                   <div key={dateKey} className="space-y-3">
+                    {isFirstLessonOfMonth && (
+                      <div className="mb-6">
+                        <h2 className="text-2xl font-bold text-foreground mb-2">
+                          {format(date, 'MMMM yyyy')}
+                        </h2>
+                        <div className="h-px bg-border"></div>
+                      </div>
+                    )}
+                    
                     <div className="flex items-center gap-3">
                       <h3 className={`text-lg font-semibold ${isToday ? 'text-primary' : isPast ? 'text-muted-foreground' : ''}`}>
                         {isToday ? 'Today' : format(date, 'EEE d')}
