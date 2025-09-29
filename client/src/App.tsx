@@ -655,6 +655,16 @@ function SchedulePage() {
     .filter((lesson: any) => lesson.dateTime >= lastWeek)
     .sort((a: any, b: any) => a.dateTime.getTime() - b.dateTime.getTime());
 
+  // Group lessons by date
+  const groupedLessons = displayLessons.reduce((groups: any, lesson: any) => {
+    const dateKey = format(lesson.dateTime, 'yyyy-MM-dd');
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
+    }
+    groups[dateKey].push(lesson);
+    return groups;
+  }, {});
+
   const handleEditLesson = (lessonId: string) => {
     const originalLesson = (lessonsData as any[]).find(
       (l: any) => l.id === lessonId,
@@ -795,17 +805,39 @@ function SchedulePage() {
               <p>Click "Schedule Lesson" in the sidebar to get started.</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {displayLessons.map((lesson: any) => (
-                <LessonCard
-                  key={lesson.id}
-                  lesson={lesson}
-                  onEdit={handleEditLesson}
-                  onDelete={handleDeleteLesson}
-                  onJoinLesson={lesson.lessonLink ? handleJoinLesson : undefined}
-                  onUpdatePaymentStatus={handleUpdatePaymentStatus}
-                />
-              ))}
+            <div className="space-y-6">
+              {Object.entries(groupedLessons).map(([dateKey, lessons]: [string, any]) => {
+                const date = new Date(dateKey);
+                const isToday = format(new Date(), 'yyyy-MM-dd') === dateKey;
+                const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+                
+                return (
+                  <div key={dateKey} className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <h3 className={`text-lg font-semibold ${isToday ? 'text-primary' : isPast ? 'text-muted-foreground' : ''}`}>
+                        {isToday ? 'Today' : format(date, 'EEEE, MMMM d, yyyy')}
+                      </h3>
+                      <div className="flex-1 h-px bg-border"></div>
+                      <span className="text-sm text-muted-foreground">
+                        {lessons.length} lesson{lessons.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-3 pl-4">
+                      {lessons.map((lesson: any) => (
+                        <LessonCard
+                          key={lesson.id}
+                          lesson={lesson}
+                          onEdit={handleEditLesson}
+                          onDelete={handleDeleteLesson}
+                          onJoinLesson={lesson.lessonLink ? handleJoinLesson : undefined}
+                          onUpdatePaymentStatus={handleUpdatePaymentStatus}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>
