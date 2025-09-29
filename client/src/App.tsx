@@ -649,6 +649,7 @@ function SchedulePage() {
         studentName: student
           ? `${student.firstName} ${student.lastName || ""}`
           : "Unknown Student",
+        studentColor: student?.defaultColor || '#3b82f6',
         pricePerHour: parseFloat(lesson.pricePerHour),
       };
     })
@@ -810,11 +811,11 @@ function SchedulePage() {
                 const date = new Date(dateKey);
                 const isToday = format(new Date(), 'yyyy-MM-dd') === dateKey;
                 const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
-                
+
                 // Check if this is the first lesson of a new month
                 const isFirstLessonOfMonth = index === 0 || 
                   format(date, 'yyyy-MM') !== format(new Date(Object.keys(groupedLessons)[index - 1]), 'yyyy-MM');
-                
+
                 return (
                   <div key={dateKey} className="space-y-3">
                     {isFirstLessonOfMonth && (
@@ -825,7 +826,7 @@ function SchedulePage() {
                         <div className="h-px bg-border"></div>
                       </div>
                     )}
-                    
+
                     <div className="flex items-center gap-3">
                       <h3 className={`text-lg font-semibold ${isToday ? 'text-primary' : isPast ? 'text-muted-foreground' : ''}`}>
                         {isToday ? 'Today' : format(date, 'EEE d')}
@@ -835,12 +836,15 @@ function SchedulePage() {
                         {lessons.length} lesson{lessons.length !== 1 ? 's' : ''}
                       </span>
                     </div>
-                    
+
                     <div className="space-y-3 pl-4">
                       {lessons.map((lesson: any) => (
                         <LessonCard
                           key={lesson.id}
-                          lesson={lesson}
+                          lesson={{
+                            ...lesson,
+                            studentColor: lesson.studentColor
+                          }}
                           onEdit={handleEditLesson}
                           onDelete={handleDeleteLesson}
                           onJoinLesson={lesson.lessonLink ? handleJoinLesson : undefined}
