@@ -38,6 +38,12 @@ export default function Navigation({
       badge: lessonCount > 0 ? lessonCount.toString() : undefined,
     },
     {
+      path: '/schedule',
+      label: 'Schedule',
+      icon: GraduationCap,
+      badge: lessonCount > 0 ? lessonCount.toString() : undefined,
+    },
+    {
       path: '/students',
       label: 'Students',
       icon: Users,

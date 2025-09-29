@@ -30,6 +30,7 @@ import LessonForm from "./components/LessonForm";
 import StudentForm from "./components/StudentForm";
 import ThemeToggle from "./components/ThemeToggle";
 import StudentCard from "./components/StudentCard";
+import LessonCard from "./components/LessonCard";
 import {
   useStudents,
   useCreateStudent,
@@ -619,6 +620,266 @@ function StudentsPage() {
   );
 }
 
+function SchedulePage() {
+  const [showLessonForm, setShowLessonForm] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<any>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [lessonToDelete, setLessonToDelete] = useState<any>(null);
+  const [deleteAllFuture, setDeleteAllFuture] = useState(false);
+  const { toast } = useToast();
+
+  const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
+  const { data: studentsData = [] } = useStudents();
+  const updateLessonMutation = useUpdateLesson();
+  const deleteLessonMutation = useDeleteLesson();
+
+  // Transform and filter lessons starting from last week
+  const lastWeek = new Date();
+  lastWeek.setDate(lastWeek.getDate() - 7);
+  lastWeek.setHours(0, 0, 0, 0);
+
+  const displayLessons = (lessonsData as any[])
+    .map((lesson: any) => {
+      const student = (studentsData as any[]).find(
+        (s: any) => s.id === lesson.studentId,
+      );
+      return {
+        ...lesson,
+        dateTime: new Date(lesson.dateTime),
+        studentName: student
+          ? `${student.firstName} ${student.lastName || ""}`
+          : "Unknown Student",
+        pricePerHour: parseFloat(lesson.pricePerHour),
+      };
+    })
+    .filter((lesson: any) => lesson.dateTime >= lastWeek)
+    .sort((a: any, b: any) => a.dateTime.getTime() - b.dateTime.getTime());
+
+  const handleEditLesson = (lessonId: string) => {
+    const originalLesson = (lessonsData as any[]).find(
+      (l: any) => l.id === lessonId,
+    );
+    if (originalLesson) {
+      setSelectedLesson(originalLesson);
+      setShowLessonForm(true);
+    }
+  };
+
+  const handleDeleteLesson = (lessonId: string) => {
+    const lesson = displayLessons.find((l: any) => l.id === lessonId);
+    if (lesson) {
+      setLessonToDelete(lesson);
+      setDeleteAllFuture(false);
+      setShowDeleteDialog(true);
+    }
+  };
+
+  const handleJoinLesson = (link: string) => {
+    window.open(link, "_blank");
+  };
+
+  const handleUpdatePaymentStatus = async (lessonId: string, status: 'pending' | 'paid' | 'overdue') => {
+    try {
+      const lessonToUpdate = (lessonsData as any[]).find((l: any) => l.id === lessonId);
+      if (lessonToUpdate) {
+        await updateLessonMutation.mutateAsync({
+          id: lessonId,
+          ...lessonToUpdate,
+          paymentStatus: status,
+        });
+        toast({
+          title: "Success",
+          description: `Payment status updated to ${status}`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update payment status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLessonSubmit = async (lessonData: any) => {
+    try {
+      const formattedData = {
+        ...lessonData,
+        dateTime: new Date(lessonData.dateTime).toISOString(),
+        pricePerHour: lessonData.pricePerHour.toString(),
+      };
+
+      if (selectedLesson) {
+        await updateLessonMutation.mutateAsync({
+          id: selectedLesson.id,
+          ...formattedData,
+        });
+        toast({ title: "Success", description: "Lesson updated successfully" });
+      }
+
+      setShowLessonForm(false);
+      setSelectedLesson(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save lesson",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const confirmDeleteLesson = async () => {
+    if (!lessonToDelete) return;
+
+    try {
+      if (deleteAllFuture) {
+        const lessonDate = new Date(lessonToDelete.dateTime);
+        const dayOfWeek = lessonDate.getDay();
+        const timeString = lessonDate.toTimeString().substring(0, 8);
+
+        const futureRecurringLessons = (lessonsData as any[]).filter(
+          (lesson: any) => {
+            const lessonDateTime = new Date(lesson.dateTime);
+            return (
+              lessonDateTime >= lessonDate &&
+              lessonDateTime.getDay() === dayOfWeek &&
+              lessonDateTime.toTimeString().substring(0, 8) === timeString &&
+              lesson.studentId === lessonToDelete.studentId
+            );
+          },
+        );
+
+        for (const lesson of futureRecurringLessons) {
+          await deleteLessonMutation.mutateAsync(lesson.id);
+        }
+
+        toast({
+          title: "Success",
+          description: `Deleted ${futureRecurringLessons.length} lesson${futureRecurringLessons.length !== 1 ? "s" : ""} successfully`,
+        });
+      } else {
+        await deleteLessonMutation.mutateAsync(lessonToDelete.id);
+        toast({ title: "Success", description: "Lesson deleted successfully" });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete lesson",
+        variant: "destructive",
+      });
+    }
+
+    setShowDeleteDialog(false);
+    setLessonToDelete(null);
+    setDeleteAllFuture(false);
+  };
+
+  if (lessonsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading lessons...
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Schedule ({displayLessons.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {displayLessons.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No lessons scheduled from last week onwards.</p>
+              <p>Click "Schedule Lesson" in the sidebar to get started.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {displayLessons.map((lesson: any) => (
+                <LessonCard
+                  key={lesson.id}
+                  lesson={lesson}
+                  onEdit={handleEditLesson}
+                  onDelete={handleDeleteLesson}
+                  onJoinLesson={lesson.lessonLink ? handleJoinLesson : undefined}
+                  onUpdatePaymentStatus={handleUpdatePaymentStatus}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Lesson</DialogTitle>
+          </DialogHeader>
+          <LessonForm
+            students={studentsData as any[]}
+            initialData={
+              selectedLesson
+                ? {
+                    ...selectedLesson,
+                    dateTime: new Date(selectedLesson.dateTime),
+                    pricePerHour: parseFloat(selectedLesson.pricePerHour),
+                  }
+                : undefined
+            }
+            onSubmit={handleLessonSubmit}
+            onCancel={() => {
+              setShowLessonForm(false);
+              setSelectedLesson(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Lesson</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this lesson? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="delete-all-future-schedule"
+                checked={deleteAllFuture}
+                onCheckedChange={(checked) => setDeleteAllFuture(!!checked)}
+              />
+              <Label htmlFor="delete-all-future-schedule" className="text-sm">
+                Delete all future lessons on the same day and time
+              </Label>
+            </div>
+            {deleteAllFuture && (
+              <p className="text-sm text-muted-foreground">
+                This will delete all future lessons for the same student that
+                occur on the same day of the week at the same time.
+              </p>
+            )}
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteLesson}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete {deleteAllFuture ? "All Future Lessons" : "Lesson"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
 function AnalyticsPage() {
   return (
     <Card>
@@ -651,6 +912,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={CalendarPage} />
+      <Route path="/schedule" component={SchedulePage} />
       <Route path="/students" component={StudentsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/settings" component={SettingsPage} />
