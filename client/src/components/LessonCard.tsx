@@ -47,7 +47,10 @@ export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson, onU
           <div className="min-w-0 flex-1">
             <CardTitle className="text-base font-semibold truncate">{lesson.subject}</CardTitle>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-              <span className="w-3 h-3 rounded-full mr-1" style={{ backgroundColor: lesson.studentColor }}></span>
+              <div 
+                className="w-3 h-3 rounded-full border-2 border-white shadow-sm flex-shrink-0"
+                style={{ backgroundColor: lesson.studentColor || '#3b82f6' }}
+              />
               <span className="truncate">{lesson.studentName}</span>
             </div>
           </div>
