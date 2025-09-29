@@ -16,6 +16,7 @@ interface LessonCardProps {
     subject: string;
     dateTime: Date;
     studentName: string;
+    studentColor?: string;
     duration: number;
     paymentStatus: 'pending' | 'paid' | 'overdue';
     pricePerHour: number;
