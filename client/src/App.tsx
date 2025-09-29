@@ -815,7 +815,7 @@ function SchedulePage() {
                   <div key={dateKey} className="space-y-3">
                     <div className="flex items-center gap-3">
                       <h3 className={`text-lg font-semibold ${isToday ? 'text-primary' : isPast ? 'text-muted-foreground' : ''}`}>
-                        {isToday ? 'Today' : format(date, 'EEEE, MMMM d, yyyy')}
+                        {isToday ? 'Today' : format(date, 'EEE d')}
                       </h3>
                       <div className="flex-1 h-px bg-border"></div>
                       <span className="text-sm text-muted-foreground">
