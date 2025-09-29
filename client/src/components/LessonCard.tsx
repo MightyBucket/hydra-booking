@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Clock, User, DollarSign, Link as LinkIcon, Edit, Trash2, ChevronDown } from 'lucide-react';
+import { Clock, DollarSign, Trash2, Edit, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface LessonCardProps {
@@ -32,7 +31,7 @@ export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson, onU
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return 'bg-lesson-confirmed text-white';
-      case 'pending': return 'bg-lesson-pending text-black'; 
+      case 'pending': return 'bg-lesson-pending text-black';
       case 'overdue': return 'bg-lesson-cancelled text-white';
       default: return 'bg-secondary';
     }
@@ -47,7 +46,7 @@ export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson, onU
           <div className="min-w-0 flex-1">
             <CardTitle className="text-base font-semibold truncate">{lesson.subject}</CardTitle>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-              <User className="h-3 w-3 flex-shrink-0" />
+              <span className="w-3 h-3 rounded-full mr-1" style={{ backgroundColor: lesson.studentColor }}></span>
               <span className="truncate">{lesson.studentName}</span>
             </div>
           </div>
@@ -98,7 +97,7 @@ export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson, onU
           )}
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-3 pt-0">
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
@@ -108,7 +107,7 @@ export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson, onU
             </div>
             <span className="text-muted-foreground text-xs">{lesson.duration}min</span>
           </div>
-          
+
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <DollarSign className="h-3 w-3 text-muted-foreground flex-shrink-0" />
@@ -133,7 +132,7 @@ export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson, onU
               </Button>
             )}
           </div>
-          
+
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
