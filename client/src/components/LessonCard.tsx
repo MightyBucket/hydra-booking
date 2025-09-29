@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Clock, DollarSign, Trash2, Edit, ChevronDown } from 'lucide-react';
+import { Clock, DollarSign, Trash2, Edit, ChevronDown, Link as LinkIcon } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface LessonCardProps {
