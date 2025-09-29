@@ -104,7 +104,7 @@ export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson, onU
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-              <span className="font-medium">{format(lesson.dateTime, 'MMM d, h:mm a')}</span>
+              <span className="font-medium">{format(lesson.dateTime, 'h:mm a')}</span>
             </div>
             <span className="text-muted-foreground text-xs">{lesson.duration}min</span>
           </div>
