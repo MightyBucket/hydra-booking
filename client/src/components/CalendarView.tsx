@@ -221,7 +221,9 @@ export default function CalendarView({
   const days = view === "month" ? monthDays : weekDays;
 
   const getLessonsForDate = (date: Date) => {
-    return lessons.filter((lesson) => isSameDay(lesson.dateTime, date));
+    return lessons
+      .filter((lesson) => isSameDay(lesson.dateTime, date))
+      .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
   };
 
   const getPaymentStatusColor = (status: string) => {
