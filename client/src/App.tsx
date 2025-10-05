@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Switch, Route, useRoute } from "wouter";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -300,8 +300,8 @@ function CalendarPage() {
 
 
 function StudentCalendarPage() {
-  const routeResult = useRoute("/:studentId/calendar");
-  const studentId = routeResult[1]?.studentId;
+  const [, params] = useRoute("/:studentId/calendar");
+  const studentId = params?.studentId;
   
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
