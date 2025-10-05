@@ -300,7 +300,9 @@ function CalendarPage() {
 
 
 function StudentCalendarPage() {
-  const [match, params] = useRoute("/:studentId/calendar");
+  const routeMatch = useRoute("/:studentId/calendar");
+  const match = routeMatch[0];
+  const params = routeMatch[1];
   const studentId = match && params ? params.studentId : undefined;
   
   const [showLessonForm, setShowLessonForm] = useState(false);
