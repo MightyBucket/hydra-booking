@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Switch, Route, useParams } from "wouter";
+import { Switch, Route, useParams, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -1048,6 +1048,7 @@ function Router() {
 function AppContent() {
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [showStudentForm, setShowStudentForm] = useState(false);
+  const [location] = useLocation();
 
   const { data: studentsData = [] } = useStudents();
   const { data: lessonsData = [] } = useLessons();
@@ -1055,6 +1056,10 @@ function AppContent() {
   const createLessonWithRecurringMutation = useCreateLessonWithRecurring();
   const createStudentMutation = useCreateStudent();
   const { toast } = useToast();
+
+  // Check if we're on a student calendar view
+  const isStudentCalendarView = location.match(/^\/\d{6}\/calendar$/);
+  const shouldShowNavigation = !isStudentCalendarView;
 
   const getDefaultDateTime = () => {
     const now = new Date();
@@ -1148,12 +1153,14 @@ function AppContent() {
 
   return (
     <div className="flex h-screen bg-background">
-      <Navigation
-        onAddLesson={handleAddLesson}
-        onAddStudent={handleAddStudent}
-        lessonCount={(lessonsData as any[]).length}
-        studentCount={(studentsData as any[]).length}
-      />
+      {shouldShowNavigation && (
+        <Navigation
+          onAddLesson={handleAddLesson}
+          onAddStudent={handleAddStudent}
+          lessonCount={(lessonsData as any[]).length}
+          studentCount={(studentsData as any[]).length}
+        />
+      )}
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="flex items-center justify-between p-4 border-b">
