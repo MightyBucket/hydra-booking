@@ -33,6 +33,7 @@ import StudentForm from "./components/StudentForm";
 import ThemeToggle from "./components/ThemeToggle";
 import StudentCard from "./components/StudentCard";
 import LessonCard from "./components/LessonCard";
+import LessonCardWithComments from "./components/LessonCardWithComments";
 import {
   useStudents,
   useCreateStudent,
@@ -46,6 +47,12 @@ import {
   useDeleteLesson,
   useCreateLessonWithRecurring,
 } from "./hooks/useLessons";
+import {
+  useCommentsByLesson,
+  useCreateComment,
+  useDeleteComment,
+} from "./hooks/useComments";
+import CommentForm from "./components/CommentForm";
 import { format } from "date-fns";
 import NotFound from "@/pages/not-found";
 
@@ -632,6 +639,8 @@ function SchedulePage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [lessonToDelete, setLessonToDelete] = useState<any>(null);
   const [deleteAllFuture, setDeleteAllFuture] = useState(false);
+  const [showCommentForm, setShowCommentForm] = useState(false);
+  const [selectedLessonForComment, setSelectedLessonForComment] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
@@ -713,6 +722,55 @@ function SchedulePage() {
       toast({
         title: "Error",
         description: "Failed to update payment status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddComment = (lessonId: string) => {
+    setSelectedLessonForComment(lessonId);
+    setShowCommentForm(true);
+  };
+
+  const createCommentMutation = useCreateComment();
+  const deleteCommentMutation = useDeleteComment();
+
+  const handleCommentSubmit = async (data: { title: string; content: string; visibleToStudent: boolean }) => {
+    if (!selectedLessonForComment) return;
+
+    try {
+      await createCommentMutation.mutateAsync({
+        lessonId: selectedLessonForComment,
+        title: data.title,
+        content: data.content,
+        visibleToStudent: data.visibleToStudent ? 1 : 0,
+      });
+      toast({
+        title: "Success",
+        description: "Comment added successfully",
+      });
+      setShowCommentForm(false);
+      setSelectedLessonForComment(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await deleteCommentMutation.mutateAsync(commentId);
+      toast({
+        title: "Success",
+        description: "Comment deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete comment",
         variant: "destructive",
       });
     }
@@ -845,7 +903,7 @@ function SchedulePage() {
 
                     <div className="space-y-3 pl-4">
                       {lessons.map((lesson: any) => (
-                        <LessonCard
+                        <LessonCardWithComments
                           key={lesson.id}
                           lesson={{
                             ...lesson,
@@ -855,6 +913,8 @@ function SchedulePage() {
                           onDelete={handleDeleteLesson}
                           onJoinLesson={lesson.lessonLink ? handleJoinLesson : undefined}
                           onUpdatePaymentStatus={handleUpdatePaymentStatus}
+                          onAddComment={handleAddComment}
+                          onDeleteComment={handleDeleteComment}
                         />
                       ))}
                     </div>
@@ -931,6 +991,21 @@ function SchedulePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showCommentForm} onOpenChange={setShowCommentForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Comment</DialogTitle>
+          </DialogHeader>
+          <CommentForm
+            onSubmit={handleCommentSubmit}
+            onCancel={() => {
+              setShowCommentForm(false);
+              setSelectedLessonForComment(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

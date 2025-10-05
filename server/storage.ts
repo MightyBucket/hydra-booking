@@ -2,12 +2,15 @@ import {
   students,
   lessons,
   recurringLessons,
+  comments,
   type Student,
   type InsertStudent,
   type Lesson,
   type InsertLesson,
   type RecurringLesson,
   type InsertRecurringLesson,
+  type Comment,
+  type InsertComment,
   type User,
   type InsertUser
 } from "@shared/schema";
@@ -63,6 +66,13 @@ export interface IStorage {
   createRecurringLesson(recurringLesson: InsertRecurringLesson): Promise<RecurringLesson>;
   updateRecurringLesson(id: string, recurringLesson: Partial<InsertRecurringLesson>): Promise<RecurringLesson | undefined>;
   deleteRecurringLesson(id: string): Promise<void>;
+
+  // Comment methods
+  getComment(id: string): Promise<Comment | undefined>;
+  getCommentsByLesson(lessonId: string): Promise<Comment[]>;
+  createComment(comment: InsertComment): Promise<Comment>;
+  updateComment(id: string, comment: Partial<InsertComment>): Promise<Comment | undefined>;
+  deleteComment(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -182,6 +192,38 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRecurringLesson(id: string): Promise<void> {
     await db.delete(recurringLessons).where(eq(recurringLessons.id, id));
+  }
+
+  // Comment methods
+  async getComment(id: string): Promise<Comment | undefined> {
+    const [comment] = await db.select().from(comments).where(eq(comments.id, id));
+    return comment || undefined;
+  }
+
+  async getCommentsByLesson(lessonId: string): Promise<Comment[]> {
+    return await db
+      .select()
+      .from(comments)
+      .where(eq(comments.lessonId, lessonId))
+      .orderBy(desc(comments.createdAt));
+  }
+
+  async createComment(insertComment: InsertComment): Promise<Comment> {
+    const [comment] = await db.insert(comments).values(insertComment).returning();
+    return comment;
+  }
+
+  async updateComment(id: string, updateData: Partial<InsertComment>): Promise<Comment | undefined> {
+    const [comment] = await db
+      .update(comments)
+      .set(updateData)
+      .where(eq(comments.id, id))
+      .returning();
+    return comment || undefined;
+  }
+
+  async deleteComment(id: string): Promise<void> {
+    await db.delete(comments).where(eq(comments.id, id));
   }
 }
 

@@ -38,6 +38,16 @@ export const recurringLessons = pgTable("recurring_lessons", {
   endDate: timestamp("end_date"),
 });
 
+// Comments table
+export const comments = pgTable("comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  lessonId: varchar("lesson_id").notNull().references(() => lessons.id, { onDelete: 'cascade' }),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  visibleToStudent: integer("visible_to_student").notNull().default(0), // 0 = false, 1 = true
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Relations
 export const studentsRelations = relations(students, ({ many }) => ({
   lessons: many(lessons),
@@ -49,11 +59,19 @@ export const lessonsRelations = relations(lessons, ({ one, many }) => ({
     references: [students.id],
   }),
   recurringLessons: many(recurringLessons),
+  comments: many(comments),
 }));
 
 export const recurringLessonsRelations = relations(recurringLessons, ({ one }) => ({
   templateLesson: one(lessons, {
     fields: [recurringLessons.templateLessonId],
+    references: [lessons.id],
+  }),
+}));
+
+export const commentsRelations = relations(comments, ({ one }) => ({
+  lesson: one(lessons, {
+    fields: [comments.lessonId],
     references: [lessons.id],
   }),
 }));
@@ -91,6 +109,15 @@ export const insertRecurringLessonSchema = createInsertSchema(recurringLessons).
   endDate: z.coerce.date(),
 });
 
+export const insertCommentSchema = createInsertSchema(comments).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  title: z.string().min(1, "Title is required"),
+  content: z.string().min(1, "Comment is required"),
+  visibleToStudent: z.number().int().min(0).max(1),
+});
+
 // Types
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;
@@ -100,6 +127,9 @@ export type Lesson = typeof lessons.$inferSelect;
 
 export type InsertRecurringLesson = z.infer<typeof insertRecurringLessonSchema>;
 export type RecurringLesson = typeof recurringLessons.$inferSelect;
+
+export type InsertComment = z.infer<typeof insertCommentSchema>;
+export type Comment = typeof comments.$inferSelect;
 
 // Legacy user schema for compatibility
 export const users = pgTable("users", {

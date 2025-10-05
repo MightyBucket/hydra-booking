@@ -7,8 +7,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Clock, DollarSign, Trash2, Edit, ChevronDown, Link as LinkIcon } from 'lucide-react';
+import { Clock, DollarSign, Trash2, Edit, ChevronDown, Link as LinkIcon, MessageSquare, Eye, EyeOff } from 'lucide-react';
 import { format } from 'date-fns';
+
+interface Comment {
+  id: string;
+  title: string;
+  content: string;
+  visibleToStudent: number;
+  createdAt: string;
+}
 
 interface LessonCardProps {
   lesson: {
@@ -22,13 +30,17 @@ interface LessonCardProps {
     pricePerHour: number;
     lessonLink?: string;
   };
+  comments?: Comment[];
   onEdit: (lessonId: string) => void;
   onDelete: (lessonId: string) => void;
   onJoinLesson?: (link: string) => void;
   onUpdatePaymentStatus?: (lessonId: string, status: 'pending' | 'paid' | 'overdue' | 'unpaid') => void;
+  onAddComment?: (lessonId: string) => void;
+  onDeleteComment?: (commentId: string) => void;
+  showCommentActions?: boolean;
 }
 
-export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson, onUpdatePaymentStatus }: LessonCardProps) {
+export default function LessonCard({ lesson, comments = [], onEdit, onDelete, onJoinLesson, onUpdatePaymentStatus, onAddComment, onDeleteComment, showCommentActions = true }: LessonCardProps) {
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return 'bg-lesson-confirmed text-white';
@@ -147,6 +159,17 @@ export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson, onU
           </div>
 
           <div className="flex items-center gap-1">
+            {showCommentActions && onAddComment && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onAddComment(lesson.id)}
+                data-testid={`button-add-comment-${lesson.id}`}
+                className="h-8 w-8 p-0"
+              >
+                <MessageSquare className="h-3 w-3" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -167,6 +190,43 @@ export default function LessonCard({ lesson, onEdit, onDelete, onJoinLesson, onU
             </Button>
           </div>
         </div>
+
+        {comments.length > 0 && (
+          <div className="mt-3 pt-3 border-t space-y-2">
+            <div className="text-xs font-medium text-muted-foreground">
+              Comments ({comments.length})
+            </div>
+            {comments.map((comment) => (
+              <div key={comment.id} className="text-xs bg-muted/50 p-2 rounded space-y-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-medium flex items-center gap-1">
+                    {comment.title}
+                    {comment.visibleToStudent === 1 ? (
+                      <Eye className="h-3 w-3 text-muted-foreground" title="Visible to student" />
+                    ) : (
+                      <EyeOff className="h-3 w-3 text-muted-foreground" title="Not visible to student" />
+                    )}
+                  </div>
+                  {showCommentActions && onDeleteComment && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDeleteComment(comment.id)}
+                      className="h-5 w-5 p-0 text-destructive hover:text-destructive"
+                      data-testid={`button-delete-comment-${comment.id}`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                <div className="text-muted-foreground">{comment.content}</div>
+                <div className="text-[10px] text-muted-foreground">
+                  {format(new Date(comment.createdAt), 'MMM d, yyyy h:mm a')}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -258,6 +258,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Comment routes (read endpoints are public for student view, write endpoints are protected)
+  app.get("/api/lessons/:lessonId/comments", async (req, res) => {
+    try {
+      const allComments = await storage.getCommentsByLesson(req.params.lessonId);
+      
+      // Check if user is authenticated
+      const sessionId = req.headers.authorization?.replace('Bearer ', '');
+      const { validateSession } = await import('./auth');
+      const isAuthenticated = sessionId ? validateSession(sessionId) : false;
+      
+      // If not authenticated, only return comments visible to students
+      const comments = isAuthenticated 
+        ? allComments 
+        : allComments.filter(comment => comment.visibleToStudent === 1);
+      
+      res.json(comments);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/lessons/:lessonId/comments", requireAuth, async (req, res) => {
+    try {
+      const { insertCommentSchema } = await import('@shared/schema');
+      const validatedData = insertCommentSchema.parse({
+        ...req.body,
+        lessonId: req.params.lessonId,
+      });
+      const comment = await storage.createComment(validatedData);
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error('Error creating comment:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create comment" });
+    }
+  });
+
+  app.delete("/api/comments/:id", requireAuth, async (req, res) => {
+    try {
+      await storage.deleteComment(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      res.status(500).json({ error: "Failed to delete comment" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
