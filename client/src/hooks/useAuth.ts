@@ -1,8 +1,8 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { useNavigate } from 'react-router-dom';
 
-const AUTH_STORAGE_KEY = 'auth_session_id';
+const AUTH_STORAGE_KEY = 'sessionId';
 
 export function getStoredSessionId(): string | null {
   return localStorage.getItem(AUTH_STORAGE_KEY);
@@ -50,41 +50,60 @@ export function useAuth() {
 
 export function useLogin() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   return useMutation({
-    mutationFn: async ({ username, password }: { username: string; password: string }) => {
-      const res = await fetch('/api/auth/login', {
+    mutationFn: async (credentials: { username: string; password: string }) => {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify(credentials),
+        credentials: 'include',
       });
 
-      if (!res.ok) {
+      if (!response.ok) {
         throw new Error('Invalid credentials');
       }
 
-      return await res.json();
+      const data = await response.json();
+      // Store session ID in localStorage
+      if (data.sessionId) {
+        localStorage.setItem('sessionId', data.sessionId);
+      }
+      return data;
     },
-    onSuccess: (data) => {
-      setStoredSessionId(data.sessionId);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/validate'] });
+      navigate('/');
     },
   });
 }
 
 export function useLogout() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: async () => {
-      const sessionId = getStoredSessionId();
-      if (sessionId) {
-        await apiRequest('POST', '/api/auth/logout', undefined);
+      const sessionId = localStorage.getItem('sessionId');
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sessionId || ''}`,
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Logout failed');
       }
-      clearStoredSessionId();
+
+      // Clear session ID from localStorage
+      localStorage.removeItem('sessionId');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/validate'] });
+      navigate('/login');
     },
   });
 }
