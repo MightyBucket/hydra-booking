@@ -12,21 +12,43 @@ import {
   type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
+
+// Generate a unique 6-digit student ID
+async function generateUniqueStudentId(): Promise<string> {
+  let attempts = 0;
+  const maxAttempts = 100;
+
+  while (attempts < maxAttempts) {
+    // Generate random 6-digit number
+    const studentId = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Check if it already exists
+    const existing = await db.select().from(students).where(eq(students.studentId, studentId));
+
+    if (existing.length === 0) {
+      return studentId;
+    }
+
+    attempts++;
+  }
+
+  throw new Error('Failed to generate unique student ID after multiple attempts');
+}
 
 export interface IStorage {
   // Legacy user methods for compatibility
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Student methods
   getStudent(id: string): Promise<Student | undefined>;
   getStudents(): Promise<Student[]>;
   createStudent(student: InsertStudent): Promise<Student>;
   updateStudent(id: string, student: Partial<InsertStudent>): Promise<Student | undefined>;
   deleteStudent(id: string): Promise<void>;
-  
+
   // Lesson methods
   getLesson(id: string): Promise<Lesson | undefined>;
   getLessons(): Promise<Lesson[]>;
@@ -34,7 +56,7 @@ export interface IStorage {
   createLesson(lesson: InsertLesson): Promise<Lesson>;
   updateLesson(id: string, lesson: Partial<InsertLesson>): Promise<Lesson | undefined>;
   deleteLesson(id: string): Promise<void>;
-  
+
   // Recurring lesson methods
   getRecurringLesson(id: string): Promise<RecurringLesson | undefined>;
   getRecurringLessons(): Promise<RecurringLesson[]>;
@@ -70,8 +92,9 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(students).orderBy(students.firstName, students.lastName);
   }
 
-  async createStudent(insertStudent: InsertStudent): Promise<Student> {
-    const [student] = await db.insert(students).values(insertStudent).returning();
+  async createStudent(data: InsertStudent): Promise<Student> {
+    const studentId = await generateUniqueStudentId();
+    const [student] = await db.insert(students).values({ ...data, studentId }).returning();
     return student;
   }
 

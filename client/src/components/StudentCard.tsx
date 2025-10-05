@@ -14,6 +14,7 @@ import {
 
 interface Student {
   id: string;
+  studentId: string;
   firstName: string;
   lastName?: string | null;
   email?: string | null;
@@ -57,9 +58,14 @@ export default function StudentCard({
             style={{ backgroundColor: student.defaultColor || '#3b82f6' }}
             title="Student color"
           />
-          <CardTitle className="text-lg font-semibold">
-            {student.firstName} {student.lastName || ''}
-          </CardTitle>
+          <div>
+            <CardTitle className="text-lg font-semibold">
+              {student.firstName} {student.lastName || ''}
+            </CardTitle>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              ID: {student.studentId}
+            </div>
+          </div>
         </div>
         {student.email && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
