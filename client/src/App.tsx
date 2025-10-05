@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useParams } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -957,6 +957,76 @@ function SettingsPage() {
   );
 }
 
+function StudentCalendarPage() {
+  const params = useParams<{ studentId: string }>();
+  const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
+  const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
+
+  // Find the student by their 6-digit studentId
+  const student = (studentsData as any[]).find(
+    (s: any) => s.studentId === params.studentId
+  );
+
+  if (lessonsLoading || studentsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading calendar...
+      </div>
+    );
+  }
+
+  if (!student) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="text-center" data-testid="student-not-found">
+            <h2 className="text-2xl font-bold mb-2" data-testid="text-not-found-title">
+              Student Not Found
+            </h2>
+            <p className="text-muted-foreground" data-testid="text-not-found-message">
+              No student found with ID: {params.studentId}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Transform lessons data for calendar display
+  const displayLessons = (lessonsData as any[]).map((lesson: any) => {
+    const lessonStudent = (studentsData as any[]).find(
+      (s: any) => s.id === lesson.studentId
+    );
+    return {
+      ...lesson,
+      dateTime: new Date(lesson.dateTime),
+      studentName: lessonStudent
+        ? `${lessonStudent.firstName} ${lessonStudent.lastName || ""}`
+        : "Unknown Student",
+      studentColor: lessonStudent?.defaultColor || '#3b82f6',
+      studentId: lesson.studentId,
+      pricePerHour: parseFloat(lesson.pricePerHour),
+    };
+  });
+
+  return (
+    <>
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold" data-testid="student-name">
+          Calendar for {student.firstName} {student.lastName || ""} (ID: {student.studentId})
+        </h1>
+      </div>
+      <CalendarView
+        lessons={displayLessons}
+        onLessonClick={() => {}}
+        onDateClick={() => {}}
+        onUpdatePaymentStatus={() => {}}
+        focusedStudentId={student.id}
+      />
+    </>
+  );
+}
+
 function Router() {
   return (
     <Switch>
@@ -965,6 +1035,7 @@ function Router() {
       <Route path="/students" component={StudentsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/settings" component={SettingsPage} />
+      <Route path="/:studentId/calendar" component={StudentCalendarPage} />
       <Route component={NotFound} />
     </Switch>
   );
