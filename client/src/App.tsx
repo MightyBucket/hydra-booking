@@ -1013,6 +1013,13 @@ function StudentCalendarPage() {
     };
   });
 
+  const handleLessonClick = (lesson: any) => {
+    // Only open link for this student's lessons
+    if (lesson.studentId === student.id && lesson.lessonLink) {
+      window.open(lesson.lessonLink, "_blank");
+    }
+  };
+
   return (
     <>
       <div className="mb-4">
@@ -1022,7 +1029,7 @@ function StudentCalendarPage() {
       </div>
       <CalendarView
         lessons={displayLessons}
-        onLessonClick={() => {}}
+        onLessonClick={handleLessonClick}
         onDateClick={() => {}}
         onUpdatePaymentStatus={() => {}}
         focusedStudentId={student.id}
