@@ -4,6 +4,8 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/useAuth";
+import LoginForm from "@/components/LoginForm";
 import {
   Dialog,
   DialogContent,
@@ -1172,7 +1174,9 @@ function AppContent() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="flex items-center justify-between p-4 border-b">
           <div className="flex-1" />
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+          </div>
         </header>
 
         <main className="flex-1 overflow-auto p-6">
@@ -1210,11 +1214,34 @@ function AppContent() {
   );
 }
 
+function AuthenticatedApp() {
+  const [location] = useLocation();
+  const { data: authData, isLoading } = useAuth();
+
+  // Allow access to student calendar view without authentication
+  const isStudentCalendarView = location.match(/^\/\d{6}\/calendar$/);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        Loading...
+      </div>
+    );
+  }
+
+  // Show login form if not authenticated and not on public route
+  if (!isStudentCalendarView && !authData?.authenticated) {
+    return <LoginForm />;
+  }
+
+  return <AppContent />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AppContent />
+        <AuthenticatedApp />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
