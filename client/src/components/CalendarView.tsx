@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Trash2,
   ChevronDown,
+  MessageSquare,
 } from "lucide-react";
 import {
   format,
@@ -54,6 +55,7 @@ interface CalendarViewProps {
     lessonId: string,
     status: Lesson["paymentStatus"],
   ) => void;
+  onAddComment?: (lessonId: string) => void;
   focusedStudentId?: string;
 }
 
@@ -202,6 +204,7 @@ export default function CalendarView({
   onJoinLesson,
   onDeleteLesson,
   onUpdatePaymentStatus,
+  onAddComment,
   focusedStudentId,
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -486,6 +489,20 @@ export default function CalendarView({
                               data-testid={`button-join-lesson-${lesson.id}`}
                             >
                               <ExternalLink className="h-3 w-3 mr-1" />
+                            </Button>
+                          )}
+                          {onAddComment && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onAddComment(lesson.id);
+                              }}
+                              data-testid={`button-add-comment-${lesson.id}`}
+                            >
+                              <MessageSquare className="h-3 w-3 mr-1" />
                             </Button>
                           )}
                           {onDeleteLesson && (
