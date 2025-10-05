@@ -63,6 +63,8 @@ function CalendarPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [lessonToDelete, setLessonToDelete] = useState<any>(null);
   const [deleteAllFuture, setDeleteAllFuture] = useState(false);
+  const [showCommentForm, setShowCommentForm] = useState(false);
+  const [selectedLessonForComment, setSelectedLessonForComment] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
@@ -71,6 +73,7 @@ function CalendarPage() {
   const createLessonWithRecurringMutation = useCreateLessonWithRecurring();
   const updateLessonMutation = useUpdateLesson();
   const deleteLessonMutation = useDeleteLesson();
+  const createCommentMutation = useCreateComment();
 
   // Transform lessons data for calendar display
   const displayLessons = (lessonsData as any[]).map((lesson: any) => {
@@ -203,6 +206,36 @@ function CalendarPage() {
       toast({
         title: "Error",
         description: "Failed to update payment status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddComment = (lessonId: string) => {
+    setSelectedLessonForComment(lessonId);
+    setShowCommentForm(true);
+  };
+
+  const handleCommentSubmit = async (data: { title: string; content: string; visibleToStudent: boolean }) => {
+    if (!selectedLessonForComment) return;
+
+    try {
+      await createCommentMutation.mutateAsync({
+        lessonId: selectedLessonForComment,
+        title: data.title,
+        content: data.content,
+        visibleToStudent: data.visibleToStudent ? 1 : 0,
+      });
+      toast({
+        title: "Success",
+        description: "Comment added successfully",
+      });
+      setShowCommentForm(false);
+      setSelectedLessonForComment(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
         variant: "destructive",
       });
     }
@@ -349,6 +382,21 @@ function CalendarPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showCommentForm} onOpenChange={setShowCommentForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Comment</DialogTitle>
+          </DialogHeader>
+          <CommentForm
+            onSubmit={handleCommentSubmit}
+            onCancel={() => {
+              setShowCommentForm(false);
+              setSelectedLessonForComment(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
