@@ -128,12 +128,12 @@ const LessonCardWithComments = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-1.5 py-0 h-auto text-[10px] font-medium leading-tight`}
+                className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-auto text-xs font-medium`}
                 onClick={(e) => e.stopPropagation()}
                 data-testid={`dropdown-payment-status-${lesson.id}`}
               >
                 {lesson.paymentStatus}
-                <ChevronDown className="ml-0.5 h-2.5 w-2.5" />
+                <ChevronDown className="ml-1 h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="min-w-24">
