@@ -297,6 +297,284 @@ function CalendarPage() {
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
+
+
+function StudentCalendarPage() {
+  const [, params] = useRoute("/:studentId/calendar");
+  const studentId = params?.studentId;
+  
+  const [showLessonForm, setShowLessonForm] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<any>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [lessonToDelete, setLessonToDelete] = useState<any>(null);
+  const [deleteAllFuture, setDeleteAllFuture] = useState(false);
+  const { toast } = useToast();
+
+  const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
+  const { data: studentsData = [] } = useStudents();
+  const createLessonMutation = useCreateLesson();
+  const createLessonWithRecurringMutation = useCreateLessonWithRecurring();
+  const updateLessonMutation = useUpdateLesson();
+  const deleteLessonMutation = useDeleteLesson();
+
+  const currentStudent = (studentsData as any[]).find((s: any) => s.id === studentId);
+
+  // Transform lessons data for calendar display
+  const displayLessons = (lessonsData as any[]).map((lesson: any) => {
+    const student = (studentsData as any[]).find(
+      (s: any) => s.id === lesson.studentId,
+    );
+    const isCurrentStudent = lesson.studentId === studentId;
+    
+    return {
+      ...lesson,
+      dateTime: new Date(lesson.dateTime),
+      studentName: isCurrentStudent && student
+        ? `${student.firstName} ${student.lastName || ""}`
+        : "",
+      studentColor: isCurrentStudent ? (student?.defaultColor || '#3b82f6') : '#9ca3af',
+      pricePerHour: parseFloat(lesson.pricePerHour),
+      isOtherStudent: !isCurrentStudent,
+    };
+  });
+
+  const handleLessonClick = (lesson: any) => {
+    // Only allow clicking on current student's lessons
+    if (lesson.studentId === studentId) {
+      setSelectedLesson(lesson);
+      setShowLessonForm(true);
+    }
+  };
+
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    setSelectedLesson(null);
+    setShowLessonForm(true);
+  };
+
+  const handleJoinLesson = (lesson: any) => {
+    if (lesson.lessonLink && lesson.studentId === studentId) {
+      window.open(lesson.lessonLink, "_blank");
+    }
+  };
+
+  const handleDeleteLesson = (lesson: any) => {
+    if (lesson.studentId === studentId) {
+      setLessonToDelete(lesson);
+      setShowDeleteDialog(true);
+    }
+  };
+
+  const confirmDeleteLesson = async () => {
+    if (!lessonToDelete) return;
+
+    try {
+      await deleteLessonMutation.mutateAsync(lessonToDelete.id);
+      toast({
+        title: "Success",
+        description: "Lesson deleted successfully",
+      });
+      setShowDeleteDialog(false);
+      setLessonToDelete(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete lesson",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const cancelDeleteLesson = () => {
+    setShowDeleteDialog(false);
+    setLessonToDelete(null);
+    setDeleteAllFuture(false);
+  };
+
+  const handleUpdatePaymentStatus = async (
+    lessonId: string,
+    status: "pending" | "paid" | "unpaid",
+  ) => {
+    const lesson = displayLessons.find((l) => l.id === lessonId);
+    if (lesson?.studentId !== studentId) return;
+
+    try {
+      await updateLessonMutation.mutateAsync({
+        id: lessonId,
+        paymentStatus: status,
+      });
+      toast({
+        title: "Success",
+        description: `Payment status updated to ${status}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update payment status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLessonSubmit = async (lessonData: any) => {
+    try {
+      if (selectedLesson) {
+        await updateLessonMutation.mutateAsync({
+          id: selectedLesson.id,
+          ...lessonData,
+          dateTime: new Date(lessonData.dateTime),
+          pricePerHour: lessonData.pricePerHour.toString(),
+        });
+        toast({
+          title: "Success",
+          description: "Lesson updated successfully",
+        });
+      } else if (lessonData.isRecurring && lessonData.endDate) {
+        const recurringData = {
+          lesson: {
+            subject: lessonData.subject,
+            dateTime: new Date(lessonData.dateTime),
+            studentId: studentId!,
+            lessonLink: lessonData.lessonLink,
+            pricePerHour: lessonData.pricePerHour.toString(),
+            duration: lessonData.duration,
+            paymentStatus: lessonData.paymentStatus || "pending",
+          },
+          recurring: {
+            frequency: lessonData.frequency,
+            endDate: lessonData.endDate,
+          },
+        };
+
+        await createLessonWithRecurringMutation.mutateAsync(recurringData);
+        toast({
+          title: "Success",
+          description: "Recurring lessons created successfully",
+        });
+      } else {
+        await createLessonMutation.mutateAsync({
+          ...lessonData,
+          dateTime: new Date(lessonData.dateTime),
+          studentId: studentId!,
+          pricePerHour: lessonData.pricePerHour.toString(),
+        });
+        toast({
+          title: "Success",
+          description: "Lesson created successfully",
+        });
+      }
+      setShowLessonForm(false);
+      setSelectedLesson(null);
+      setSelectedDate(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save lesson",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLessonCancel = () => {
+    setShowLessonForm(false);
+    setSelectedLesson(null);
+    setSelectedDate(null);
+  };
+
+  if (!currentStudent) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Student Not Found</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            The student with ID "{studentId}" could not be found.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <div className="mb-4">
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <div 
+            className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+            style={{ backgroundColor: currentStudent.defaultColor || '#3b82f6' }}
+          />
+          {currentStudent.firstName} {currentStudent.lastName || ''}'s Calendar
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Student ID: {currentStudent.studentId}
+        </p>
+      </div>
+
+      <CalendarView
+        lessons={displayLessons}
+        onLessonClick={handleLessonClick}
+        onDateClick={handleDateClick}
+        onJoinLesson={handleJoinLesson}
+        onDeleteLesson={handleDeleteLesson}
+        onUpdatePaymentStatus={handleUpdatePaymentStatus}
+      />
+
+      <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedLesson ? "Edit Lesson" : "Schedule New Lesson"}
+            </DialogTitle>
+          </DialogHeader>
+          <LessonForm
+            students={[currentStudent]}
+            initialData={
+              selectedLesson
+                ? {
+                    ...selectedLesson,
+                    dateTime: new Date(selectedLesson.dateTime),
+                    pricePerHour: parseFloat(selectedLesson.pricePerHour),
+                  }
+                : selectedDate
+                ? {
+                    dateTime: selectedDate,
+                    studentId: studentId,
+                  }
+                : {
+                    studentId: studentId,
+                  }
+            }
+            onSubmit={handleLessonSubmit}
+            onCancel={handleLessonCancel}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Lesson</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this lesson? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDeleteLesson}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteLesson}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Lesson</AlertDialogTitle>
             <AlertDialogDescription>
@@ -965,6 +1243,7 @@ function Router() {
       <Route path="/students" component={StudentsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/settings" component={SettingsPage} />
+      <Route path="/:studentId/calendar" component={StudentCalendarPage} />
       <Route component={NotFound} />
     </Switch>
   );
