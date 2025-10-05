@@ -9,6 +9,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
   ChevronLeft,
   ChevronRight,
   Calendar,
@@ -17,9 +22,12 @@ import {
   Trash2,
   ChevronDown,
   MessageSquare,
+  Eye,
+  EyeOff,
 } from "lucide-react";
+import { useCommentsByLesson } from "@/hooks/useComments";
+import { format } from "date-fns";
 import {
-  format,
   startOfWeek,
   endOfWeek,
   addDays,
@@ -59,9 +67,8 @@ interface CalendarViewProps {
   focusedStudentId?: string;
 }
 
-// Mock LessonCard component for demonstration purposes
-// In a real scenario, this would be imported from "@/components/LessonCard"
-const LessonCard = ({
+// LessonCard component with comment count and hover preview
+const LessonCardWithComments = ({
   lesson,
   onEdit,
   onDelete,
@@ -77,6 +84,8 @@ const LessonCard = ({
     status: Lesson["paymentStatus"],
   ) => void;
 }) => {
+  const { data: comments = [] } = useCommentsByLesson(lesson.id);
+
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case "paid":
@@ -90,7 +99,7 @@ const LessonCard = ({
     }
   };
 
-  return (
+  const cardContent = (
     <div
       className="p-1 rounded text-xs hover-elevate group border-l-2"
       style={{
@@ -113,55 +122,64 @@ const LessonCard = ({
         <div className="truncate text-muted-foreground">{lesson.subject}</div>
         <div className="truncate font-medium">{lesson.studentName}</div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-auto text-xs font-medium mt-1`}
-              onClick={(e) => e.stopPropagation()}
-              data-testid={`dropdown-payment-status-${lesson.id}`}
-            >
-              {lesson.paymentStatus}
-              <ChevronDown className="ml-1 h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-24">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "pending");
-              }}
-              className={lesson.paymentStatus === "pending" ? "bg-accent" : ""}
-              data-testid={`payment-option-pending-${lesson.id}`}
-            >
-              <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
-              Pending
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "paid");
-              }}
-              className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
-              data-testid={`payment-option-paid-${lesson.id}`}
-            >
-              <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
-              Paid
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "unpaid");
-              }}
-              className={lesson.paymentStatus === "unpaid" ? "bg-accent" : ""}
-              data-testid={`payment-option-unpaid-${lesson.id}`}
-            >
-              <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
-              Unpaid
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1 mt-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-auto text-xs font-medium`}
+                onClick={(e) => e.stopPropagation()}
+                data-testid={`dropdown-payment-status-${lesson.id}`}
+              >
+                {lesson.paymentStatus}
+                <ChevronDown className="ml-1 h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-24">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdatePaymentStatus(lesson.id, "pending");
+                }}
+                className={lesson.paymentStatus === "pending" ? "bg-accent" : ""}
+                data-testid={`payment-option-pending-${lesson.id}`}
+              >
+                <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
+                Pending
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdatePaymentStatus(lesson.id, "paid");
+                }}
+                className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
+                data-testid={`payment-option-paid-${lesson.id}`}
+              >
+                <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
+                Paid
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdatePaymentStatus(lesson.id, "unpaid");
+                }}
+                className={lesson.paymentStatus === "unpaid" ? "bg-accent" : ""}
+                data-testid={`payment-option-unpaid-${lesson.id}`}
+              >
+                <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
+                Unpaid
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {comments.length > 0 && (
+            <div className="flex items-center gap-0.5 text-muted-foreground">
+              <MessageSquare className="h-3 w-3" />
+              <span className="text-[10px]">{comments.length}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -194,6 +212,41 @@ const LessonCard = ({
         )}
       </div>
     </div>
+  );
+
+  if (comments.length === 0) {
+    return cardContent;
+  }
+
+  return (
+    <HoverCard openDelay={200}>
+      <HoverCardTrigger asChild>
+        {cardContent}
+      </HoverCardTrigger>
+      <HoverCardContent side="right" align="start" className="w-80">
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold">Comments ({comments.length})</h4>
+          {comments.slice(0, 3).map((comment: any) => (
+            <div key={comment.id} className="text-xs space-y-1 pb-2 border-b last:border-b-0">
+              <div className="flex items-center gap-1 font-medium">
+                {comment.title}
+                {comment.visibleToStudent === 1 ? (
+                  <Eye className="h-3 w-3 text-muted-foreground" />
+                ) : (
+                  <EyeOff className="h-3 w-3 text-muted-foreground" />
+                )}
+              </div>
+              <div className="text-muted-foreground line-clamp-2">{comment.content}</div>
+            </div>
+          ))}
+          {comments.length > 3 && (
+            <div className="text-xs text-muted-foreground">
+              +{comments.length - 3} more comment{comments.length - 3 !== 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
   );
 };
 
@@ -377,150 +430,24 @@ export default function CalendarView({
                     }
 
                     return (
-                      <div
+                      <LessonCardWithComments
                         key={lesson.id}
-                        className="p-1 rounded text-xs hover-elevate group border-l-2"
-                        style={{
-                          backgroundColor: `${lesson.studentColor}15`,
-                          borderLeftColor: lesson.studentColor || "#3b82f6",
+                        lesson={lesson}
+                        onEdit={() => {
+                          onLessonClick(lesson);
                         }}
-                        data-testid={`lesson-${lesson.id}`}
-                      >
-                        <div
-                          className="cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onLessonClick(lesson);
-                          }}
-                        >
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span className="truncate">
-                              {format(lesson.dateTime, "HH:mm")}-
-                              {format(
-                                new Date(
-                                  lesson.dateTime.getTime() +
-                                    lesson.duration * 60000,
-                                ),
-                                "HH:mm",
-                              )}{" "}
-                              ()
-                            </span>
-                          </div>
-                          <div className="truncate text-muted-foreground">
-                            {lesson.subject}
-                          </div>
-                          <div className="truncate font-medium">
-                            {lesson.studentName}
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button
-                                className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
-                                onClick={(e) => e.stopPropagation()}
-                                data-testid={`dropdown-payment-status-${lesson.id}`}
-                              >
-                                {lesson.paymentStatus}
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align="start"
-                              className="min-w-24"
-                            >
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onUpdatePaymentStatus(lesson.id, "pending");
-                                }}
-                                className={
-                                  lesson.paymentStatus === "pending"
-                                    ? "bg-accent"
-                                    : ""
-                                }
-                                data-testid={`payment-option-pending-${lesson.id}`}
-                              >
-                                <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
-                                Pending
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onUpdatePaymentStatus(lesson.id, "paid");
-                                }}
-                                className={
-                                  lesson.paymentStatus === "paid"
-                                    ? "bg-accent"
-                                    : ""
-                                }
-                                data-testid={`payment-option-paid-${lesson.id}`}
-                              >
-                                <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
-                                Paid
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onUpdatePaymentStatus(lesson.id, "unpaid");
-                                }}
-                                className={
-                                  lesson.paymentStatus === "unpaid"
-                                    ? "bg-accent"
-                                    : ""
-                                }
-                                data-testid={`payment-option-unpaid-${lesson.id}`}
-                              >
-                                <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
-                                Unpaid
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-
-                        {/* Action buttons - shown on hover */}
-                        <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {onJoinLesson && lesson.lessonLink && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onJoinLesson(lesson);
-                              }}
-                              data-testid={`button-join-lesson-${lesson.id}`}
-                            >
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                            </Button>
-                          )}
-                          {onAddComment && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 px-2 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onAddComment(lesson.id);
-                              }}
-                              data-testid={`button-add-comment-${lesson.id}`}
-                            >
-                              <MessageSquare className="h-3 w-3 mr-1" />
-                            </Button>
-                          )}
-                          {onDeleteLesson && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="h-6 px-2 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDeleteLesson(lesson);
-                              }}
-                              data-testid={`button-delete-lesson-${lesson.id}`}
-                            >
-                              <Trash2 className="h-3 w-3 mr-1" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+                        onDelete={() => {
+                          if (onDeleteLesson) {
+                            onDeleteLesson(lesson);
+                          }
+                        }}
+                        onJoinLesson={
+                          onJoinLesson && lesson.lessonLink
+                            ? () => onJoinLesson(lesson)
+                            : undefined
+                        }
+                        onUpdatePaymentStatus={onUpdatePaymentStatus}
+                      />
                     );
                   })}
 
