@@ -53,8 +53,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Student routes (protected)
-  app.get("/api/students", requireAuth, async (req, res) => {
+  // Student routes (read endpoints are public for student calendar view, write endpoints are protected)
+  app.get("/api/students", async (req, res) => {
     try {
       const students = await storage.getStudents();
       res.json(students);
@@ -64,7 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/students/:id", requireAuth, async (req, res) => {
+  app.get("/api/students/:id", async (req, res) => {
     try {
       const student = await storage.getStudent(req.params.id);
       if (!student) {
@@ -118,8 +118,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Lesson routes (protected)
-  app.get("/api/lessons", requireAuth, async (req, res) => {
+  // Lesson routes (read endpoints are public for student calendar view, write endpoints are protected)
+  app.get("/api/lessons", async (req, res) => {
     try {
       const lessons = await storage.getLessons();
       res.json(lessons);
@@ -129,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/lessons/:id", requireAuth, async (req, res) => {
+  app.get("/api/lessons/:id", async (req, res) => {
     try {
       const lesson = await storage.getLesson(req.params.id);
       if (!lesson) {
@@ -142,7 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/students/:studentId/lessons", requireAuth, async (req, res) => {
+  app.get("/api/students/:studentId/lessons", async (req, res) => {
     try {
       const lessons = await storage.getLessonsByStudent(req.params.studentId);
       res.json(lessons);
