@@ -73,7 +73,7 @@ export default function LessonCard({ lesson, comments = [], onEdit, onDelete, on
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-1 h-auto text-xs font-medium flex-shrink-0`}
+                  className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-auto text-xs font-medium flex-shrink-0`}
                   data-testid={`dropdown-payment-status-${lesson.id}`}
                 >
                   {lesson.paymentStatus}
@@ -116,9 +116,14 @@ export default function LessonCard({ lesson, comments = [], onEdit, onDelete, on
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Badge className={`${getPaymentStatusColor(lesson.paymentStatus)} text-xs flex-shrink-0`}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`${getPaymentStatusColor(lesson.paymentStatus)} px-2 py-0.5 h-auto text-xs font-medium flex-shrink-0`}
+              disabled
+            >
               {lesson.paymentStatus}
-            </Badge>
+            </Button>
           )}
         </div>
       </CardHeader>
