@@ -41,7 +41,6 @@ interface Lesson {
   paymentStatus: "pending" | "paid" | "unpaid";
   pricePerHour: number;
   lessonLink?: string;
-  isOtherStudent?: boolean;
 }
 
 interface CalendarViewProps {
@@ -349,153 +348,132 @@ export default function CalendarView({
                       key={lesson.id}
                       className="p-1 rounded text-xs hover-elevate group border-l-2"
                       style={{
-                        backgroundColor: lesson.isOtherStudent ? '#f3f4f615' : `${lesson.studentColor}15`,
+                        backgroundColor: `${lesson.studentColor}15`,
                         borderLeftColor: lesson.studentColor || "#3b82f6",
                       }}
                       data-testid={`lesson-${lesson.id}`}
                     >
-                      {lesson.isOtherStudent ? (
-                        <div className="cursor-not-allowed opacity-60">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span className="truncate">
-                              {format(lesson.dateTime, "HH:mm")}-
-                              {format(
-                                new Date(
-                                  lesson.dateTime.getTime() +
-                                    lesson.duration * 60000,
-                                ),
-                                "HH:mm",
-                              )}
-                            </span>
-                          </div>
-                          <div className="truncate text-muted-foreground">
-                            Unavailable
-                          </div>
+                      <div
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onLessonClick(lesson);
+                        }}
+                      >
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span className="truncate">
+                            {format(lesson.dateTime, "HH:mm")}-
+                            {format(
+                              new Date(
+                                lesson.dateTime.getTime() +
+                                  lesson.duration * 60000,
+                              ),
+                              "HH:mm",
+                            )}{" "}
+                            ()
+                          </span>
                         </div>
-                      ) : (
-                        <>
-                          <div
-                            className="cursor-pointer"
+                        <div className="truncate text-muted-foreground">
+                          {lesson.subject}
+                        </div>
+                        <div className="truncate font-medium">
+                          {lesson.studentName}
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
+                              onClick={(e) => e.stopPropagation()}
+                              data-testid={`dropdown-payment-status-${lesson.id}`}
+                            >
+                              {lesson.paymentStatus}
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="start"
+                            className="min-w-24"
+                          >
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdatePaymentStatus(lesson.id, "pending");
+                              }}
+                              className={
+                                lesson.paymentStatus === "pending"
+                                  ? "bg-accent"
+                                  : ""
+                              }
+                              data-testid={`payment-option-pending-${lesson.id}`}
+                            >
+                              <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
+                              Pending
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdatePaymentStatus(lesson.id, "paid");
+                              }}
+                              className={
+                                lesson.paymentStatus === "paid"
+                                  ? "bg-accent"
+                                  : ""
+                              }
+                              data-testid={`payment-option-paid-${lesson.id}`}
+                            >
+                              <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
+                              Paid
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdatePaymentStatus(lesson.id, "unpaid");
+                              }}
+                              className={
+                                lesson.paymentStatus === "unpaid"
+                                  ? "bg-accent"
+                                  : ""
+                              }
+                              data-testid={`payment-option-unpaid-${lesson.id}`}
+                            >
+                              <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
+                              Unpaid
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {/* Action buttons - shown on hover */}
+                      <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {onJoinLesson && lesson.lessonLink && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            //className="h-6 px-2 text-xs"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onLessonClick(lesson);
+                              onJoinLesson(lesson);
                             }}
+                            data-testid={`button-join-lesson-${lesson.id}`}
                           >
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              <span className="truncate">
-                                {format(lesson.dateTime, "HH:mm")}-
-                                {format(
-                                  new Date(
-                                    lesson.dateTime.getTime() +
-                                      lesson.duration * 60000,
-                                  ),
-                                  "HH:mm",
-                                )}
-                              </span>
-                            </div>
-                            <div className="truncate text-muted-foreground">
-                              {lesson.subject}
-                            </div>
-                            <div className="truncate font-medium">
-                              {lesson.studentName}
-                            </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button
-                                  className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
-                                  onClick={(e) => e.stopPropagation()}
-                                  data-testid={`dropdown-payment-status-${lesson.id}`}
-                                >
-                                  {lesson.paymentStatus}
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="start"
-                                className="min-w-24"
-                              >
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onUpdatePaymentStatus(lesson.id, "pending");
-                                  }}
-                                  className={
-                                    lesson.paymentStatus === "pending"
-                                      ? "bg-accent"
-                                      : ""
-                                  }
-                                  data-testid={`payment-option-pending-${lesson.id}`}
-                                >
-                                  <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
-                                  Pending
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onUpdatePaymentStatus(lesson.id, "paid");
-                                  }}
-                                  className={
-                                    lesson.paymentStatus === "paid"
-                                      ? "bg-accent"
-                                      : ""
-                                  }
-                                  data-testid={`payment-option-paid-${lesson.id}`}
-                                >
-                                  <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
-                                  Paid
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onUpdatePaymentStatus(lesson.id, "unpaid");
-                                  }}
-                                  className={
-                                    lesson.paymentStatus === "unpaid"
-                                      ? "bg-accent"
-                                      : ""
-                                  }
-                                  data-testid={`payment-option-unpaid-${lesson.id}`}
-                                >
-                                  <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
-                                  Unpaid
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-
-                          {/* Action buttons - shown on hover */}
-                          <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {onJoinLesson && lesson.lessonLink && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onJoinLesson(lesson);
-                                }}
-                                data-testid={`button-join-lesson-${lesson.id}`}
-                              >
-                                <ExternalLink className="h-3 w-3 mr-1" />
-                              </Button>
-                            )}
-                            {onDeleteLesson && (
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="h-6 px-2 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onDeleteLesson(lesson);
-                                }}
-                                data-testid={`button-delete-lesson-${lesson.id}`}
-                              >
-                                <Trash2 className="h-3 w-3 mr-1" />
-                              </Button>
-                            )}
-                          </div>
-                        </>
-                      )}
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                          </Button>
+                        )}
+                        {onDeleteLesson && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-6 px-2 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteLesson(lesson);
+                            }}
+                            data-testid={`button-delete-lesson-${lesson.id}`}
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
 
