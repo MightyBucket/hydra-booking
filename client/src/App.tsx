@@ -383,8 +383,12 @@ function StudentsPage() {
   };
 
   const handleViewLessons = (studentId: string) => {
-    // TODO: This would navigate to calendar filtered by student
-    console.log("View lessons for student:", studentId);
+    const student = (studentsData as any[]).find(
+      (s: any) => s.id === studentId,
+    );
+    if (student?.studentId) {
+      window.location.href = `/${student.studentId}/calendar`;
+    }
   };
 
   const handleDeleteStudent = (studentId: string) => {
