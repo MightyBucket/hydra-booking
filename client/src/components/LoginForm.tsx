@@ -41,7 +41,7 @@ export default function LoginForm() {
             Login
           </CardTitle>
           <CardDescription>
-            Enter your credentials to access the tutoring manager
+            Enter your credentials to access the management section
           </CardDescription>
         </CardHeader>
         <CardContent>
