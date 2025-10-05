@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 
 const AUTH_STORAGE_KEY = 'sessionId';
 
@@ -50,7 +50,7 @@ export function useAuth() {
 
 export function useLogin() {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   return useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
@@ -74,14 +74,14 @@ export function useLogin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/validate'] });
-      navigate('/');
+      setLocation('/');
     },
   });
 }
 
 export function useLogout() {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   return useMutation({
     mutationFn: async () => {
@@ -103,7 +103,7 @@ export function useLogout() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/validate'] });
-      navigate('/login');
+      setLocation('/login');
     },
   });
 }
