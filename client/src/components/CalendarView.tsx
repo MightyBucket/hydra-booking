@@ -350,7 +350,8 @@ export default function CalendarView({
 
                 <div className="space-y-1">
                   {dayLessons.slice(0, 3).map((lesson) => {
-                    const isOtherStudent = focusedStudentId && lesson.studentId !== focusedStudentId;
+                    const isOtherStudent =
+                      focusedStudentId && lesson.studentId !== focusedStudentId;
 
                     if (isOtherStudent) {
                       return (
@@ -475,48 +476,51 @@ export default function CalendarView({
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-
                         {/* Action buttons - shown on hover */}
+
                         <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           {onJoinLesson && lesson.lessonLink && (
                             <Button
                               size="sm"
-                              variant="outline"
+                              variant="ghost"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onJoinLesson(lesson);
                               }}
                               data-testid={`button-join-lesson-${lesson.id}`}
+                              className="h-8 w-8 p-0"
                             >
                               <ExternalLink className="h-3 w-3 mr-1" />
                             </Button>
                           )}
+
                           {onAddComment && (
                             <Button
+                              variant="ghost"
                               size="sm"
-                              variant="outline"
-                              className="h-6 px-2 text-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onAddComment(lesson.id);
                               }}
                               data-testid={`button-add-comment-${lesson.id}`}
+                              className="h-8 w-8 p-0"
                             >
-                              <MessageSquare className="h-3 w-3 mr-1" />
+                              <MessageSquare className="h-3 w-3" />
                             </Button>
                           )}
+
                           {onDeleteLesson && (
                             <Button
+                              variant="ghost"
                               size="sm"
-                              variant="destructive"
-                              className="h-6 px-2 text-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onDeleteLesson(lesson);
                               }}
                               data-testid={`button-delete-lesson-${lesson.id}`}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                             >
-                              <Trash2 className="h-3 w-3 mr-1" />
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           )}
                         </div>
