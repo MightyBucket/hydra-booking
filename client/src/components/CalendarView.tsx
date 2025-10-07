@@ -604,7 +604,6 @@ export default function CalendarView({
                   ${isToday ? "bg-accent" : "bg-card"}
                   ${!isCurrentMonth ? "opacity-40" : ""}
                 `}
-                style={{ zIndex: 1 }}
                 onClick={() => onDateClick(day)}
                 data-testid={`calendar-day-${format(day, "yyyy-MM-dd")}`}
               >
