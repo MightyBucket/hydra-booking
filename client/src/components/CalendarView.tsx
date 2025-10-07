@@ -132,16 +132,16 @@ const LessonWithComments = ({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-auto text-xs font-medium mt-1`}
-              onClick={(e) => e.stopPropagation()}
-              data-testid={`dropdown-payment-status-${lesson.id}`}
-            >
-              {lesson.paymentStatus}
-              <ChevronDown className="ml-1 h-3 w-3" />
-            </Button>
+
+            {
+              <button
+                className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
+                onClick={(e) => e.stopPropagation()}
+                data-testid={`dropdown-payment-status-${lesson.id}`}
+              >
+                {lesson.paymentStatus}
+              </button>
+            }
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-24">
             <DropdownMenuItem
@@ -236,15 +236,16 @@ const LessonWithComments = ({
 
   return (
     <HoverCard openDelay={200}>
-      <HoverCardTrigger asChild>
-        {lessonContent}
-      </HoverCardTrigger>
+      <HoverCardTrigger asChild>{lessonContent}</HoverCardTrigger>
       <HoverCardContent className="w-80" side="bottom" align="start">
         <div className="space-y-2">
           <h4 className="text-sm font-semibold">Comments</h4>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {comments.map((comment) => (
-              <div key={comment.id} className="border-l-2 border-primary/20 pl-2">
+              <div
+                key={comment.id}
+                className="border-l-2 border-primary/20 pl-2"
+              >
                 <div className="flex items-center gap-2">
                   <p className="text-xs font-medium">{comment.title}</p>
                   {comment.visibleToStudent === 1 && (
@@ -331,7 +332,7 @@ const LessonCard = ({
               onClick={(e) => e.stopPropagation()}
               data-testid={`dropdown-payment-status-${lesson.id}`}
             >
-              {lesson.paymentStatus}
+              s:{lesson.paymentStatus}
               <ChevronDown className="ml-1 h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
@@ -374,28 +375,21 @@ const LessonCard = ({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button
+            {/*<button
               className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
               onClick={(e) => e.stopPropagation()}
               data-testid={`dropdown-payment-status-${lesson.id}`}
             >
-              {lesson.paymentStatus}
-            </button>
+              s:{lesson.paymentStatus}
+            </button>*/}
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="start"
-            className="min-w-24"
-          >
+          <DropdownMenuContent align="start" className="min-w-24">
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
                 onUpdatePaymentStatus(lesson.id, "pending");
               }}
-              className={
-                lesson.paymentStatus === "pending"
-                  ? "bg-accent"
-                  : ""
-              }
+              className={lesson.paymentStatus === "pending" ? "bg-accent" : ""}
               data-testid={`payment-option-pending-${lesson.id}`}
             >
               <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
@@ -406,11 +400,7 @@ const LessonCard = ({
                 e.stopPropagation();
                 onUpdatePaymentStatus(lesson.id, "paid");
               }}
-              className={
-                lesson.paymentStatus === "paid"
-                  ? "bg-accent"
-                  : ""
-              }
+              className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
               data-testid={`payment-option-paid-${lesson.id}`}
             >
               <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
@@ -421,11 +411,7 @@ const LessonCard = ({
                 e.stopPropagation();
                 onUpdatePaymentStatus(lesson.id, "unpaid");
               }}
-              className={
-                lesson.paymentStatus === "unpaid"
-                  ? "bg-accent"
-                  : ""
-              }
+              className={lesson.paymentStatus === "unpaid" ? "bg-accent" : ""}
               data-testid={`payment-option-unpaid-${lesson.id}`}
             >
               <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
@@ -664,7 +650,9 @@ export default function CalendarView({
                         }
                         onUpdatePaymentStatus={onUpdatePaymentStatus}
                         onAddComment={
-                          onAddComment ? () => onAddComment(lesson.id) : undefined
+                          onAddComment
+                            ? () => onAddComment(lesson.id)
+                            : undefined
                         }
                       />
                     );
