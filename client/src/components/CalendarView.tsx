@@ -74,6 +74,7 @@ const LessonWithComments = ({
   onJoinLesson,
   onUpdatePaymentStatus,
   onAddComment,
+  isStudentView = false,
 }: {
   lesson: Lesson;
   onEdit: () => void;
@@ -84,6 +85,7 @@ const LessonWithComments = ({
     status: Lesson["paymentStatus"],
   ) => void;
   onAddComment?: () => void;
+  isStudentView?: boolean;
 }) => {
   const { data: comments = [] } = useCommentsByLesson(lesson.id);
   const hasComments = comments.length > 0;
@@ -197,7 +199,7 @@ const LessonWithComments = ({
           </Button>
         )}
 
-        {onAddComment && (
+        {onAddComment && !isStudentView && (
           <Button
             variant="ghost"
             size="sm"
@@ -212,7 +214,7 @@ const LessonWithComments = ({
           </Button>
         )}
 
-        {onDelete && (
+        {onDelete && !isStudentView && (
           <Button
             variant="ghost"
             size="sm"
@@ -659,6 +661,7 @@ export default function CalendarView({
                             ? () => onAddComment(lesson.id)
                             : undefined
                         }
+                        isStudentView={!!focusedStudentId}
                       />
                     );
                   })}
