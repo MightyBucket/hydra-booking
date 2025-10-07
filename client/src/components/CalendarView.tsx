@@ -646,10 +646,7 @@ export default function CalendarView({
                       <LessonWithComments
                         key={lesson.id}
                         lesson={lesson}
-                        onEdit={(e) => {
-                          e.stopPropagation();
-                          onLessonClick(lesson);
-                        }}
+                        onEdit={() => onLessonClick(lesson)}
                         onDelete={() => onDeleteLesson?.(lesson)}
                         onJoinLesson={
                           onJoinLesson && lesson.lessonLink
