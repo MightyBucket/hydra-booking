@@ -22,7 +22,7 @@ import {
   Trash2,
   ChevronDown,
   MessageSquare,
-  CalendarSync,
+  Download,
 } from "lucide-react";
 import { useCommentsByLesson } from "@/hooks/useComments";
 import { format as formatDate } from "date-fns";
@@ -620,7 +620,7 @@ export default function CalendarView({
               onClick={handleSyncToCalendar}
               data-testid="button-sync-calendar"
             >
-              <CalendarSync className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 mr-2" />
               Sync to Calendar
             </Button>
           )}
