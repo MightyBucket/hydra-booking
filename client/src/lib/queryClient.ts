@@ -12,22 +12,29 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const sessionId = localStorage.getItem('auth_session_id');
-  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
-  
-  if (sessionId) {
-    headers['Authorization'] = `Bearer ${sessionId}`;
+  const sessionId = localStorage.getItem('sessionId');
+
+  const options: RequestInit = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(sessionId ? { 'Authorization': `Bearer ${sessionId}` } : {}),
+    },
+    credentials: "include",
+  };
+
+  if (data) {
+    options.body = JSON.stringify(data);
   }
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  const response = await fetch(url, options);
 
-  await throwIfResNotOk(res);
-  return res;
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(error.error || 'Request failed');
+  }
+
+  return response;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -36,9 +43,9 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const sessionId = localStorage.getItem('auth_session_id');
+    const sessionId = localStorage.getItem('sessionId');
     const headers: Record<string, string> = {};
-    
+
     if (sessionId) {
       headers['Authorization'] = `Bearer ${sessionId}`;
     }

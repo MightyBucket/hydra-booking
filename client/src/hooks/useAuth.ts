@@ -54,22 +54,18 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      const response = await fetch('/api/auth/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
-        credentials: 'include',
       });
 
-      if (!response.ok) {
+      if (!res.ok) {
         throw new Error('Invalid credentials');
       }
 
-      const data = await response.json();
-      // Store session ID in localStorage
-      if (data.sessionId) {
-        localStorage.setItem('sessionId', data.sessionId);
-      }
+      const data = await res.json();
+      localStorage.setItem('sessionId', data.sessionId);
       return data;
     },
     onSuccess: () => {
