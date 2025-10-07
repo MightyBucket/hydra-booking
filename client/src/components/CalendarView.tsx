@@ -157,6 +157,68 @@ const LessonCard = ({
               className={lesson.paymentStatus === "unpaid" ? "bg-accent" : ""}
               data-testid={`payment-option-unpaid-${lesson.id}`}
             >
+              {/*<span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>*/}
+              Unpaid
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
+              onClick={(e) => e.stopPropagation()}
+              data-testid={`dropdown-payment-status-${lesson.id}`}
+            >
+              {lesson.paymentStatus}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="min-w-24"
+          >
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdatePaymentStatus(lesson.id, "pending");
+              }}
+              className={
+                lesson.paymentStatus === "pending"
+                  ? "bg-accent"
+                  : ""
+              }
+              data-testid={`payment-option-pending-${lesson.id}`}
+            >
+              <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
+              Pending
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdatePaymentStatus(lesson.id, "paid");
+              }}
+              className={
+                lesson.paymentStatus === "paid"
+                  ? "bg-accent"
+                  : ""
+              }
+              data-testid={`payment-option-paid-${lesson.id}`}
+            >
+              <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
+              Paid
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdatePaymentStatus(lesson.id, "unpaid");
+              }}
+              className={
+                lesson.paymentStatus === "unpaid"
+                  ? "bg-accent"
+                  : ""
+              }
+              data-testid={`payment-option-unpaid-${lesson.id}`}
+            >
               <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
               Unpaid
             </DropdownMenuItem>
