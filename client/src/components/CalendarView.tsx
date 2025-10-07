@@ -132,7 +132,7 @@ const LessonWithComments = ({
         <div className="truncate text-muted-foreground">{lesson.subject}</div>
         <div className="truncate font-medium">{lesson.studentName}</div>
 
-        <DropdownMenu>
+        {!isStudentView && (<DropdownMenu>
           <DropdownMenuTrigger asChild>
 
             {
@@ -180,7 +180,17 @@ const LessonWithComments = ({
               Unpaid
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu>)}
+
+        {isStudentView &&
+          (<button
+            className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
+            onClick={(e) => e.stopPropagation()}
+            data-testid={`dropdown-payment-status-${lesson.id}`}
+          >
+            {lesson.paymentStatus}
+          </button>)
+        }
       </div>
 
       <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
