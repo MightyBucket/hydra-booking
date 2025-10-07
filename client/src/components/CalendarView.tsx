@@ -239,7 +239,12 @@ const LessonWithComments = ({
       <HoverCardTrigger asChild>
         <div>{lessonContent}</div>
       </HoverCardTrigger>
-      <HoverCardContent className="w-80 z-[9999]" side="bottom" align="start">
+      <HoverCardContent 
+        className="w-80 z-[99999] bg-popover border-popover-border" 
+        side="bottom" 
+        align="start"
+        sideOffset={8}
+      >
         <div className="space-y-2">
           <h4 className="text-sm font-semibold">Comments ({comments.length})</h4>
           <div className="space-y-2 max-h-48 overflow-y-auto">
