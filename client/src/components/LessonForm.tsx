@@ -27,7 +27,7 @@ interface LessonFormProps {
     duration?: number;
     pricePerHour?: number;
     lessonLink?: string;
-    paymentStatus?: 'pending' | 'paid' | 'unpaid';
+    paymentStatus?: 'pending' | 'paid' | 'unpaid' | 'free';
   };
   onSubmit: (lessonData: any) => void;
   onCancel: () => void;
@@ -52,7 +52,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
     duration: initialData?.duration || 60,
     pricePerHour: initialData?.pricePerHour || 50,
     lessonLink: initialData?.lessonLink || '',
-    paymentStatus: (initialData?.paymentStatus || 'pending') as 'pending' | 'paid' | 'unpaid',
+    paymentStatus: (initialData?.paymentStatus || 'pending') as 'pending' | 'paid' | 'unpaid' | 'free',
     isRecurring: false,
     frequency: 'weekly' as 'weekly' | 'biweekly',
     endDate: '',
@@ -73,29 +73,29 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!formData.dateTime) {
       alert('Please select a date and time for the lesson.');
       return;
     }
-    
+
     if (!formData.studentId) {
       alert('Please select a student.');
       return;
     }
-    
+
     if (!formData.subject) {
       alert('Please enter a subject.');
       return;
     }
-    
+
     // Validate recurring fields if recurring is enabled
     if (formData.isRecurring && !formData.endDate) {
       alert('Please select an end date for recurring lessons.');
       return;
     }
-    
+
     const lessonData = {
       ...formData,
       dateTime: new Date(formData.dateTime),
@@ -231,7 +231,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
               <Label htmlFor="paymentStatus">Payment Status</Label>
               <Select 
                 value={formData.paymentStatus} 
-                onValueChange={(value: 'pending' | 'paid' | 'unpaid') => 
+                onValueChange={(value: 'pending' | 'paid' | 'unpaid' | 'free') => 
                   setFormData(prev => ({ ...prev, paymentStatus: value }))
                 }
               >
@@ -242,6 +242,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="paid">Paid</SelectItem>
                   <SelectItem value="unpaid">Unpaid</SelectItem>
+                  <SelectItem value="free">Free</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -299,7 +300,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
                       />
                     </div>
                   </div>
-                  
+
                   <div className="text-sm text-muted-foreground">
                     <p>Recurring lessons will be created automatically based on the selected frequency until the end date.</p>
                   </div>

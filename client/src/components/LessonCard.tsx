@@ -26,7 +26,7 @@ interface LessonCardProps {
     studentName: string;
     studentColor?: string;
     duration: number;
-    paymentStatus: 'pending' | 'paid' | 'overdue' | 'unpaid';
+    paymentStatus: 'pending' | 'paid' | 'overdue' | 'unpaid' | 'free';
     pricePerHour: number;
     lessonLink?: string;
   };
@@ -34,7 +34,7 @@ interface LessonCardProps {
   onEdit: (lessonId: string) => void;
   onDelete: (lessonId: string) => void;
   onJoinLesson?: (link: string) => void;
-  onUpdatePaymentStatus?: (lessonId: string, status: 'pending' | 'paid' | 'overdue' | 'unpaid') => void;
+  onUpdatePaymentStatus?: (lessonId: string, status: 'pending' | 'paid' | 'overdue' | 'unpaid' | 'free') => void;
   onAddComment?: (lessonId: string) => void;
   onDeleteComment?: (commentId: string) => void;
   showCommentActions?: boolean;
@@ -48,6 +48,7 @@ export default function LessonCard({ lesson, comments = [], onEdit, onDelete, on
       case 'pending': return 'bg-lesson-pending text-black';
       case 'overdue': return 'bg-lesson-cancelled text-white';
       case 'unpaid': return 'bg-lesson-cancelled text-white';
+      case 'free': return 'bg-gray-400 text-white';
       default: return 'bg-secondary';
     }
   };
@@ -113,6 +114,14 @@ export default function LessonCard({ lesson, comments = [], onEdit, onDelete, on
                 >
                   <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
                   Unpaid
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onUpdatePaymentStatus(lesson.id, 'free')}
+                  className={lesson.paymentStatus === 'free' ? 'bg-accent' : ''}
+                  data-testid={`payment-option-free-${lesson.id}`}
+                >
+                  <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
+                  Free
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

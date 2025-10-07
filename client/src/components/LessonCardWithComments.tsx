@@ -7,7 +7,7 @@ interface LessonCardWithCommentsProps {
   onEdit: (lessonId: string) => void;
   onDelete: (lessonId: string) => void;
   onJoinLesson?: (link: string) => void;
-  onUpdatePaymentStatus?: (lessonId: string, status: 'pending' | 'paid' | 'overdue' | 'unpaid') => void;
+  onUpdatePaymentStatus?: (lessonId: string, status: 'pending' | 'paid' | 'overdue' | 'unpaid' | 'free') => void;
   onAddComment?: (lessonId: string) => void;
   onDeleteComment?: (commentId: string) => void;
   showCommentActions?: boolean;

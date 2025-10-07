@@ -47,7 +47,7 @@ interface Lesson {
   studentColor?: string;
   studentId?: string;
   duration: number;
-  paymentStatus: "pending" | "paid" | "unpaid";
+  paymentStatus: "pending" | "paid" | "unpaid" | "free";
   pricePerHour: number;
   lessonLink?: string;
 }
@@ -98,6 +98,8 @@ const LessonWithComments = ({
         return "bg-lesson-pending text-black";
       case "unpaid":
         return "bg-lesson-cancelled text-white";
+      case "free":
+        return "bg-gray-400 text-white";
       default:
         return "bg-secondary";
     }
@@ -178,6 +180,17 @@ const LessonWithComments = ({
             >
               <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
               Unpaid
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdatePaymentStatus(lesson.id, "free");
+              }}
+              className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
+              data-testid={`payment-option-free-${lesson.id}`}
+            >
+              <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
+              Free
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>)}
@@ -315,6 +328,8 @@ const LessonCard = ({
         return "bg-lesson-pending text-black";
       case "unpaid":
         return "bg-lesson-cancelled text-white";
+      case "free":
+        return "bg-gray-400 text-white";
       default:
         return "bg-secondary";
     }
@@ -390,6 +405,17 @@ const LessonCard = ({
               {/*<span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>*/}
               Unpaid
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdatePaymentStatus(lesson.id, "free");
+              }}
+              className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
+              data-testid={`payment-option-free-${lesson.id}`}
+            >
+              <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
+              Free
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -436,6 +462,17 @@ const LessonCard = ({
             >
               <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
               Unpaid
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdatePaymentStatus(lesson.id, "free");
+              }}
+              className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
+              data-testid={`payment-option-free-${lesson.id}`}
+            >
+              <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
+              Free
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -517,6 +554,8 @@ export default function CalendarView({
         return "bg-lesson-pending text-black";
       case "unpaid":
         return "bg-lesson-cancelled text-white";
+      case "free":
+        return "bg-gray-400 text-white";
       default:
         return "bg-secondary";
     }
