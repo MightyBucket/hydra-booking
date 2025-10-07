@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Switch, Route, useParams, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -691,7 +691,6 @@ function SchedulePage() {
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [selectedLessonForComment, setSelectedLessonForComment] = useState<string | null>(null);
   const { toast } = useToast();
-  const { useEffect, useRef } = require('react');
 
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
   const { data: studentsData = [] } = useStudents();
