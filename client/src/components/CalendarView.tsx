@@ -240,7 +240,8 @@ const LessonWithComments = ({
         <div>{lessonContent}</div>
       </HoverCardTrigger>
       <HoverCardContent 
-        className="w-80 z-[99999] bg-popover border-popover-border" 
+        className="w-80 bg-popover border-popover-border" 
+        style={{ zIndex: 99999 }}
         side="bottom" 
         align="start"
         sideOffset={8}
@@ -603,6 +604,7 @@ export default function CalendarView({
                   ${isToday ? "bg-accent" : "bg-card"}
                   ${!isCurrentMonth ? "opacity-40" : ""}
                 `}
+                style={{ zIndex: 1 }}
                 onClick={() => onDateClick(day)}
                 data-testid={`calendar-day-${format(day, "yyyy-MM-dd")}`}
               >
