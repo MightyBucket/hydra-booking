@@ -235,11 +235,13 @@ const LessonWithComments = ({
   }
 
   return (
-    <HoverCard openDelay={200}>
-      <HoverCardTrigger asChild>{lessonContent}</HoverCardTrigger>
-      <HoverCardContent className="w-80" side="bottom" align="start">
+    <HoverCard openDelay={300}>
+      <HoverCardTrigger asChild>
+        <div>{lessonContent}</div>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-80 z-50" side="bottom" align="start">
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold">Comments</h4>
+          <h4 className="text-sm font-semibold">Comments ({comments.length})</h4>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {comments.map((comment) => (
               <div
