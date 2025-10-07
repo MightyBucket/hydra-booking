@@ -308,6 +308,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // iCalendar endpoint for calendar sync
+  app.get("/api/calendar/ics", requireAuth, async (req, res) => {
+    try {
+      const lessons = await storage.getLessons();
+      const students = await storage.getStudents();
+      
+      // Filter lessons for next two months
+      const now = new Date();
+      const twoMonthsLater = new Date();
+      twoMonthsLater.setMonth(twoMonthsLater.getMonth() + 2);
+      
+      const filteredLessons = lessons.filter((lesson: any) => {
+        const lessonDate = new Date(lesson.dateTime);
+        return lessonDate >= now && lessonDate <= twoMonthsLater;
+      });
+
+      // Generate iCalendar format
+      let icsContent = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Lesson Scheduler//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'X-WR-CALNAME:Lesson Schedule',
+        'X-WR-TIMEZONE:UTC',
+      ];
+
+      filteredLessons.forEach((lesson: any) => {
+        const student = students.find((s: any) => s.id === lesson.studentId);
+        const studentName = student ? `${student.firstName} ${student.lastName || ''}`.trim() : 'Unknown Student';
+        
+        const startDate = new Date(lesson.dateTime);
+        const endDate = new Date(startDate.getTime() + lesson.duration * 60000);
+        
+        // Format dates to iCalendar format (YYYYMMDDTHHMMSSZ)
+        const formatDate = (date: Date) => {
+          return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        };
+
+        const now = new Date();
+        const dtstamp = formatDate(now);
+        
+        icsContent.push('BEGIN:VEVENT');
+        icsContent.push(`UID:${lesson.id}@lessonscheduler`);
+        icsContent.push(`DTSTAMP:${dtstamp}`);
+        icsContent.push(`DTSTART:${formatDate(startDate)}`);
+        icsContent.push(`DTEND:${formatDate(endDate)}`);
+        icsContent.push(`SUMMARY:${lesson.subject} - ${studentName}`);
+        icsContent.push(`DESCRIPTION:Duration: ${lesson.duration} minutes\\nPrice: £${lesson.pricePerHour}/hr\\nStatus: ${lesson.paymentStatus}`);
+        
+        if (lesson.lessonLink) {
+          icsContent.push(`URL:${lesson.lessonLink}`);
+        }
+        
+        icsContent.push('END:VEVENT');
+      });
+
+      icsContent.push('END:VCALENDAR');
+
+      const icsString = icsContent.join('\r\n');
+
+      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="lessons.ics"');
+      res.send(icsString);
+    } catch (error) {
+      console.error('Error generating calendar:', error);
+      res.status(500).json({ error: "Failed to generate calendar" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

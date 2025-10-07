@@ -22,6 +22,7 @@ import {
   Trash2,
   ChevronDown,
   MessageSquare,
+  CalendarSync,
 } from "lucide-react";
 import { useCommentsByLesson } from "@/hooks/useComments";
 import { format as formatDate } from "date-fns";
@@ -573,6 +574,36 @@ export default function CalendarView({
     setCurrentDate(new Date());
   };
 
+  const handleSyncToCalendar = () => {
+    const token = localStorage.getItem('sessionId');
+    const baseUrl = window.location.origin;
+    const icsUrl = `${baseUrl}/api/calendar/ics`;
+    
+    // Create a temporary link to download the .ics file
+    const link = document.createElement('a');
+    link.href = icsUrl;
+    link.setAttribute('download', 'lessons.ics');
+    
+    // Add authorization header via fetch and trigger download
+    fetch(icsUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(response => response.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(error => {
+      console.error('Error downloading calendar:', error);
+    });
+  };
+
   return (
     <Card className="w-full h-full" data-testid="calendar-view">
       <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-4">
@@ -582,6 +613,18 @@ export default function CalendarView({
         </CardTitle>
 
         <div className="flex items-center gap-2">
+          {!focusedStudentId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncToCalendar}
+              data-testid="button-sync-calendar"
+            >
+              <CalendarSync className="h-4 w-4 mr-2" />
+              Sync to Calendar
+            </Button>
+          )}
+          
           <Button
             variant="outline"
             size="sm"
