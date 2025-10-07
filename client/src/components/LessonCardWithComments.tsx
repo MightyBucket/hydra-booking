@@ -11,6 +11,7 @@ interface LessonCardWithCommentsProps {
   onAddComment?: (lessonId: string) => void;
   onDeleteComment?: (commentId: string) => void;
   showCommentActions?: boolean;
+  isStudentView?: boolean;
 }
 
 export default function LessonCardWithComments(props: LessonCardWithCommentsProps) {

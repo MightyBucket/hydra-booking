@@ -38,9 +38,10 @@ interface LessonCardProps {
   onAddComment?: (lessonId: string) => void;
   onDeleteComment?: (commentId: string) => void;
   showCommentActions?: boolean;
+  isStudentView?: boolean;
 }
 
-export default function LessonCard({ lesson, comments = [], onEdit, onDelete, onJoinLesson, onUpdatePaymentStatus, onAddComment, onDeleteComment, showCommentActions = true }: LessonCardProps) {
+export default function LessonCard({ lesson, comments = [], onEdit, onDelete, onJoinLesson, onUpdatePaymentStatus, onAddComment, onDeleteComment, showCommentActions = true, isStudentView = false }: LessonCardProps) {
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return 'bg-lesson-confirmed text-white';
@@ -159,7 +160,7 @@ export default function LessonCard({ lesson, comments = [], onEdit, onDelete, on
           </div>
 
           <div className="flex items-center gap-1">
-            {showCommentActions && onAddComment && (
+            {!isStudentView && showCommentActions && onAddComment && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -170,24 +171,28 @@ export default function LessonCard({ lesson, comments = [], onEdit, onDelete, on
                 <MessageSquare className="h-3 w-3" />
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onEdit(lesson.id)}
-              data-testid={`button-edit-lesson-${lesson.id}`}
-              className="h-8 w-8 p-0"
-            >
-              <Edit className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDelete(lesson.id)}
-              data-testid={`button-delete-lesson-${lesson.id}`}
-              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+            {!isStudentView && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onEdit(lesson.id)}
+                data-testid={`button-edit-lesson-${lesson.id}`}
+                className="h-8 w-8 p-0"
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+            )}
+            {!isStudentView && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(lesson.id)}
+                data-testid={`button-delete-lesson-${lesson.id}`}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         </div>
 
