@@ -691,6 +691,7 @@ function SchedulePage() {
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [selectedLessonForComment, setSelectedLessonForComment] = useState<string | null>(null);
   const { toast } = useToast();
+  const { useEffect, useRef } = require('react');
 
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
   const { data: studentsData = [] } = useStudents();
@@ -825,6 +826,17 @@ function SchedulePage() {
     }
   };
 
+  // Auto-scroll to today's section on mount
+  useEffect(() => {
+    const todayDateKey = format(new Date(), 'yyyy-MM-dd');
+    const todayElement = document.querySelector(`[data-date-key="${todayDateKey}"]`);
+    if (todayElement) {
+      setTimeout(() => {
+        todayElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [lessonsLoading]);
+
   const handleLessonSubmit = async (lessonData: any) => {
     try {
       const formattedData = {
@@ -930,7 +942,7 @@ function SchedulePage() {
                   format(date, 'yyyy-MM') !== format(new Date(Object.keys(groupedLessons)[index - 1]), 'yyyy-MM');
 
                 return (
-                  <div key={dateKey} className="space-y-3">
+                  <div key={dateKey} className="space-y-3" data-date-key={dateKey}>
                     {isFirstLessonOfMonth && (
                       <div className="mb-6">
                         <h2 className="text-2xl font-bold text-foreground mb-2">
