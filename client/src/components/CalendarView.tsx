@@ -108,7 +108,7 @@ const LessonWithComments = ({
 
   const lessonContent = (
     <div
-      className="p-1 rounded text-xs hover-elevate group border-l-2"
+      className="p-1 sm:p-1.5 rounded text-[10px] sm:text-xs hover-elevate group border-l-2"
       style={{
         backgroundColor: `${lesson.studentColor}15`,
         borderLeftColor: lesson.studentColor || "#3b82f6",
@@ -116,9 +116,9 @@ const LessonWithComments = ({
       data-testid={`lesson-${lesson.id}`}
     >
       <div className="cursor-pointer" onClick={onEdit}>
-        <div className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          <span className="truncate">
+        <div className="flex items-center gap-0.5 sm:gap-1">
+          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+          <span className="truncate text-[9px] sm:text-xs">
             {format(lesson.dateTime, "HH:mm")}-
             {format(
               new Date(lesson.dateTime.getTime() + lesson.duration * 60000),
@@ -127,20 +127,20 @@ const LessonWithComments = ({
           </span>
           {hasComments && (
             <div className="flex items-center gap-0.5 ml-auto">
-              <MessageSquare className="h-3 w-3" />
-              <span className="text-[10px]">{comments.length}</span>
+              <MessageSquare className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+              <span className="text-[9px] sm:text-[10px]">{comments.length}</span>
             </div>
           )}
         </div>
-        <div className="truncate text-muted-foreground">{lesson.subject}</div>
-        <div className="truncate font-medium">{lesson.studentName}</div>
+        <div className="truncate text-muted-foreground text-[9px] sm:text-xs leading-tight mt-0.5">{lesson.subject}</div>
+        <div className="truncate font-medium text-[9px] sm:text-xs leading-tight">{lesson.studentName}</div>
 
         {!isStudentView && (<DropdownMenu>
           <DropdownMenuTrigger asChild>
 
             {
               <button
-                className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
+                className={`inline-flex items-center rounded-md border px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-0.5 sm:mt-1`}
                 onClick={(e) => e.stopPropagation()}
                 data-testid={`dropdown-payment-status-${lesson.id}`}
               >
@@ -198,7 +198,7 @@ const LessonWithComments = ({
 
         {isStudentView &&
           (<button
-            className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
+            className={`inline-flex items-center rounded-md border px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-0.5 sm:mt-1`}
             onClick={(e) => e.stopPropagation()}
             data-testid={`dropdown-payment-status-${lesson.id}`}
           >
@@ -207,7 +207,7 @@ const LessonWithComments = ({
         }
       </div>
 
-      <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex gap-0.5 sm:gap-1 mt-0.5 sm:mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {onJoinLesson && lesson.lessonLink && (
           <Button
             size="sm"
@@ -217,9 +217,9 @@ const LessonWithComments = ({
               onJoinLesson();
             }}
             data-testid={`button-join-lesson-${lesson.id}`}
-            className="h-8 w-8 p-0"
+            className="h-6 w-6 sm:h-8 sm:w-8 p-0"
           >
-            <ExternalLink className="h-3 w-3 mr-1" />
+            <ExternalLink className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
           </Button>
         )}
 
@@ -232,9 +232,9 @@ const LessonWithComments = ({
               onAddComment();
             }}
             data-testid={`button-add-comment-${lesson.id}`}
-            className="h-8 w-8 p-0"
+            className="h-6 w-6 sm:h-8 sm:w-8 p-0"
           >
-            <MessageSquare className="h-3 w-3" />
+            <MessageSquare className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
           </Button>
         )}
 
@@ -247,9 +247,9 @@ const LessonWithComments = ({
               onDelete();
             }}
             data-testid={`button-delete-lesson-${lesson.id}`}
-            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
           </Button>
         )}
       </div>
@@ -673,18 +673,18 @@ export default function CalendarView({
       </CardHeader>
 
       <CardContent>
-        <div className="grid grid-cols-7 gap-2 mb-4">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 sm:mb-4">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
             <div
               key={day}
-              className="p-2 text-center text-sm font-medium text-muted-foreground"
+              className="p-1 sm:p-2 text-center text-[10px] sm:text-sm font-medium text-muted-foreground"
             >
               {day}
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {days.map((day) => {
             const dayLessons = getLessonsForDate(day);
             const isToday = isSameDay(day, new Date());
@@ -694,7 +694,7 @@ export default function CalendarView({
               <div
                 key={day.toISOString()}
                 className={`
-                  min-h-24 p-2 border rounded-md cursor-pointer hover-elevate
+                  min-h-16 sm:min-h-24 p-1 sm:p-2 border rounded-md cursor-pointer hover-elevate
                   ${isToday ? "bg-accent" : "bg-card"}
                   ${!isCurrentMonth ? "opacity-40" : ""}
                 `}
@@ -702,12 +702,12 @@ export default function CalendarView({
                 data-testid={`calendar-day-${format(day, "yyyy-MM-dd")}`}
               >
                 <div
-                  className={`text-sm font-medium mb-1 ${isToday ? "text-primary" : ""}`}
+                  className={`text-[10px] sm:text-sm font-medium mb-0.5 sm:mb-1 ${isToday ? "text-primary" : ""}`}
                 >
                   {format(day, "d")}
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-0.5 sm:space-y-1">
                   {dayLessons.slice(0, 3).map((lesson) => {
                     const isOtherStudent =
                       focusedStudentId && lesson.studentId !== focusedStudentId;
@@ -716,11 +716,11 @@ export default function CalendarView({
                       return (
                         <div
                           key={lesson.id}
-                          className="p-1 rounded text-xs bg-muted border-l-2 border-l-muted-foreground/30"
+                          className="p-0.5 sm:p-1 rounded text-[9px] sm:text-xs bg-muted border-l-2 border-l-muted-foreground/30"
                           data-testid={`lesson-blocked-${lesson.id}`}
                         >
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Clock className="h-3 w-3" />
+                          <div className="flex items-center gap-0.5 sm:gap-1 text-muted-foreground">
+                            <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                             <span className="truncate">
                               {format(lesson.dateTime, "HH:mm")}-
                               {format(
@@ -759,8 +759,8 @@ export default function CalendarView({
                   })}
 
                   {dayLessons.length > 3 && (
-                    <div className="text-xs text-muted-foreground">
-                      +{dayLessons.length - 3} more
+                    <div className="text-[9px] sm:text-xs text-muted-foreground">
+                      +{dayLessons.length - 3}
                     </div>
                   )}
                 </div>
