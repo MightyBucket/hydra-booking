@@ -709,8 +709,8 @@ export default function CalendarView({
         </div>
       </CardHeader>
 
-      <CardContent className={isMobile ? "pb-0" : ""}>
-        <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 sm:mb-4">
+      <CardContent className={isMobile ? "px-2 pb-0" : ""}>
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-2 mb-2 sm:mb-4">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
             <div
               key={day}
@@ -721,7 +721,7 @@ export default function CalendarView({
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1 sm:gap-2">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-2">
           {days.map((day) => {
             const dayLessons = getLessonsForDate(day);
             const isToday = isSameDay(day, new Date());
@@ -732,7 +732,7 @@ export default function CalendarView({
               <div
                 key={day.toISOString()}
                 className={`
-                  ${isMobile ? 'min-h-12' : 'min-h-16 sm:min-h-24'} p-1 sm:p-2 border rounded-md cursor-pointer hover-elevate
+                  ${isMobile ? 'min-h-11 p-0.5' : 'min-h-16 sm:min-h-24 p-1 sm:p-2'} border rounded-sm cursor-pointer hover-elevate
                   ${isToday ? "bg-accent" : "bg-card"}
                   ${isSelected && isMobile ? "ring-2 ring-primary" : ""}
                   ${!isCurrentMonth ? "opacity-40" : ""}
@@ -741,13 +741,13 @@ export default function CalendarView({
                 data-testid={`calendar-day-${format(day, "yyyy-MM-dd")}`}
               >
                 <div
-                  className={`text-[10px] sm:text-sm font-medium mb-0.5 sm:mb-1 ${isToday ? "text-primary" : ""}`}
+                  className={`${isMobile ? 'text-[9px]' : 'text-[10px] sm:text-sm'} font-medium mb-0.5 sm:mb-1 ${isToday ? "text-primary" : ""}`}
                 >
                   {format(day, "d")}
                 </div>
 
                 {isMobile ? (
-                  <div className="space-y-0.5">
+                  <div className="space-y-[2px]">
                     {dayLessons.slice(0, 2).map((lesson) => {
                       const isOtherStudent =
                         focusedStudentId && lesson.studentId !== focusedStudentId;
@@ -835,7 +835,7 @@ export default function CalendarView({
         </div>
 
         {isMobile && selectedMobileDate && (
-          <div className="mt-4 pt-4 border-t">
+          <div className="mt-4 pt-4 pb-4 px-4 -mx-2 border-t border-x border-b rounded-b-lg bg-card">
             <h3 className="text-sm font-semibold mb-3">
               {format(selectedMobileDate, 'EEEE, MMMM d')}
               {selectedMobileLessons.length > 0 && (
