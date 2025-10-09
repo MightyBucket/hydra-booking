@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Clock, DollarSign, Trash2, Edit, ChevronDown, Link as LinkIcon, MessageSquare, Eye, EyeOff } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -42,6 +49,8 @@ interface LessonCardProps {
 }
 
 export default function LessonCard({ lesson, comments = [], onEdit, onDelete, onJoinLesson, onUpdatePaymentStatus, onAddComment, onDeleteComment, showCommentActions = true, isStudentView = false }: LessonCardProps) {
+  const [viewComments, setViewComments] = useState(false);
+  
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return 'bg-lesson-confirmed text-white';
@@ -173,7 +182,13 @@ export default function LessonCard({ lesson, comments = [], onEdit, onDelete, on
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onAddComment(lesson.id)}
+                onClick={() => {
+                  if (comments.length > 0) {
+                    setViewComments(true);
+                  } else {
+                    onAddComment(lesson.id);
+                  }
+                }}
                 data-testid={`button-add-comment-${lesson.id}`}
                 className="h-8 w-8 p-0"
               >
@@ -242,6 +257,58 @@ export default function LessonCard({ lesson, comments = [], onEdit, onDelete, on
           </div>
         )}
       </CardContent>
+
+      <Dialog open={viewComments} onOpenChange={setViewComments}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Comments</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {comments.map((comment) => (
+              <div key={comment.id} className="border-l-2 border-primary/20 pl-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="text-sm font-semibold">{comment.title}</h4>
+                      {comment.visibleToStudent === 1 ? (
+                        <Badge variant="outline" className="text-xs">
+                          <Eye className="h-3 w-3 mr-1" />
+                          Visible to Student
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          <EyeOff className="h-3 w-3 mr-1" />
+                          Private
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{comment.content}</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {format(new Date(comment.createdAt), 'MMM d, yyyy h:mm a')}
+                    </p>
+                  </div>
+                  {showCommentActions && onDeleteComment && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        onDeleteComment(comment.id);
+                        if (comments.length === 1) {
+                          setViewComments(false);
+                        }
+                      }}
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                      data-testid={`button-delete-comment-${comment.id}`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

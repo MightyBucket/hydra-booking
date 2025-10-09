@@ -40,6 +40,12 @@ import {
   subMonths,
   isSameMonth,
 } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Lesson {
   id: string;
@@ -116,8 +122,8 @@ const LessonWithComments = ({
       }}
       data-testid={`lesson-${lesson.id}`}
     >
-      <div 
-        className="cursor-pointer" 
+      <div
+        className="cursor-pointer"
         onClick={(e: React.MouseEvent) => {
           e.stopPropagation();
           onEdit();
@@ -228,9 +234,13 @@ const LessonWithComments = ({
             size="sm"
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
-              onAddComment(lesson.id);
+              if (hasComments) {
+                setViewCommentsLessonId(lesson.id);
+              } else {
+                onAddComment(lesson.id);
+              }
             }}
-            className="h-7 w-7 sm:w-7 p-0"
+            className="h-7 w-7 p-0"
           >
             <MessageSquare className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
           </Button>
@@ -524,6 +534,7 @@ export default function CalendarView({
   const [lastTapTime, setLastTapTime] = useState<number>(0);
   const [lastTapDate, setLastTapDate] = useState<Date | null>(null);
   const isMobile = useIsMobile();
+  const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -631,6 +642,8 @@ export default function CalendarView({
       console.error('Error downloading calendar:', error);
     });
   };
+
+  const lessonComments = viewCommentsLessonId ? getLessonsForDate(new Date(viewCommentsLessonId))[0] : null;
 
   return (
     <Card className="w-full h-full" data-testid="calendar-view">
@@ -751,14 +764,14 @@ export default function CalendarView({
                     {dayLessons.slice(0, 2).map((lesson) => {
                       const isOtherStudent =
                         focusedStudentId && lesson.studentId !== focusedStudentId;
-                      
+
                       return (
                         <div
                           key={lesson.id}
                           className="h-1 rounded-full"
-                          style={{ 
-                            backgroundColor: isOtherStudent 
-                              ? '#9ca3af' 
+                          style={{
+                            backgroundColor: isOtherStudent
+                              ? '#9ca3af'
                               : (lesson.studentColor || '#3b82f6')
                           }}
                         />
@@ -911,6 +924,38 @@ export default function CalendarView({
           </div>
         )}
       </CardContent>
+
+      <Dialog open={!!viewCommentsLessonId} onOpenChange={() => setViewCommentsLessonId(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Comments for Lesson</DialogTitle>
+          </DialogHeader>
+          {lessonComments && (
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {lessonComments.comments.map((comment) => (
+                  <div key={comment.id} className="border-l-2 border-primary/20 pl-2">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-medium">{comment.title}</p>
+                      {comment.visibleToStudent === 1 && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">
+                          Visible
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {comment.content}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
