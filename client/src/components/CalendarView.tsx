@@ -876,6 +876,16 @@ export default function CalendarView({
                 })}
               </div>
             )}
+            {!focusedStudentId && (
+              <Button
+                className="w-full mt-4"
+                onClick={() => onDateClick(selectedMobileDate)}
+                data-testid="button-book-lesson-mobile"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Book Lesson
+              </Button>
+            )}
           </div>
         )}
       </CardContent>
