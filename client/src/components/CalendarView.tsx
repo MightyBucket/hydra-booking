@@ -144,55 +144,61 @@ const LessonWithComments = ({
           <div className="truncate text-muted-foreground text-sm sm:text-xs leading-tight">{lesson.subject}</div>
         </div>
 
-        {!isStudentView && (<DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 sm:h-6 sm:w-6 opacity-0 sm:group-hover:opacity-100 transition-opacity absolute top-1 right-1"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation();
-              }}
-            >
-              <ChevronDown className="h-4 w-4 sm:h-4 sm:w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => onUpdatePaymentStatus?.(lesson.id, "pending")}
-              className={
-                lesson.paymentStatus === "pending" ? "bg-accent" : ""
-              }
-            >
-              <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
-              Pending
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onUpdatePaymentStatus?.(lesson.id, "paid")}
-              className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
-            >
-              <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
-              Paid
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onUpdatePaymentStatus?.(lesson.id, "unpaid")}
-              className={
-                lesson.paymentStatus === "unpaid" ? "bg-accent" : ""
-              }
-            >
-              <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
-              Unpaid
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onUpdatePaymentStatus?.(lesson.id, "free")}
-              className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
-            >
-              <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
-              Free
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>)}
-      </div>
+        <div className="flex items-center gap-1 mt-1">
+          {!isStudentView && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-auto text-[10px] sm:text-xs font-medium flex items-center gap-0.5`}
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  {lesson.paymentStatus}
+                  <ChevronDown className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => onUpdatePaymentStatus?.(lesson.id, "pending")}
+                  className={
+                    lesson.paymentStatus === "pending" ? "bg-accent" : ""
+                  }
+                >
+                  <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
+                  Pending
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onUpdatePaymentStatus?.(lesson.id, "paid")}
+                  className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
+                >
+                  <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
+                  Paid
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onUpdatePaymentStatus?.(lesson.id, "unpaid")}
+                  className={
+                    lesson.paymentStatus === "unpaid" ? "bg-accent" : ""
+                  }
+                >
+                  <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
+                  Unpaid
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onUpdatePaymentStatus?.(lesson.id, "free")}
+                  className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
+                >
+                  <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
+                  Free
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+
+        </div>
 
       <div className="flex items-center gap-1 mt-2">
         {lesson.lessonLink && (
