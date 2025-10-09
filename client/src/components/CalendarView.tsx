@@ -76,13 +76,13 @@ interface CalendarViewProps {
 
 // Helper function to detect and linkify URLs
 const linkifyText = (text: string): JSX.Element => {
-  const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;
+  const urlRegex = /(https?:\/\/[^\s]+)/gi;
   const parts = text.split(urlRegex);
   return (
     <>
       {parts.map((part, index) => {
-        // Check if the part is a URL
-        if (index % 2 === 1) {
+        // Check if the part matches a URL
+        if (part.match(urlRegex)) {
           return (
             <a
               key={index}
@@ -984,7 +984,7 @@ export default function CalendarView({
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {comment.content}
+                          {linkifyText(comment.content)}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-1">
                           {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
