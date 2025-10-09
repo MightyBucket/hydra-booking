@@ -139,7 +139,13 @@ const LessonWithComments = ({
             )}
           </span>
           {hasComments && (
-            <div className="flex items-center gap-0.5 ml-auto">
+            <div 
+              className="flex items-center gap-0.5 ml-auto cursor-pointer hover:opacity-70 transition-opacity"
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                setViewCommentsLessonId(lesson.id);
+              }}
+            >
               <MessageSquare className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
               <span className="text-xs sm:text-[10px] font-medium">{comments.length}</span>
             </div>
