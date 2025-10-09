@@ -34,6 +34,7 @@ import ThemeToggle from "./components/ThemeToggle";
 import StudentCard from "./components/StudentCard";
 import LessonCard from "./components/LessonCard";
 import LessonCardWithComments from "./components/LessonCardWithComments";
+import LessonWithComments from "./components/LessonWithComments";
 import {
   useStudents,
   useCreateStudent,
