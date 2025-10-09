@@ -109,7 +109,7 @@ const LessonWithComments = ({
 
   const lessonContent = (
     <div
-      className="p-1 sm:p-1.5 rounded text-[10px] sm:text-xs hover-elevate group border-l-2"
+      className="p-2 sm:p-1.5 rounded text-xs sm:text-xs hover-elevate group border-l-2"
       style={{
         backgroundColor: `${lesson.studentColor}15`,
         borderLeftColor: lesson.studentColor || "#3b82f6",
@@ -117,9 +117,9 @@ const LessonWithComments = ({
       data-testid={`lesson-${lesson.id}`}
     >
       <div className="cursor-pointer" onClick={onEdit}>
-        <div className="flex items-center gap-0.5 sm:gap-1">
-          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
-          <span className="truncate text-[9px] sm:text-xs">
+        <div className="flex items-center gap-1 sm:gap-1">
+          <Clock className="h-3.5 w-3.5 sm:h-3 sm:w-3 flex-shrink-0" />
+          <span className="truncate text-xs sm:text-xs font-medium">
             {format(lesson.dateTime, "HH:mm")}-
             {format(
               new Date(lesson.dateTime.getTime() + lesson.duration * 60000),
@@ -128,129 +128,103 @@ const LessonWithComments = ({
           </span>
           {hasComments && (
             <div className="flex items-center gap-0.5 ml-auto">
-              <MessageSquare className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-              <span className="text-[9px] sm:text-[10px]">{comments.length}</span>
+              <MessageSquare className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+              <span className="text-xs sm:text-[10px] font-medium">{comments.length}</span>
             </div>
           )}
         </div>
-        <div className="truncate text-muted-foreground text-[9px] sm:text-xs leading-tight mt-0.5">{lesson.subject}</div>
-        <div className="truncate font-medium text-[9px] sm:text-xs leading-tight">{lesson.studentName}</div>
+        <div className="truncate text-muted-foreground text-xs sm:text-xs leading-tight mt-1">{lesson.subject}</div>
+        <div className="truncate font-semibold text-xs sm:text-xs leading-tight mt-0.5">{lesson.studentName}</div>
 
         {!isStudentView && (<DropdownMenu>
           <DropdownMenuTrigger asChild>
-
-            {
-              <button
-                className={`inline-flex items-center rounded-md border px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-0.5 sm:mt-1`}
-                onClick={(e) => e.stopPropagation()}
-                data-testid={`dropdown-payment-status-${lesson.id}`}
-              >
-                {lesson.paymentStatus}
-              </button>
-            }
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-24">
-            <DropdownMenuItem
-              onClick={(e) => {
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 sm:h-6 sm:w-6 opacity-0 sm:group-hover:opacity-100 transition-opacity absolute top-1 right-1"
+              onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "pending");
               }}
-              className={lesson.paymentStatus === "pending" ? "bg-accent" : ""}
-              data-testid={`payment-option-pending-${lesson.id}`}
+            >
+              <ChevronDown className="h-4 w-4 sm:h-4 sm:w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => onUpdatePaymentStatus?.(lesson.id, "pending")}
+              className={
+                lesson.paymentStatus === "pending" ? "bg-accent" : ""
+              }
             >
               <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
               Pending
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "paid");
-              }}
+              onClick={() => onUpdatePaymentStatus?.(lesson.id, "paid")}
               className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
-              data-testid={`payment-option-paid-${lesson.id}`}
             >
               <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
               Paid
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "unpaid");
-              }}
-              className={lesson.paymentStatus === "unpaid" ? "bg-accent" : ""}
-              data-testid={`payment-option-unpaid-${lesson.id}`}
+              onClick={() => onUpdatePaymentStatus?.(lesson.id, "unpaid")}
+              className={
+                lesson.paymentStatus === "unpaid" ? "bg-accent" : ""
+              }
             >
               <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
               Unpaid
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "free");
-              }}
+              onClick={() => onUpdatePaymentStatus?.(lesson.id, "free")}
               className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
-              data-testid={`payment-option-free-${lesson.id}`}
             >
               <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
               Free
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>)}
-
-        {isStudentView &&
-          (<button
-            className={`inline-flex items-center rounded-md border px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-0.5 sm:mt-1`}
-            onClick={(e) => e.stopPropagation()}
-            data-testid={`dropdown-payment-status-${lesson.id}`}
-          >
-            {lesson.paymentStatus}
-          </button>)
-        }
       </div>
 
-      <div className="flex gap-0.5 sm:gap-1 mt-0.5 sm:mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {onJoinLesson && lesson.lessonLink && (
+      <div className="flex items-center gap-1 mt-2">
+        {lesson.lessonLink && (
           <Button
+            variant="outline"
             size="sm"
-            variant="ghost"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
-              onJoinLesson();
+              onJoinLesson?.(lesson.lessonLink!);
             }}
-            data-testid={`button-join-lesson-${lesson.id}`}
-            className="h-6 w-6 sm:h-8 sm:w-8 p-0"
+            className="h-7 flex-1 text-xs sm:text-xs px-2"
           >
-            <ExternalLink className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+            <ExternalLink className="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1 sm:mr-1" />
+            Join
           </Button>
         )}
-
-        {onAddComment && !isStudentView && (
+        {!isStudentView && onAddComment && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
-              onAddComment();
+              onAddComment(lesson.id);
             }}
-            data-testid={`button-add-comment-${lesson.id}`}
-            className="h-6 w-6 sm:h-8 sm:w-8 p-0"
+            className="h-7 w-7 sm:w-7 p-0"
           >
-            <MessageSquare className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+            <MessageSquare className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
           </Button>
         )}
-
-        {onDelete && !isStudentView && (
+        {!isStudentView && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
-              onDelete();
+              onDelete(lesson.id);
             }}
-            data-testid={`button-delete-lesson-${lesson.id}`}
-            className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive"
+            className="h-7 w-7 sm:w-7 p-0 text-destructive hover:text-destructive border-destructive/50"
           >
-            <Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+            <Trash2 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
           </Button>
         )}
       </div>
@@ -266,10 +240,10 @@ const LessonWithComments = ({
       <HoverCardTrigger asChild>
         <div>{lessonContent}</div>
       </HoverCardTrigger>
-      <HoverCardContent 
-        className="w-80 bg-popover border-popover-border" 
+      <HoverCardContent
+        className="w-80 bg-popover border-popover-border"
         style={{ zIndex: 99999 }}
-        side="bottom" 
+        side="bottom"
         align="start"
         sideOffset={8}
       >
@@ -581,7 +555,7 @@ export default function CalendarView({
     setSelectedMobileDate(date);
   };
 
-  const selectedMobileLessons = selectedMobileDate 
+  const selectedMobileLessons = selectedMobileDate
     ? getLessonsForDate(selectedMobileDate)
     : [];
 
@@ -589,12 +563,12 @@ export default function CalendarView({
     const token = localStorage.getItem('sessionId');
     const baseUrl = window.location.origin;
     const icsUrl = `${baseUrl}/api/calendar/ics`;
-    
+
     // Create a temporary link to download the .ics file
     const link = document.createElement('a');
     link.href = icsUrl;
     link.setAttribute('download', 'lessons.ics');
-    
+
     // Add authorization header via fetch and trigger download
     fetch(icsUrl, {
       headers: {
@@ -638,7 +612,7 @@ export default function CalendarView({
                 <span className="sm:hidden ml-1">Sync</span>
               </Button>
             )}
-            
+
             <Button
               variant="outline"
               size="sm"
