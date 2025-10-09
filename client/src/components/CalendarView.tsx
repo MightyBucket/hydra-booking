@@ -709,7 +709,7 @@ export default function CalendarView({
         </div>
       </CardHeader>
 
-      <CardContent className={isMobile ? "px-2 pb-0" : ""}>
+      <CardContent className={isMobile ? "px-0 pb-0" : ""}>
         <div className="grid grid-cols-7 gap-0.5 sm:gap-2 mb-2 sm:mb-4">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
             <div
@@ -835,7 +835,7 @@ export default function CalendarView({
         </div>
 
         {isMobile && selectedMobileDate && (
-          <div className="mt-4 pt-4 pb-4 px-4 -mx-2 border-t border-x border-b rounded-b-lg bg-card">
+          <div className="mt-4 pt-4 pb-4 px-3 border-t border-x border-b rounded-b-lg bg-card">
             <h3 className="text-sm font-semibold mb-3">
               {format(selectedMobileDate, 'EEEE, MMMM d')}
               {selectedMobileLessons.length > 0 && (
