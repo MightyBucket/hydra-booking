@@ -853,7 +853,7 @@ function SchedulePage() {
 
   // Auto-scroll to today's section on mount
   useEffect(() => {
-    const todayDateKey = format(new Date(), 'yyyy-MM-dd');
+    const todayDateKey = format(new Date(), 'yyyy-MM-dd')
     const todayElement = document.querySelector(`[data-date-key="${todayDateKey}"]`);
     if (todayElement) {
       setTimeout(() => {
@@ -943,200 +943,6 @@ function SchedulePage() {
     );
   }
 
-  // Mobile lesson card component matching calendar view style
-  const MobileLessonCard = ({ lesson }: { lesson: Lesson & { studentName: string; studentColor?: string } }) => {
-    const { data: comments = [] } = useCommentsByLesson(lesson.id);
-    const hasComments = comments.length > 0;
-
-    const getPaymentStatusColor = (status: string) => {
-      switch (status) {
-        case "paid":
-          return "bg-lesson-confirmed text-white";
-        case "pending":
-          return "bg-lesson-pending text-black";
-        case "unpaid":
-          return "bg-lesson-cancelled text-white";
-        case "free":
-          return "bg-gray-400 text-white";
-        default:
-          return "bg-secondary";
-      }
-    };
-
-    const lessonContent = (
-      <div
-        className="p-2 rounded text-xs hover-elevate group border-l-2"
-        style={{
-          backgroundColor: `${lesson.studentColor}15`,
-          borderLeftColor: lesson.studentColor || "#3b82f6",
-        }}
-        data-testid={`lesson-${lesson.id}`}
-      >
-        <div
-          className="cursor-pointer"
-          onClick={(e: React.MouseEvent) => {
-            e.stopPropagation();
-            handleEditLesson(lesson);
-          }}
-        >
-          <div className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5 flex-shrink-0" />
-            <span className="truncate text-xs font-medium">
-              {format(lesson.dateTime, "HH:mm")}-
-              {format(
-                new Date(lesson.dateTime.getTime() + lesson.duration * 60000),
-                "HH:mm",
-              )}
-            </span>
-            {hasComments && (
-              <div className="flex items-center gap-0.5 ml-auto">
-                <MessageSquare className="h-3.5 w-3.5" />
-                <span className="text-xs font-medium">{comments.length}</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center justify-between gap-2 mt-1">
-            <div className="truncate font-semibold text-sm leading-tight">{lesson.studentName}</div>
-            <div className="truncate text-muted-foreground text-sm leading-tight">{lesson.subject}</div>
-          </div>
-
-          <div className="flex items-center gap-1 mt-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
-                  onClick={(e) => e.stopPropagation()}
-                  data-testid={`dropdown-payment-status-${lesson.id}`}
-                >
-                  {lesson.paymentStatus}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => handleUpdatePaymentStatus(lesson.id, "pending")}
-                  className={
-                    lesson.paymentStatus === "pending" ? "bg-accent" : ""
-                  }
-                >
-                  <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
-                  Pending
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleUpdatePaymentStatus(lesson.id, "paid")}
-                  className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
-                >
-                  <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
-                  Paid
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleUpdatePaymentStatus(lesson.id, "unpaid")}
-                  className={
-                    lesson.paymentStatus === "unpaid" ? "bg-accent" : ""
-                  }
-                >
-                  <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
-                  Unpaid
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleUpdatePaymentStatus(lesson.id, "free")}
-                  className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
-                >
-                  <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
-                  Free
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1 mt-2">
-          {lesson.lessonLink && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation();
-                handleJoinLesson(lesson);
-              }}
-              className="h-7 flex-1 text-xs px-2"
-            >
-              <ExternalLink className="h-3.5 w-3.5 mr-1" />
-              Join
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              setCommentFormLessonId(lesson.id);
-            }}
-            className="h-7 w-7 p-0"
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              handleDeleteLesson(lesson);
-            }}
-            className="h-7 w-7 p-0 text-destructive hover:text-destructive border-destructive/50"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
-    );
-
-    if (!hasComments) {
-      return lessonContent;
-    }
-
-    return (
-      <HoverCard openDelay={300}>
-        <HoverCardTrigger asChild>
-          <div>{lessonContent}</div>
-        </HoverCardTrigger>
-        <HoverCardContent
-          className="w-80 bg-popover border-popover-border"
-          style={{ zIndex: 99999 }}
-          side="bottom"
-          align="start"
-          sideOffset={8}
-        >
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold">Comments ({comments.length})</h4>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="border-l-2 border-primary/20 pl-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-medium">{comment.title}</p>
-                    {comment.visibleToStudent === 1 && (
-                      <Badge variant="outline" className="text-[10px] px-1 py-0">
-                        Visible
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {comment.content}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {format(new Date(comment.createdAt), "MMM d, h:mm a")}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </HoverCardContent>
-      </HoverCard>
-    );
-  };
-
   return (
     <>
       <Card>
@@ -1184,7 +990,7 @@ function SchedulePage() {
                     <div className="space-y-3 pl-4">
                       {lessons.map((lesson) => (
                         isMobile ? (
-                          <MobileLessonCard key={lesson.id} lesson={lesson} />
+                          <LessonWithComments key={lesson.id} lesson={lesson} onEdit={handleEditLesson} onDelete={handleDeleteLesson} onJoinLesson={handleJoinLesson} onUpdatePaymentStatus={handleUpdatePaymentStatus} onAddComment={(lessonId) => setCommentFormLessonId(lessonId)} onDeleteComment={handleDeleteComment} />
                         ) : (
                           <LessonCardWithComments
                             key={lesson.id}
