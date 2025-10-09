@@ -327,13 +327,15 @@ function CalendarPage() {
                     pricePerHour: parseFloat(selectedLesson.pricePerHour),
                   }
                 : selectedDate
-                ? {
-                    dateTime: selectedDate,
-                  }
+                ? { dateTime: selectedDate }
                 : undefined
             }
             onSubmit={handleLessonSubmit}
-            onCancel={handleLessonCancel}
+            onCancel={() => {
+              setShowLessonForm(false);
+              setSelectedLesson(null);
+              setSelectedDate(null);
+            }}
           />
         </DialogContent>
       </Dialog>
