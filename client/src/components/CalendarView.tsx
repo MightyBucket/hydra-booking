@@ -242,9 +242,9 @@ const LessonWithComments = ({
             size="sm"
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
-              if (hasComments) {
+              {/*if (hasComments) {
                 setViewCommentsLessonId(lesson.id);
-              } else {
+              } else*/} {
                 onAddComment(lesson.id);
               }
             }}
