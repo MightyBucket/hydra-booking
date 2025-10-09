@@ -133,8 +133,10 @@ const LessonWithComments = ({
             </div>
           )}
         </div>
-        <div className="truncate text-muted-foreground text-xs sm:text-xs leading-tight mt-1">{lesson.subject}</div>
-        <div className="truncate font-semibold text-xs sm:text-xs leading-tight mt-0.5">{lesson.studentName}</div>
+        <div className="flex items-center justify-between gap-2 mt-1">
+          <div className="truncate font-semibold text-sm sm:text-xs leading-tight">{lesson.studentName}</div>
+          <div className="truncate text-muted-foreground text-sm sm:text-xs leading-tight">{lesson.subject}</div>
+        </div>
 
         {!isStudentView && (<DropdownMenu>
           <DropdownMenuTrigger asChild>
