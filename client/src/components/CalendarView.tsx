@@ -617,69 +617,78 @@ export default function CalendarView({
 
   return (
     <Card className="w-full h-full" data-testid="calendar-view">
-      <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-4">
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          {format(currentDate, "MMMM yyyy")}
-        </CardTitle>
+      <CardHeader className="space-y-0 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            {format(currentDate, "MMMM yyyy")}
+          </CardTitle>
 
-        <div className="flex items-center gap-2">
-          {!focusedStudentId && (
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            {!focusedStudentId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSyncToCalendar}
+                data-testid="button-sync-calendar"
+                className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
+              >
+                <Download className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Sync to Calendar</span>
+                <span className="sm:hidden ml-1">Sync</span>
+              </Button>
+            )}
+            
             <Button
               variant="outline"
               size="sm"
-              onClick={handleSyncToCalendar}
-              data-testid="button-sync-calendar"
+              onClick={() => setToToday()}
+              data-testid="button-today"
+              className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
             >
-              <Download className="h-4 w-4 mr-2" />
-              Sync to Calendar
+              Today
             </Button>
-          )}
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setToToday()}
-            data-testid="button-today"
-          >
-            Today
-          </Button>
 
-          <div className="flex rounded-md border">
+            <div className="flex rounded-md border">
+              <Button
+                variant={view === "month" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setView("month")}
+                data-testid="button-month-view"
+                className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
+              >
+                Month
+              </Button>
+              <Button
+                variant={view === "week" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setView("week")}
+                data-testid="button-week-view"
+                className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
+              >
+                Week
+              </Button>
+            </div>
+
             <Button
-              variant={view === "month" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setView("month")}
-              data-testid="button-month-view"
+              variant="outline"
+              size="icon"
+              onClick={() => navigateMonth("prev")}
+              data-testid="button-prev-month"
+              className="h-8 w-8 sm:h-9 sm:w-9"
             >
-              Month
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
             <Button
-              variant={view === "week" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setView("week")}
-              data-testid="button-week-view"
+              variant="outline"
+              size="icon"
+              onClick={() => navigateMonth("next")}
+              data-testid="button-next-month"
+              className="h-8 w-8 sm:h-9 sm:w-9"
             >
-              Week
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigateMonth("prev")}
-            data-testid="button-prev-month"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigateMonth("next")}
-            data-testid="button-next-month"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
         </div>
       </CardHeader>
 
