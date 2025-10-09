@@ -22,6 +22,33 @@ import {
 import { useCommentsByLesson } from "@/hooks/useComments";
 import { format as formatDate } from "date-fns";
 import LessonWithComments from "@/components/LessonWithComments";
+
+// Helper function to detect and linkify URLs
+const linkifyText = (text: string): JSX.Element => {
+  const urlRegex = /(https?:\/\/[^\s]+)/gi;
+  const parts = text.split(urlRegex);
+  return (
+    <>
+      {parts.map((part, index) => {
+        // Check if the part matches a URL
+        if (part.match(urlRegex)) {
+          return (
+            <a
+              key={index}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline"
+            >
+              {part}
+            </a>
+          );
+        }
+        return part;
+      })}
+    </>
+  );
+};
 import {
   format,
   startOfWeek,
