@@ -535,6 +535,7 @@ export default function CalendarView({
   const [lastTapDate, setLastTapDate] = useState<Date | null>(null);
   const isMobile = useIsMobile();
   const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
+  const { data: viewCommentsData = [] } = useCommentsByLesson(viewCommentsLessonId || '');
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -643,7 +644,7 @@ export default function CalendarView({
     });
   };
 
-  const lessonComments = viewCommentsLessonId ? getLessonsForDate(new Date(viewCommentsLessonId))[0] : null;
+  const viewedLesson = viewCommentsLessonId ? lessons.find(l => l.id === viewCommentsLessonId) : null;
 
   return (
     <Card className="w-full h-full" data-testid="calendar-view">
@@ -928,12 +929,12 @@ export default function CalendarView({
       <Dialog open={!!viewCommentsLessonId} onOpenChange={() => setViewCommentsLessonId(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Comments for Lesson</DialogTitle>
+            <DialogTitle>Comments</DialogTitle>
           </DialogHeader>
-          {lessonComments && (
+          {viewedLesson && viewCommentsData.length > 0 && (
             <div className="grid gap-4 py-4">
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {lessonComments.comments.map((comment) => (
+                {viewCommentsData.map((comment) => (
                   <div key={comment.id} className="border-l-2 border-primary/20 pl-2">
                     <div className="flex items-center gap-2">
                       <p className="text-xs font-medium">{comment.title}</p>
