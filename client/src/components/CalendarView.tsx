@@ -74,6 +74,33 @@ interface CalendarViewProps {
   focusedStudentId?: string;
 }
 
+// Helper function to detect and linkify URLs
+const linkifyText = (text: string): JSX.Element => {
+  const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;
+  const parts = text.split(urlRegex);
+  return (
+    <>
+      {parts.map((part, index) => {
+        // Check if the part is a URL
+        if (index % 2 === 1) {
+          return (
+            <a
+              key={index}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline"
+            >
+              {part}
+            </a>
+          );
+        }
+        return part;
+      })}
+    </>
+  );
+};
+
 // Component to show lesson with comment hover
 const LessonWithComments = ({
   lesson,
@@ -141,7 +168,7 @@ const LessonWithComments = ({
             )}
           </span>
           {hasComments && (
-            <div 
+            <div
               className="flex items-center gap-0.5 ml-auto cursor-pointer hover:opacity-70 transition-opacity"
               onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
@@ -303,8 +330,8 @@ const LessonWithComments = ({
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {comment.content}
-                </p>
+                    {linkifyText(comment.content)}
+                  </p>
                 <p className="text-[10px] text-muted-foreground mt-1">
                   {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
                 </p>
@@ -975,7 +1002,7 @@ export default function CalendarView({
                               },
                               credentials: "include",
                             });
-                            
+
                             if (response.ok) {
                               // Close dialog if this was the last comment
                               if (viewCommentsData.length === 1) {
