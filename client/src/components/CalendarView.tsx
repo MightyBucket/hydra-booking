@@ -946,20 +946,51 @@ export default function CalendarView({
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {viewCommentsData.map((comment) => (
                   <div key={comment.id} className="border-l-2 border-primary/20 pl-2">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-medium">{comment.title}</p>
-                      {comment.visibleToStudent === 1 && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0">
-                          Visible
-                        </Badge>
-                      )}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-medium">{comment.title}</p>
+                          {comment.visibleToStudent === 1 && (
+                            <Badge variant="outline" className="text-[10px] px-1 py-0">
+                              Visible
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {comment.content}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(`/api/comments/${comment.id}`, {
+                              method: "DELETE",
+                              headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('sessionId') || ''}`,
+                              },
+                              credentials: "include",
+                            });
+                            
+                            if (response.ok) {
+                              // Close dialog if this was the last comment
+                              if (viewCommentsData.length === 1) {
+                                setViewCommentsLessonId(null);
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Error deleting comment:', error);
+                          }
+                        }}
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {comment.content}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
-                    </p>
                   </div>
                 ))}
               </div>
