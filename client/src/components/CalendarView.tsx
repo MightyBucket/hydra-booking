@@ -649,7 +649,7 @@ export default function CalendarView({
               Today
             </Button>
 
-            <div className="flex rounded-md border">
+            {/*<div className="flex rounded-md border">
               <Button
                 variant={view === "month" ? "default" : "ghost"}
                 size="sm"
@@ -668,7 +668,7 @@ export default function CalendarView({
               >
                 Week
               </Button>
-            </div>
+            </div>*/}
 
             <Button
               variant="outline"
