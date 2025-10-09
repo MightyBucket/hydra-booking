@@ -55,6 +55,29 @@ import {
 import CommentForm from "./components/CommentForm";
 import { format } from "date-fns";
 import NotFound from "@/pages/not-found";
+import { useQueryClient } from "@tanstack/react-query";
+import { Lesson } from "./types/Lesson";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Clock,
+  ExternalLink,
+  Trash2,
+  Edit,
+  ChevronDown,
+  MessageSquare,
+} from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { Badge } from "@/components/ui/badge";
+
 
 function CalendarPage() {
   const [showLessonForm, setShowLessonForm] = useState(false);
@@ -96,7 +119,7 @@ function CalendarPage() {
     const originalLesson = (lessonsData as any[]).find(
       (l: any) => l.id === lesson.id,
     );
-    
+
     if (originalLesson) {
       setSelectedLesson(originalLesson);
       setShowLessonForm(true);
@@ -251,7 +274,7 @@ function CalendarPage() {
         // Find all lessons with same day of week and time in the future
         const lessonDate = new Date(lessonToDelete.dateTime);
         const dayOfWeek = lessonDate.getDay();
-        const timeString = lessonDate.toTimeString().substring(0, 8); // HH:MM:SS
+        const timeString = lessonToDelete.dateTime.slice(11, 19); // HH:MM:SS
 
         const futureRecurringLessons = (lessonsData as any[]).filter(
           (lesson: any) => {
@@ -259,7 +282,7 @@ function CalendarPage() {
             return (
               lessonDateTime >= lessonDate && // Same date or future
               lessonDateTime.getDay() === dayOfWeek && // Same day of week
-              lessonDateTime.toTimeString().substring(0, 8) === timeString && // Same time
+              lessonDateTime.toISOString().slice(11, 19) === timeString && // Same time
               lesson.studentId === lessonToDelete.studentId // Same student
             );
           },
@@ -693,13 +716,21 @@ function SchedulePage() {
   const [lessonToDelete, setLessonToDelete] = useState<any>(null);
   const [deleteAllFuture, setDeleteAllFuture] = useState(false);
   const [showCommentForm, setShowCommentForm] = useState(false);
-  const [selectedLessonForComment, setSelectedLessonForComment] = useState<string | null>(null);
+  const [commentFormLessonId, setCommentFormLessonId] = useState<string | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
+  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [editingLesson, setEditingLesson] = useState<Lesson | undefined>(undefined);
+  const [isScheduleFormOpen, setIsScheduleFormOpen] = useState(false);
 
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
   const { data: studentsData = [] } = useStudents();
   const updateLessonMutation = useUpdateLesson();
   const deleteLessonMutation = useDeleteLesson();
+  const createCommentMutation = useCreateComment();
+  const deleteCommentMutation = useDeleteComment();
 
   // Transform and filter lessons starting from last week
   const lastWeek = new Date();
@@ -734,30 +765,24 @@ function SchedulePage() {
     return groups;
   }, {});
 
-  const handleEditLesson = (lessonId: string) => {
-    const originalLesson = (lessonsData as any[]).find(
-      (l: any) => l.id === lessonId,
-    );
-    if (originalLesson) {
-      setSelectedLesson(originalLesson);
-      setShowLessonForm(true);
+  const handleEditLesson = (lesson: Lesson) => {
+    setEditingLesson(lesson);
+    setShowLessonForm(true);
+  };
+
+  const handleDeleteLesson = (lesson: Lesson) => {
+    setLessonToDelete(lesson);
+    setDeleteAllFuture(false);
+    setShowDeleteDialog(true);
+  };
+
+  const handleJoinLesson = (lesson: Lesson) => {
+    if (lesson.lessonLink) {
+      window.open(lesson.lessonLink, "_blank");
     }
   };
 
-  const handleDeleteLesson = (lessonId: string) => {
-    const lesson = displayLessons.find((l: any) => l.id === lessonId);
-    if (lesson) {
-      setLessonToDelete(lesson);
-      setDeleteAllFuture(false);
-      setShowDeleteDialog(true);
-    }
-  };
-
-  const handleJoinLesson = (link: string) => {
-    window.open(link, "_blank");
-  };
-
-  const handleUpdatePaymentStatus = async (lessonId: string, status: 'pending' | 'paid' | 'overdue') => {
+  const handleUpdatePaymentStatus = async (lessonId: string, status: 'pending' | 'paid' | 'unpaid' | 'free') => {
     try {
       const lessonToUpdate = (lessonsData as any[]).find((l: any) => l.id === lessonId);
       if (lessonToUpdate) {
@@ -781,19 +806,16 @@ function SchedulePage() {
   };
 
   const handleAddComment = (lessonId: string) => {
-    setSelectedLessonForComment(lessonId);
+    setCommentFormLessonId(lessonId);
     setShowCommentForm(true);
   };
 
-  const createCommentMutation = useCreateComment();
-  const deleteCommentMutation = useDeleteComment();
-
   const handleCommentSubmit = async (data: { title: string; content: string; visibleToStudent: boolean }) => {
-    if (!selectedLessonForComment) return;
+    if (!commentFormLessonId) return;
 
     try {
       await createCommentMutation.mutateAsync({
-        lessonId: selectedLessonForComment,
+        lessonId: commentFormLessonId,
         title: data.title,
         content: data.content,
         visibleToStudent: data.visibleToStudent ? 1 : 0,
@@ -803,7 +825,7 @@ function SchedulePage() {
         description: "Comment added successfully",
       });
       setShowCommentForm(false);
-      setSelectedLessonForComment(null);
+      setCommentFormLessonId(null);
     } catch (error) {
       toast({
         title: "Error",
@@ -848,16 +870,16 @@ function SchedulePage() {
         pricePerHour: lessonData.pricePerHour.toString(),
       };
 
-      if (selectedLesson) {
+      if (editingLesson) {
         await updateLessonMutation.mutateAsync({
-          id: selectedLesson.id,
+          id: editingLesson.id,
           ...formattedData,
         });
         toast({ title: "Success", description: "Lesson updated successfully" });
       }
 
       setShowLessonForm(false);
-      setSelectedLesson(null);
+      setEditingLesson(undefined);
     } catch (error) {
       toast({
         title: "Error",
@@ -874,7 +896,7 @@ function SchedulePage() {
       if (deleteAllFuture) {
         const lessonDate = new Date(lessonToDelete.dateTime);
         const dayOfWeek = lessonDate.getDay();
-        const timeString = lessonDate.toTimeString().substring(0, 8);
+        const timeString = lessonToDelete.dateTime.slice(11, 19);
 
         const futureRecurringLessons = (lessonsData as any[]).filter(
           (lesson: any) => {
@@ -882,7 +904,7 @@ function SchedulePage() {
             return (
               lessonDateTime >= lessonDate &&
               lessonDateTime.getDay() === dayOfWeek &&
-              lessonDateTime.toTimeString().substring(0, 8) === timeString &&
+              lessonDateTime.toISOString().slice(11, 19) === timeString &&
               lesson.studentId === lessonToDelete.studentId
             );
           },
@@ -921,6 +943,200 @@ function SchedulePage() {
     );
   }
 
+  // Mobile lesson card component matching calendar view style
+  const MobileLessonCard = ({ lesson }: { lesson: Lesson & { studentName: string; studentColor?: string } }) => {
+    const { data: comments = [] } = useCommentsByLesson(lesson.id);
+    const hasComments = comments.length > 0;
+
+    const getPaymentStatusColor = (status: string) => {
+      switch (status) {
+        case "paid":
+          return "bg-lesson-confirmed text-white";
+        case "pending":
+          return "bg-lesson-pending text-black";
+        case "unpaid":
+          return "bg-lesson-cancelled text-white";
+        case "free":
+          return "bg-gray-400 text-white";
+        default:
+          return "bg-secondary";
+      }
+    };
+
+    const lessonContent = (
+      <div
+        className="p-2 rounded text-xs hover-elevate group border-l-2"
+        style={{
+          backgroundColor: `${lesson.studentColor}15`,
+          borderLeftColor: lesson.studentColor || "#3b82f6",
+        }}
+        data-testid={`lesson-${lesson.id}`}
+      >
+        <div
+          className="cursor-pointer"
+          onClick={(e: React.MouseEvent) => {
+            e.stopPropagation();
+            handleEditLesson(lesson);
+          }}
+        >
+          <div className="flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+            <span className="truncate text-xs font-medium">
+              {format(lesson.dateTime, "HH:mm")}-
+              {format(
+                new Date(lesson.dateTime.getTime() + lesson.duration * 60000),
+                "HH:mm",
+              )}
+            </span>
+            {hasComments && (
+              <div className="flex items-center gap-0.5 ml-auto">
+                <MessageSquare className="h-3.5 w-3.5" />
+                <span className="text-xs font-medium">{comments.length}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-2 mt-1">
+            <div className="truncate font-semibold text-sm leading-tight">{lesson.studentName}</div>
+            <div className="truncate text-muted-foreground text-sm leading-tight">{lesson.subject}</div>
+          </div>
+
+          <div className="flex items-center gap-1 mt-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid={`dropdown-payment-status-${lesson.id}`}
+                >
+                  {lesson.paymentStatus}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => handleUpdatePaymentStatus(lesson.id, "pending")}
+                  className={
+                    lesson.paymentStatus === "pending" ? "bg-accent" : ""
+                  }
+                >
+                  <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
+                  Pending
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleUpdatePaymentStatus(lesson.id, "paid")}
+                  className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
+                >
+                  <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
+                  Paid
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleUpdatePaymentStatus(lesson.id, "unpaid")}
+                  className={
+                    lesson.paymentStatus === "unpaid" ? "bg-accent" : ""
+                  }
+                >
+                  <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
+                  Unpaid
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleUpdatePaymentStatus(lesson.id, "free")}
+                  className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
+                >
+                  <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
+                  Free
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 mt-2">
+          {lesson.lessonLink && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                handleJoinLesson(lesson);
+              }}
+              className="h-7 flex-1 text-xs px-2"
+            >
+              <ExternalLink className="h-3.5 w-3.5 mr-1" />
+              Join
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              setCommentFormLessonId(lesson.id);
+            }}
+            className="h-7 w-7 p-0"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleDeleteLesson(lesson);
+            }}
+            className="h-7 w-7 p-0 text-destructive hover:text-destructive border-destructive/50"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+    );
+
+    if (!hasComments) {
+      return lessonContent;
+    }
+
+    return (
+      <HoverCard openDelay={300}>
+        <HoverCardTrigger asChild>
+          <div>{lessonContent}</div>
+        </HoverCardTrigger>
+        <HoverCardContent
+          className="w-80 bg-popover border-popover-border"
+          style={{ zIndex: 99999 }}
+          side="bottom"
+          align="start"
+          sideOffset={8}
+        >
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold">Comments ({comments.length})</h4>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="border-l-2 border-primary/20 pl-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-medium">{comment.title}</p>
+                    {comment.visibleToStudent === 1 && (
+                      <Badge variant="outline" className="text-[10px] px-1 py-0">
+                        Visible
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {comment.content}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </HoverCardContent>
+      </HoverCard>
+    );
+  };
+
   return (
     <>
       <Card>
@@ -941,7 +1157,7 @@ function SchedulePage() {
                 const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
 
                 // Check if this is the first lesson of a new month
-                const isFirstLessonOfMonth = index === 0 || 
+                const isFirstLessonOfMonth = index === 0 ||
                   format(date, 'yyyy-MM') !== format(new Date(Object.keys(groupedLessons)[index - 1]), 'yyyy-MM');
 
                 return (
@@ -966,20 +1182,21 @@ function SchedulePage() {
                     </div>
 
                     <div className="space-y-3 pl-4">
-                      {lessons.map((lesson: any) => (
-                        <LessonCardWithComments
-                          key={lesson.id}
-                          lesson={{
-                            ...lesson,
-                            studentColor: lesson.studentColor
-                          }}
-                          onEdit={handleEditLesson}
-                          onDelete={handleDeleteLesson}
-                          onJoinLesson={lesson.lessonLink ? handleJoinLesson : undefined}
-                          onUpdatePaymentStatus={handleUpdatePaymentStatus}
-                          onAddComment={handleAddComment}
-                          onDeleteComment={handleDeleteComment}
-                        />
+                      {lessons.map((lesson) => (
+                        isMobile ? (
+                          <MobileLessonCard key={lesson.id} lesson={lesson} />
+                        ) : (
+                          <LessonCardWithComments
+                            key={lesson.id}
+                            lesson={lesson}
+                            onEdit={handleEditLesson}
+                            onDelete={handleDeleteLesson}
+                            onJoinLesson={handleJoinLesson}
+                            onUpdatePaymentStatus={handleUpdatePaymentStatus}
+                            onAddComment={(lessonId) => setCommentFormLessonId(lessonId)}
+                            onDeleteComment={handleDeleteComment}
+                          />
+                        )
                       ))}
                     </div>
                   </div>
@@ -993,23 +1210,25 @@ function SchedulePage() {
       <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Lesson</DialogTitle>
+            <DialogTitle>{editingLesson ? "Edit Lesson" : "Schedule New Lesson"}</DialogTitle>
           </DialogHeader>
           <LessonForm
             students={studentsData as any[]}
             initialData={
-              selectedLesson
+              editingLesson
                 ? {
-                    ...selectedLesson,
-                    dateTime: new Date(selectedLesson.dateTime),
-                    pricePerHour: parseFloat(selectedLesson.pricePerHour),
+                    ...editingLesson,
+                    dateTime: new Date(editingLesson.dateTime),
+                    pricePerHour: parseFloat(editingLesson.pricePerHour),
                   }
+                : selectedDate
+                ? { dateTime: selectedDate }
                 : undefined
             }
             onSubmit={handleLessonSubmit}
             onCancel={() => {
               setShowLessonForm(false);
-              setSelectedLesson(null);
+              setEditingLesson(undefined);
             }}
           />
         </DialogContent>
@@ -1065,7 +1284,7 @@ function SchedulePage() {
             onSubmit={handleCommentSubmit}
             onCancel={() => {
               setShowCommentForm(false);
-              setSelectedLessonForComment(null);
+              setCommentFormLessonId(null);
             }}
           />
         </DialogContent>
