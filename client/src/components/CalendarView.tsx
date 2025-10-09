@@ -726,13 +726,22 @@ export default function CalendarView({
 
                 {isMobile ? (
                   <div className="space-y-0.5">
-                    {dayLessons.slice(0, 2).map((lesson) => (
-                      <div
-                        key={lesson.id}
-                        className="h-1 rounded-full"
-                        style={{ backgroundColor: lesson.studentColor || '#3b82f6' }}
-                      />
-                    ))}
+                    {dayLessons.slice(0, 2).map((lesson) => {
+                      const isOtherStudent =
+                        focusedStudentId && lesson.studentId !== focusedStudentId;
+                      
+                      return (
+                        <div
+                          key={lesson.id}
+                          className="h-1 rounded-full"
+                          style={{ 
+                            backgroundColor: isOtherStudent 
+                              ? '#9ca3af' 
+                              : (lesson.studentColor || '#3b82f6')
+                          }}
+                        />
+                      );
+                    })}
                     {dayLessons.length > 2 && (
                       <div className="text-[8px] text-muted-foreground text-center">
                         +{dayLessons.length - 2}
