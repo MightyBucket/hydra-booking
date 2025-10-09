@@ -83,6 +83,7 @@ const LessonWithComments = ({
   onUpdatePaymentStatus,
   onAddComment,
   isStudentView = false,
+  onViewComments,
 }: {
   lesson: Lesson;
   onEdit: () => void;
@@ -94,6 +95,7 @@ const LessonWithComments = ({
   ) => void;
   onAddComment?: () => void;
   isStudentView?: boolean;
+  onViewComments?: (lessonId: string) => void;
 }) => {
   const { data: comments = [] } = useCommentsByLesson(lesson.id);
   const hasComments = comments.length > 0;
@@ -143,7 +145,7 @@ const LessonWithComments = ({
               className="flex items-center gap-0.5 ml-auto cursor-pointer hover:opacity-70 transition-opacity"
               onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
-                setViewCommentsLessonId(lesson.id);
+                onViewComments?.(lesson.id);
               }}
             >
               <MessageSquare className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
@@ -838,6 +840,7 @@ export default function CalendarView({
                               : undefined
                           }
                           isStudentView={!!focusedStudentId}
+                          onViewComments={setViewCommentsLessonId}
                         />
                       );
                     })}
@@ -913,6 +916,7 @@ export default function CalendarView({
                           : undefined
                       }
                       isStudentView={!!focusedStudentId}
+                      onViewComments={setViewCommentsLessonId}
                     />
                   );
                 })}
