@@ -92,9 +92,11 @@ function CalendarPage() {
   });
 
   const handleLessonClick = (lesson: any) => {
+    // Find the original lesson data from lessonsData
     const originalLesson = (lessonsData as any[]).find(
       (l: any) => l.id === lesson.id,
     );
+    
     if (originalLesson) {
       setSelectedLesson(originalLesson);
       setShowLessonForm(true);
