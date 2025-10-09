@@ -1126,7 +1126,7 @@ function SchedulePage() {
                     {comment.content}
                   </p>
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
+                    {format(new Date(comment.createdAt), "MMM d, h:mm a")}
                   </p>
                 </div>
               ))}
