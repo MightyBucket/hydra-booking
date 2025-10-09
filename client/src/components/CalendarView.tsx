@@ -116,7 +116,13 @@ const LessonWithComments = ({
       }}
       data-testid={`lesson-${lesson.id}`}
     >
-      <div className="cursor-pointer" onClick={onEdit}>
+      <div 
+        className="cursor-pointer" 
+        onClick={(e: React.MouseEvent) => {
+          e.stopPropagation();
+          onEdit();
+        }}
+      >
         <div className="flex items-center gap-1 sm:gap-1">
           <Clock className="h-3.5 w-3.5 sm:h-3 sm:w-3 flex-shrink-0" />
           <span className="truncate text-xs sm:text-xs font-medium">
