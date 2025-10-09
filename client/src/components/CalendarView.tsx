@@ -521,6 +521,8 @@ export default function CalendarView({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"month" | "week">("month");
   const [selectedMobileDate, setSelectedMobileDate] = useState<Date | null>(null);
+  const [lastTapTime, setLastTapTime] = useState<number>(0);
+  const [lastTapDate, setLastTapDate] = useState<Date | null>(null);
   const isMobile = useIsMobile();
 
   const monthStart = startOfMonth(currentDate);
@@ -573,7 +575,27 @@ export default function CalendarView({
   };
 
   const handleMobileDateClick = (date: Date) => {
-    setSelectedMobileDate(date);
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300; // milliseconds
+
+    // Check if this is a double-tap on the same date
+    if (
+      !focusedStudentId &&
+      lastTapDate &&
+      isSameDay(lastTapDate, date) &&
+      now - lastTapTime < DOUBLE_TAP_DELAY
+    ) {
+      // Double-tap detected - open booking form
+      onDateClick(date);
+      // Reset tap tracking
+      setLastTapTime(0);
+      setLastTapDate(null);
+    } else {
+      // Single tap - just select the date
+      setSelectedMobileDate(date);
+      setLastTapTime(now);
+      setLastTapDate(date);
+    }
   };
 
   const selectedMobileLessons = selectedMobileDate
