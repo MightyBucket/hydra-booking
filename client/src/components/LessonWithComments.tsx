@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -6,7 +5,13 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card';
-import { Clock, ExternalLink, Trash2, MessageSquare } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MessageSquare, Clock, Trash2, ChevronDown, ExternalLink } from 'lucide-react';
 import { useCommentsByLesson } from '@/hooks/useComments';
 import { format as formatDate } from 'date-fns';
 
@@ -22,6 +27,21 @@ interface Lesson {
   pricePerHour: number;
   lessonLink?: string;
 }
+
+const getPaymentStatusColor = (status: string) => {
+  switch (status) {
+    case "paid":
+      return "bg-lesson-confirmed text-white";
+    case "pending":
+      return "bg-lesson-pending text-black";
+    case "unpaid":
+      return "bg-lesson-cancelled text-white";
+    case "free":
+      return "bg-gray-400 text-white";
+    default:
+      return "bg-secondary";
+  }
+};
 
 interface LessonWithCommentsProps {
   lesson: Lesson;
@@ -130,7 +150,7 @@ export default function LessonWithComments({
             className="h-7 flex-1 text-xs sm:text-xs px-2"
           >
             <ExternalLink className="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1 sm:mr-1" />
-            
+
           </Button>
         )}
         {!isStudentView && onAddComment && (
@@ -160,17 +180,61 @@ export default function LessonWithComments({
           </Button>
         )}
         {!isStudentView && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="h-7 w-7 sm:w-7 p-0 text-destructive hover:text-destructive border-destructive/50"
-          >
-            t
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-7 text-xs font-medium border-0`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {lesson.paymentStatus}
+                <ChevronDown className="ml-1 h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-24">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdatePaymentStatus(lesson.id, "pending");
+                }}
+                className={lesson.paymentStatus === "pending" ? "bg-accent" : ""}
+              >
+                <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
+                Pending
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdatePaymentStatus(lesson.id, "paid");
+                }}
+                className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
+              >
+                <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
+                Paid
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdatePaymentStatus(lesson.id, "unpaid");
+                }}
+                className={lesson.paymentStatus === "unpaid" ? "bg-accent" : ""}
+              >
+                <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
+                Unpaid
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdatePaymentStatus(lesson.id, "free");
+                }}
+                className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
+              >
+                <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
+                Free
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </div>
