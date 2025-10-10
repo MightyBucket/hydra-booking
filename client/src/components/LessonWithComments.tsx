@@ -130,7 +130,7 @@ export default function LessonWithComments({
             className="h-7 flex-1 text-xs sm:text-xs px-2"
           >
             <ExternalLink className="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1 sm:mr-1" />
-            Join
+            
           </Button>
         )}
         {!isStudentView && onAddComment && (
@@ -157,6 +157,19 @@ export default function LessonWithComments({
             className="h-7 w-7 sm:w-7 p-0 text-destructive hover:text-destructive border-destructive/50"
           >
             <Trash2 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+          </Button>
+        )}
+        {!isStudentView && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="h-7 w-7 sm:w-7 p-0 text-destructive hover:text-destructive border-destructive/50"
+          >
+            t
           </Button>
         )}
       </div>
