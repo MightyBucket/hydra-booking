@@ -742,33 +742,35 @@ export default function CalendarView({
                           {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={async () => {
-                          try {
-                            const response = await fetch(`/api/comments/${comment.id}`, {
-                              method: "DELETE",
-                              headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('sessionId') || ''}`,
-                              },
-                              credentials: "include",
-                            });
+                      {!focusedStudentId && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(`/api/comments/${comment.id}`, {
+                                method: "DELETE",
+                                headers: {
+                                  'Authorization': `Bearer ${localStorage.getItem('sessionId') || ''}`,
+                                },
+                                credentials: "include",
+                              });
 
-                            if (response.ok) {
-                              // Close dialog if this was the last comment
-                              if (viewCommentsData.length === 1) {
-                                setViewCommentsLessonId(null);
+                              if (response.ok) {
+                                // Close dialog if this was the last comment
+                                if (viewCommentsData.length === 1) {
+                                  setViewCommentsLessonId(null);
+                                }
                               }
+                            } catch (error) {
+                              console.error('Error deleting comment:', error);
                             }
-                          } catch (error) {
-                            console.error('Error deleting comment:', error);
-                          }
-                        }}
-                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                          }}
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
