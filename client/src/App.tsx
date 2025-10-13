@@ -53,6 +53,13 @@ import {
   useCreateComment,
   useDeleteComment,
 } from "./hooks/useComments";
+import {
+  useNotesByStudent,
+  useCreateNote,
+  useUpdateNote,
+  useDeleteNote,
+} from "./hooks/useNotes";
+import NoteForm from "./components/NoteForm";
 import CommentForm from "./components/CommentForm";
 import { format } from "date-fns";
 import NotFound from "@/pages/not-found";
@@ -437,6 +444,10 @@ function StudentsPage() {
   const [selectedStudentForLesson, setSelectedStudentForLesson] =
     useState<any>(null);
   const [studentToDelete, setStudentToDelete] = useState<any>(null);
+  const [showNotesDialog, setShowNotesDialog] = useState(false);
+  const [selectedStudentForNotes, setSelectedStudentForNotes] = useState<string | null>(null);
+  const [showNoteForm, setShowNoteForm] = useState(false);
+  const [editingNote, setEditingNote] = useState<any>(null);
   const { toast } = useToast();
 
   const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
@@ -444,6 +455,10 @@ function StudentsPage() {
   const updateStudentMutation = useUpdateStudent();
   const deleteStudentMutation = useDeleteStudent();
   const createLessonMutation = useCreateLesson();
+  const { data: notesData = [] } = useNotesByStudent(selectedStudentForNotes || '');
+  const createNoteMutation = useCreateNote();
+  const updateNoteMutation = useUpdateNote();
+  const deleteNoteMutation = useDeleteNote();
 
   const handleEditStudent = (studentId: string) => {
     const student = (studentsData as any[]).find(
@@ -475,6 +490,11 @@ function StudentsPage() {
     if (student?.studentId) {
       window.location.href = `/${student.studentId}/calendar`;
     }
+  };
+
+  const handleViewNotes = (studentId: string) => {
+    setSelectedStudentForNotes(studentId);
+    setShowNotesDialog(true);
   };
 
   const handleDeleteStudent = (studentId: string) => {
@@ -575,6 +595,74 @@ function StudentsPage() {
     setSelectedStudentForLesson(null);
   };
 
+  const handleAddNote = () => {
+    setEditingNote(null);
+    setShowNoteForm(true);
+  };
+
+  const handleEditNote = (note: any) => {
+    setEditingNote(note);
+    setShowNoteForm(true);
+  };
+
+  const handleNoteSubmit = async (data: { title: string; content: string }) => {
+    if (!selectedStudentForNotes) return;
+
+    try {
+      if (editingNote) {
+        await updateNoteMutation.mutateAsync({
+          id: editingNote.id,
+          studentId: selectedStudentForNotes,
+          title: data.title,
+          content: data.content,
+        });
+        toast({
+          title: "Success",
+          description: "Note updated successfully",
+        });
+      } else {
+        await createNoteMutation.mutateAsync({
+          studentId: selectedStudentForNotes,
+          title: data.title,
+          content: data.content,
+        });
+        toast({
+          title: "Success",
+          description: "Note added successfully",
+        });
+      }
+      setShowNoteForm(false);
+      setEditingNote(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: editingNote ? "Failed to update note" : "Failed to add note",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!selectedStudentForNotes) return;
+
+    try {
+      await deleteNoteMutation.mutateAsync({
+        id: noteId,
+        studentId: selectedStudentForNotes,
+      });
+      toast({
+        title: "Success",
+        description: "Note deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete note",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (studentsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -609,6 +697,7 @@ function StudentsPage() {
                   onEdit={handleEditStudent}
                   onScheduleLesson={handleScheduleLesson}
                   onViewLessons={handleViewLessons}
+                  onViewNotes={handleViewNotes}
                   onDelete={handleDeleteStudent}
                 />
               ))}
@@ -706,6 +795,75 @@ function StudentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Notes Dialog */}
+      <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Notes for {(studentsData as any[]).find(s => s.id === selectedStudentForNotes)?.firstName} {(studentsData as any[]).find(s => s.id === selectedStudentForNotes)?.lastName || ''}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {showNoteForm ? (
+            <NoteForm
+              initialData={editingNote ? { id: editingNote.id, title: editingNote.title, content: editingNote.content } : undefined}
+              onSubmit={handleNoteSubmit}
+              onCancel={() => {
+                setShowNoteForm(false);
+                setEditingNote(null);
+              }}
+            />
+          ) : (
+            <>
+              <div className="space-y-4">
+                {notesData.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No notes yet. Click "Add Note" to create one.
+                  </p>
+                ) : (
+                  notesData.map((note: any) => (
+                    <div key={note.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm">{note.title}</h4>
+                          <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{note.content}</p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {format(new Date(note.createdAt), 'MMM d, yyyy h:mm a')}
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditNote(note)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteNote(note.id)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="flex justify-end pt-4">
+                <Button onClick={handleAddNote}>
+                  Add Note
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -31,6 +31,7 @@ interface StudentCardProps {
   onEdit: (studentId: string) => void;
   onScheduleLesson: (studentId: string) => void;
   onViewLessons: (studentId: string) => void;
+  onViewNotes: (studentId: string) => void;
   onDelete: (studentId: string) => void;
 }
 
@@ -39,6 +40,7 @@ export default function StudentCard({
   onEdit,
   onScheduleLesson,
   onViewLessons,
+  onViewNotes,
   onDelete,
 }: StudentCardProps) {
   const firstName = student.firstName || "Unknown";
@@ -112,40 +114,51 @@ export default function StudentCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 pt-2">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => onScheduleLesson(student.id)}
-            data-testid={`button-schedule-lesson-${student.id}`}
-          >
-            <Calendar className="h-4 w-4 mr-2" />
-            Schedule
-          </Button>
+        <div className="flex flex-col gap-2 pt-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => onScheduleLesson(student.id)}
+              data-testid={`button-schedule-lesson-${student.id}`}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Schedule
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewLessons(student.id)}
+              data-testid={`button-view-lessons-${student.id}`}
+            >
+              View Lessons
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onEdit(student.id)}
+              data-testid={`button-edit-student-${student.id}`}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDelete(student.id)}
+              data-testid={`button-delete-student-${student.id}`}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onViewLessons(student.id)}
-            data-testid={`button-view-lessons-${student.id}`}
+            onClick={() => onViewNotes(student.id)}
+            data-testid={`button-view-notes-${student.id}`}
+            className="w-full"
           >
-            View Lessons
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onEdit(student.id)}
-            data-testid={`button-edit-student-${student.id}`}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onDelete(student.id)}
-            data-testid={`button-delete-student-${student.id}`}
-            className="text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
+            View Notes
           </Button>
         </div>
       </CardContent>

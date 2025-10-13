@@ -48,9 +48,19 @@ export const comments = pgTable("comments", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// Notes table
+export const notes = pgTable("notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: 'cascade' }),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Relations
 export const studentsRelations = relations(students, ({ many }) => ({
   lessons: many(lessons),
+  notes: many(notes),
 }));
 
 export const lessonsRelations = relations(lessons, ({ one, many }) => ({
@@ -73,6 +83,13 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   lesson: one(lessons, {
     fields: [comments.lessonId],
     references: [lessons.id],
+  }),
+}));
+
+export const notesRelations = relations(notes, ({ one }) => ({
+  student: one(students, {
+    fields: [notes.studentId],
+    references: [students.id],
   }),
 }));
 
@@ -130,6 +147,17 @@ export type RecurringLesson = typeof recurringLessons.$inferSelect;
 
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Comment = typeof comments.$inferSelect;
+
+export const insertNoteSchema = createInsertSchema(notes).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  title: z.string().min(1, "Title is required"),
+  content: z.string().min(1, "Note content is required"),
+});
+
+export type InsertNote = z.infer<typeof insertNoteSchema>;
+export type Note = typeof notes.$inferSelect;
 
 // Legacy user schema for compatibility
 export const users = pgTable("users", {

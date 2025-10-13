@@ -308,6 +308,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Notes routes (protected)
+  app.get("/api/students/:studentId/notes", requireAuth, async (req, res) => {
+    try {
+      const notes = await storage.getNotesByStudent(req.params.studentId);
+      res.json(notes);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+      res.status(500).json({ error: "Failed to fetch notes" });
+    }
+  });
+
+  app.post("/api/students/:studentId/notes", requireAuth, async (req, res) => {
+    try {
+      const { insertNoteSchema } = await import('@shared/schema');
+      const validatedData = insertNoteSchema.parse({
+        ...req.body,
+        studentId: req.params.studentId,
+      });
+      const note = await storage.createNote(validatedData);
+      res.status(201).json(note);
+    } catch (error) {
+      console.error('Error creating note:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create note" });
+    }
+  });
+
+  app.put("/api/notes/:id", requireAuth, async (req, res) => {
+    try {
+      const { insertNoteSchema } = await import('@shared/schema');
+      const updateData = insertNoteSchema.partial().parse(req.body);
+      const note = await storage.updateNote(req.params.id, updateData);
+      if (!note) {
+        return res.status(404).json({ error: "Note not found" });
+      }
+      res.json(note);
+    } catch (error) {
+      console.error('Error updating note:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update note" });
+    }
+  });
+
+  app.delete("/api/notes/:id", requireAuth, async (req, res) => {
+    try {
+      await storage.deleteNote(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      res.status(500).json({ error: "Failed to delete note" });
+    }
+  });
+
   // iCalendar endpoint for calendar sync
   app.get("/api/calendar/ics", requireAuth, async (req, res) => {
     try {
