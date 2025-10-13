@@ -1179,7 +1179,7 @@ function ScheduleCommentsDialog({
         <DialogHeader>
           <DialogTitle>Comments</DialogTitle>
         </DialogHeader>
-        {comments.length > 0 && (
+        {comments.length > 0 ? (
           <div className="grid gap-4 py-4">
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {comments.map((comment) => (
@@ -1188,7 +1188,7 @@ function ScheduleCommentsDialog({
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="text-xs font-medium">{comment.title}</p>
-                        {comment.visibleToStudent === 1 && (
+                        {!isStudentView && comment.visibleToStudent === 1 && (
                           <Badge variant="outline" className="text-[10px] px-1 py-0">
                             Visible
                           </Badge>
@@ -1220,6 +1220,10 @@ function ScheduleCommentsDialog({
                 </div>
               ))}
             </div>
+          </div>
+        ) : (
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            No comments available
           </div>
         )}
       </DialogContent>

@@ -720,7 +720,7 @@ export default function CalendarView({
           <DialogHeader>
             <DialogTitle>Comments</DialogTitle>
           </DialogHeader>
-          {viewedLesson && viewCommentsData.length > 0 && (
+          {viewCommentsData.length > 0 ? (
             <div className="grid gap-4 py-4">
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {viewCommentsData.map((comment) => (
@@ -729,7 +729,7 @@ export default function CalendarView({
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <p className="text-xs font-medium">{comment.title}</p>
-                          {comment.visibleToStudent === 1 && (
+                          {!focusedStudentId && comment.visibleToStudent === 1 && (
                             <Badge variant="outline" className="text-[10px] px-1 py-0">
                               Visible
                             </Badge>
@@ -775,6 +775,10 @@ export default function CalendarView({
                   </div>
                 ))}
               </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              No comments available
             </div>
           )}
         </DialogContent>
