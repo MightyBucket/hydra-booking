@@ -1008,15 +1008,9 @@ function SchedulePage() {
                             lesson={lesson} 
                             onEdit={() => handleEditLesson(lesson.id)} 
                             onDelete={() => handleDeleteLesson(lesson.id)} 
-                            onJoinLesson={lesson.lessonLink ? () => handleJoinLesson(lesson.lessonLink!) : undefined} 
+                            onJoinLesson={lesson.lessonLink ? () => handleJoinLesson(lesson) : undefined} 
                             onUpdatePaymentStatus={handleUpdatePaymentStatus} 
                             onAddComment={() => setCommentFormLessonId(lesson.id)}
-                            onViewComments={(lessonId) => {
-                              const commentsData = comments.filter(c => c.lessonId === lessonId);
-                              if (commentsData.length > 0) {
-                                // You could add a dialog here to view comments if needed
-                              }
-                            }}
                           />
                         ) : (
                           <LessonCardWithComments
