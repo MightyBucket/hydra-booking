@@ -1136,11 +1136,13 @@ function SchedulePage() {
 function ScheduleCommentsDialog({ 
   lessonId, 
   onClose, 
-  onDeleteComment 
+  onDeleteComment,
+  isStudentView = false
 }: { 
   lessonId: string | null; 
   onClose: () => void;
   onDeleteComment: (commentId: string) => void;
+  isStudentView?: boolean;
 }) {
   const { data: comments = [] } = useCommentsByLesson(lessonId || '');
   
@@ -1172,19 +1174,21 @@ function ScheduleCommentsDialog({
                         {format(new Date(comment.createdAt), "MMM d, h:mm a")}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        onDeleteComment(comment.id);
-                        if (comments.length === 1) {
-                          onClose();
-                        }
-                      }}
-                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    {!isStudentView && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          onDeleteComment(comment.id);
+                          if (comments.length === 1) {
+                            onClose();
+                          }
+                        }}
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1301,6 +1305,167 @@ function StudentCalendarPage() {
   );
 }
 
+function StudentSchedulePage() {
+  const params = useParams<{ studentId: string }>();
+  const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
+  const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
+  const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
+
+  // Find the student by their 6-digit studentId
+  const student = (studentsData as any[]).find(
+    (s: any) => s.studentId === params.studentId
+  );
+
+  if (lessonsLoading || studentsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading schedule...
+      </div>
+    );
+  }
+
+  if (!student) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="text-center" data-testid="student-not-found">
+            <h2 className="text-2xl font-bold mb-2" data-testid="text-not-found-title">
+              Student Not Found
+            </h2>
+            <p className="text-muted-foreground" data-testid="text-not-found-message">
+              No student found with ID: {params.studentId}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Filter lessons for only this student, starting from last week
+  const lastWeek = new Date();
+  lastWeek.setDate(lastWeek.getDate() - 7);
+  lastWeek.setHours(0, 0, 0, 0);
+
+  const displayLessons = (lessonsData as any[])
+    .filter((lesson: any) => lesson.studentId === student.id)
+    .map((lesson: any) => {
+      return {
+        ...lesson,
+        dateTime: new Date(lesson.dateTime),
+        studentName: `${student.firstName} ${student.lastName || ""}`,
+        studentColor: student.defaultColor || '#3b82f6',
+        pricePerHour: parseFloat(lesson.pricePerHour),
+      };
+    })
+    .filter((lesson: any) => lesson.dateTime >= lastWeek)
+    .sort((a: any, b: any) => a.dateTime.getTime() - b.dateTime.getTime());
+
+  // Group lessons by date
+  const groupedLessons = displayLessons.reduce((groups: any, lesson: any) => {
+    const dateKey = format(lesson.dateTime, 'yyyy-MM-dd');
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
+    }
+    groups[dateKey].push(lesson);
+    return groups;
+  }, {});
+
+  const handleJoinLesson = (lesson: Lesson) => {
+    if (lesson.lessonLink) {
+      window.open(lesson.lessonLink, "_blank");
+    }
+  };
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Schedule for {student.firstName} {student.lastName || ""} ({displayLessons.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {displayLessons.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No lessons scheduled from last week onwards.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {Object.entries(groupedLessons).map(([dateKey, lessons]: [string, any], index: number) => {
+                const date = new Date(dateKey);
+                const isToday = format(new Date(), 'yyyy-MM-dd') === dateKey;
+                const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+
+                // Check if this is the first lesson of a new month
+                const isFirstLessonOfMonth = index === 0 ||
+                  format(date, 'yyyy-MM') !== format(new Date(Object.keys(groupedLessons)[index - 1]), 'yyyy-MM');
+
+                return (
+                  <div key={dateKey} className="space-y-3" data-date-key={dateKey}>
+                    {isFirstLessonOfMonth && (
+                      <div className="mb-6">
+                        <h2 className="text-2xl font-bold text-foreground mb-2">
+                          {format(date, 'MMMM yyyy')}
+                        </h2>
+                        <div className="h-px bg-border"></div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3">
+                      <h3 className={`text-lg font-semibold ${isToday ? 'text-primary' : isPast ? 'text-muted-foreground' : ''}`}>
+                        {isToday ? 'Today' : format(date, 'EEE d')}
+                      </h3>
+                      <div className="flex-1 h-px bg-border"></div>
+                      <span className="text-sm text-muted-foreground">
+                        {lessons.length} lesson{lessons.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 pl-4">
+                      {lessons.map((lesson) => (
+                        isMobile ? (
+                          <LessonWithComments 
+                            key={lesson.id} 
+                            lesson={lesson} 
+                            onEdit={() => {}}
+                            onDelete={() => {}}
+                            onJoinLesson={lesson.lessonLink ? () => handleJoinLesson(lesson) : undefined}
+                            onUpdatePaymentStatus={() => {}}
+                            onViewComments={setViewCommentsLessonId}
+                            isStudentView={true}
+                          />
+                        ) : (
+                          <LessonCardWithComments
+                            key={lesson.id}
+                            lesson={lesson}
+                            onEdit={() => {}}
+                            onDelete={() => {}}
+                            onJoinLesson={handleJoinLesson}
+                            showCommentActions={false}
+                            isStudentView={true}
+                          />
+                        )
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <ScheduleCommentsDialog 
+        lessonId={viewCommentsLessonId}
+        onClose={() => setViewCommentsLessonId(null)}
+        onDeleteComment={() => {}}
+        isStudentView={true}
+      />
+    </>
+  );
+}
+
 function Router() {
   return (
     <Switch>
@@ -1310,6 +1475,7 @@ function Router() {
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route path="/:studentId/calendar" component={StudentCalendarPage} />
+      <Route path="/:studentId/schedule" component={StudentSchedulePage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -1327,9 +1493,10 @@ function AppContent() {
   const createStudentMutation = useCreateStudent();
   const { toast } = useToast();
 
-  // Check if we're on a student calendar view
+  // Check if we're on a student calendar or schedule view
   const isStudentCalendarView = location.match(/^\/\d{6}\/calendar$/);
-  const shouldShowNavigation = !isStudentCalendarView;
+  const isStudentScheduleView = location.match(/^\/\d{6}\/schedule$/);
+  const shouldShowNavigation = !isStudentCalendarView && !isStudentScheduleView;
 
   const getDefaultDateTime = () => {
     const now = new Date();
@@ -1479,8 +1646,9 @@ function AuthenticatedApp() {
   const [location] = useLocation();
   const { data: authData, isLoading } = useAuth();
 
-  // Allow access to student calendar view without authentication
+  // Allow access to student calendar and schedule views without authentication
   const isStudentCalendarView = location.match(/^\/\d{6}\/calendar$/);
+  const isStudentScheduleView = location.match(/^\/\d{6}\/schedule$/);
 
   if (isLoading) {
     return (
@@ -1491,7 +1659,7 @@ function AuthenticatedApp() {
   }
 
   // Show login form if not authenticated and not on public route
-  if (!isStudentCalendarView && !authData?.authenticated) {
+  if (!isStudentCalendarView && !isStudentScheduleView && !authData?.authenticated) {
     return <LoginForm />;
   }
 
