@@ -766,15 +766,27 @@ function SchedulePage() {
     return groups;
   }, {});
 
-  const handleEditLesson = (lesson: Lesson) => {
-    setEditingLesson(lesson);
-    setShowLessonForm(true);
+  const handleEditLesson = (lessonIdOrLesson: string | Lesson) => {
+    const lesson = typeof lessonIdOrLesson === 'string' 
+      ? (lessonsData as any[]).find((l: any) => l.id === lessonIdOrLesson)
+      : lessonIdOrLesson;
+    
+    if (lesson) {
+      setEditingLesson(lesson);
+      setShowLessonForm(true);
+    }
   };
 
-  const handleDeleteLesson = (lesson: Lesson) => {
-    setLessonToDelete(lesson);
-    setDeleteAllFuture(false);
-    setShowDeleteDialog(true);
+  const handleDeleteLesson = (lessonIdOrLesson: string | Lesson) => {
+    const lesson = typeof lessonIdOrLesson === 'string' 
+      ? (lessonsData as any[]).find((l: any) => l.id === lessonIdOrLesson)
+      : lessonIdOrLesson;
+    
+    if (lesson) {
+      setLessonToDelete(lesson);
+      setDeleteAllFuture(false);
+      setShowDeleteDialog(true);
+    }
   };
 
   const handleJoinLesson = (lesson: Lesson) => {
