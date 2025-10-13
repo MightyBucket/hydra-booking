@@ -121,14 +121,15 @@ export default function LessonWithComments({
           </span>
           {hasComments && (
             <div
-              className="flex items-center gap-0.5 ml-auto cursor-pointer hover:opacity-70 transition-opacity"
+              className="flex items-center gap-0.5 ml-auto cursor-pointer hover:opacity-70 transition-opacity bg-primary/10 rounded px-1"
               onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
                 e.stopPropagation();
                 onViewComments?.(lesson.id);
               }}
             >
-              <MessageSquare className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
-              <span className="text-xs sm:text-[10px] font-medium">{comments.length}</span>
+              <MessageSquare className="h-3.5 w-3.5 sm:h-3 sm:w-3 text-primary" />
+              <span className="text-xs sm:text-[10px] font-medium text-primary">{comments.length}</span>
             </div>
           )}
         </div>
@@ -158,6 +159,7 @@ export default function LessonWithComments({
             variant="outline"
             size="sm"
             onClick={(e: React.MouseEvent) => {
+              e.preventDefault();
               e.stopPropagation();
               onAddComment();
             }}

@@ -991,7 +991,21 @@ function SchedulePage() {
                     <div className="space-y-3 pl-4">
                       {lessons.map((lesson) => (
                         isMobile ? (
-                          <LessonWithComments key={lesson.id} lesson={lesson} onEdit={handleEditLesson} onDelete={handleDeleteLesson} onJoinLesson={handleJoinLesson} onUpdatePaymentStatus={handleUpdatePaymentStatus} onAddComment={(lessonId) => setCommentFormLessonId(lessonId)} onDeleteComment={handleDeleteComment} />
+                          <LessonWithComments 
+                            key={lesson.id} 
+                            lesson={lesson} 
+                            onEdit={() => handleEditLesson(lesson.id)} 
+                            onDelete={() => handleDeleteLesson(lesson.id)} 
+                            onJoinLesson={lesson.lessonLink ? () => handleJoinLesson(lesson.lessonLink!) : undefined} 
+                            onUpdatePaymentStatus={handleUpdatePaymentStatus} 
+                            onAddComment={() => setCommentFormLessonId(lesson.id)}
+                            onViewComments={(lessonId) => {
+                              const commentsData = comments.filter(c => c.lessonId === lessonId);
+                              if (commentsData.length > 0) {
+                                // You could add a dialog here to view comments if needed
+                              }
+                            }}
+                          />
                         ) : (
                           <LessonCardWithComments
                             key={lesson.id}
