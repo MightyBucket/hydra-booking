@@ -1133,6 +1133,33 @@ function SchedulePage() {
   );
 }
 
+// Helper function to detect and linkify URLs
+const linkifyText = (text: string): JSX.Element => {
+  const urlRegex = /(https?:\/\/[^\s]+)/gi;
+  const parts = text.split(urlRegex);
+  return (
+    <>
+      {parts.map((part, index) => {
+        // Check if the part matches a URL
+        if (part.match(urlRegex)) {
+          return (
+            <a
+              key={index}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline"
+            >
+              {part}
+            </a>
+          );
+        }
+        return part;
+      })}
+    </>
+  );
+};
+
 function ScheduleCommentsDialog({ 
   lessonId, 
   onClose, 
@@ -1168,7 +1195,7 @@ function ScheduleCommentsDialog({
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {comment.content}
+                        {linkifyText(comment.content)}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-1">
                         {format(new Date(comment.createdAt), "MMM d, h:mm a")}
