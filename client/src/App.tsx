@@ -823,6 +823,11 @@ function SchedulePage() {
     setShowCommentForm(true);
   };
 
+  const handleAddCommentFromLesson = (lessonId: string) => {
+    setCommentFormLessonId(lessonId);
+    setShowCommentForm(true);
+  };
+
   const handleCommentSubmit = async (data: { title: string; content: string; visibleToStudent: boolean }) => {
     if (!commentFormLessonId) return;
 
@@ -1010,7 +1015,7 @@ function SchedulePage() {
                             onDelete={() => handleDeleteLesson(lesson.id)} 
                             onJoinLesson={lesson.lessonLink ? () => handleJoinLesson(lesson) : undefined} 
                             onUpdatePaymentStatus={handleUpdatePaymentStatus} 
-                            onAddComment={() => setCommentFormLessonId(lesson.id)}
+                            onAddComment={() => handleAddCommentFromLesson(lesson.id)}
                           />
                         ) : (
                           <LessonCardWithComments
