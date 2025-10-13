@@ -182,15 +182,22 @@ export default function LessonWithComments({
         {!isStudentView && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
+              {<Button
                 variant="ghost"
                 size="sm"
                 className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-7 text-xs font-medium border-0`}
                 onClick={(e) => e.stopPropagation()}
               >
-                {lesson.paymentStatus}
-                <ChevronDown className="ml-1 h-3 w-3" />
-              </Button>
+                &nbsp;&nbsp;&nbsp;
+              </Button>}
+              
+              {/*<button
+                className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
+                onClick={(e) => e.stopPropagation()}
+                data-testid={`dropdown-payment-status-${lesson.id}`}
+              >
+                &nbsp;
+              </button>*/}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-24">
               <DropdownMenuItem
