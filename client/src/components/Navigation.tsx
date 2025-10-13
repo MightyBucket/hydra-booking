@@ -19,18 +19,37 @@ interface NavigationProps {
   onAddStudent: () => void;
   lessonCount?: number;
   studentCount?: number;
+  isStudentView?: boolean;
+  studentId?: string;
 }
 
 export default function Navigation({ 
   onAddLesson, 
   onAddStudent, 
   lessonCount = 0, 
-  studentCount = 0 
+  studentCount = 0,
+  isStudentView = false,
+  studentId
 }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
 
-  const navItems = [
+  // Student view navigation items
+  const studentNavItems = studentId ? [
+    {
+      path: `/${studentId}/calendar`,
+      label: 'Calendar',
+      icon: Calendar,
+    },
+    {
+      path: `/${studentId}/schedule`,
+      label: 'Schedule',
+      icon: GraduationCap,
+    },
+  ] : [];
+
+  // Regular navigation items
+  const regularNavItems = [
     {
       path: '/',
       label: 'Calendar',
@@ -60,6 +79,8 @@ export default function Navigation({
       icon: Settings,
     },
   ];
+
+  const navItems = isStudentView ? studentNavItems : regularNavItems;
 
   const isActiveRoute = (path: string) => {
     if (path === '/') return location === '/';
@@ -100,31 +121,33 @@ export default function Navigation({
         </div>
 
         {/* Quick Actions */}
-        <div className="p-4 border-b space-y-2">
-          <Button
-            className="w-full justify-start"
-            onClick={() => {
-              onAddLesson();
-              setIsOpen(false);
-            }}
-            data-testid="button-add-lesson"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Schedule Lesson
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={() => {
-              onAddStudent();
-              setIsOpen(false);
-            }}
-            data-testid="button-add-student"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Student
-          </Button>
-        </div>
+        {!isStudentView && (
+          <div className="p-4 border-b space-y-2">
+            <Button
+              className="w-full justify-start"
+              onClick={() => {
+                onAddLesson();
+                setIsOpen(false);
+              }}
+              data-testid="button-add-lesson"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Schedule Lesson
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => {
+                onAddStudent();
+                setIsOpen(false);
+              }}
+              data-testid="button-add-student"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Student
+            </Button>
+          </div>
+        )}
 
         {/* Navigation Items */}
         <nav className="flex-1 p-4">

@@ -1511,7 +1511,7 @@ function Router() {
 function AppContent() {
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [showStudentForm, setShowStudentForm] = useState(false);
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const { data: studentsData = [] } = useStudents();
   const { data: lessonsData = [] } = useLessons();
@@ -1521,9 +1521,10 @@ function AppContent() {
   const { toast } = useToast();
 
   // Check if we're on a student calendar or schedule view
-  const isStudentCalendarView = location.match(/^\/\d{6}\/calendar$/);
-  const isStudentScheduleView = location.match(/^\/\d{6}\/schedule$/);
-  const shouldShowNavigation = !isStudentCalendarView && !isStudentScheduleView;
+  const studentViewMatch = location.match(/^\/(\d{6})\/(calendar|schedule)$/);
+  const isStudentView = !!studentViewMatch;
+  const studentId = studentViewMatch?.[1];
+  const shouldShowNavigation = true; // Always show navigation now
 
   const getDefaultDateTime = () => {
     const now = new Date();
@@ -1623,6 +1624,8 @@ function AppContent() {
           onAddStudent={handleAddStudent}
           lessonCount={(lessonsData as any[]).length}
           studentCount={(studentsData as any[]).length}
+          isStudentView={isStudentView}
+          studentId={studentId}
         />
       )}
 
