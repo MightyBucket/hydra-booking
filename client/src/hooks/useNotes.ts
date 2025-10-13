@@ -26,6 +26,7 @@ export function useNotesByStudent(studentId: string) {
 
       return response.json();
     },
+    enabled: !!studentId,
   });
 }
 
