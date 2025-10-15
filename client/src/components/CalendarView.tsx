@@ -18,6 +18,7 @@ import {
   Trash2,
   ChevronDown,
   Download,
+  Edit,
 } from "lucide-react";
 import { useCommentsByLesson } from "@/hooks/useComments";
 import { format as formatDate } from "date-fns";
@@ -740,36 +741,54 @@ export default function CalendarView({
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-1">
                           {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
+                          {comment.lastEdited && (
+                            <span className="ml-2 italic">
+                              (edited {formatDate(new Date(comment.lastEdited), "MMM d, h:mm a")})
+                            </span>
+                          )}
                         </p>
                       </div>
                       {!focusedStudentId && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={async () => {
-                            try {
-                              const response = await fetch(`/api/comments/${comment.id}`, {
-                                method: "DELETE",
-                                headers: {
-                                  'Authorization': `Bearer ${localStorage.getItem('sessionId') || ''}`,
-                                },
-                                credentials: "include",
-                              });
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              // Edit functionality would go here
+                              console.log('Edit comment:', comment.id);
+                            }}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(`/api/comments/${comment.id}`, {
+                                  method: "DELETE",
+                                  headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('sessionId') || ''}`,
+                                  },
+                                  credentials: "include",
+                                });
 
-                              if (response.ok) {
-                                // Close dialog if this was the last comment
-                                if (viewCommentsData.length === 1) {
-                                  setViewCommentsLessonId(null);
+                                if (response.ok) {
+                                  // Close dialog if this was the last comment
+                                  if (viewCommentsData.length === 1) {
+                                    setViewCommentsLessonId(null);
+                                  }
                                 }
+                              } catch (error) {
+                                console.error('Error deleting comment:', error);
                               }
-                            } catch (error) {
-                              console.error('Error deleting comment:', error);
-                            }
-                          }}
-                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                            }}
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>

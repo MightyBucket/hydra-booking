@@ -10,13 +10,19 @@ import { Save, X } from 'lucide-react';
 interface CommentFormProps {
   onSubmit: (data: { title: string; content: string; visibleToStudent: boolean }) => void;
   onCancel: () => void;
+  initialData?: {
+    title: string;
+    content: string;
+    visibleToStudent: boolean;
+  };
+  isEditing?: boolean;
 }
 
-export default function CommentForm({ onSubmit, onCancel }: CommentFormProps) {
+export default function CommentForm({ onSubmit, onCancel, initialData, isEditing = false }: CommentFormProps) {
   const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    visibleToStudent: false,
+    title: initialData?.title || '',
+    content: initialData?.content || '',
+    visibleToStudent: initialData?.visibleToStudent || false,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -91,7 +97,7 @@ export default function CommentForm({ onSubmit, onCancel }: CommentFormProps) {
           data-testid="button-save-comment"
         >
           <Save className="h-4 w-4 mr-2" />
-          Add Comment
+          {isEditing ? 'Update Comment' : 'Add Comment'}
         </Button>
       </div>
     </form>

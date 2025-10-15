@@ -298,6 +298,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/comments/:id", requireAuth, async (req, res) => {
+    try {
+      const { insertCommentSchema } = await import('@shared/schema');
+      const updateData = insertCommentSchema.partial().parse(req.body);
+      const comment = await storage.updateComment(req.params.id, updateData);
+      if (!comment) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+      res.json(comment);
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update comment" });
+    }
+  });
+
   app.delete("/api/comments/:id", requireAuth, async (req, res) => {
     try {
       await storage.deleteComment(req.params.id);

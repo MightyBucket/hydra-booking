@@ -62,6 +62,37 @@ export function useCreateComment() {
   });
 }
 
+export function useUpdateComment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { id: string; title: string; content: string; visibleToStudent: number }) => {
+      const response = await fetch(`/api/comments/${data.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${localStorage.getItem('sessionId') || ''}`,
+        },
+        body: JSON.stringify({
+          title: data.title,
+          content: data.content,
+          visibleToStudent: data.visibleToStudent,
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update comment");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments"] });
+    },
+  });
+}
+
 export function useDeleteComment() {
   const queryClient = useQueryClient();
 

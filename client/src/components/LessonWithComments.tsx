@@ -286,6 +286,11 @@ export default function LessonWithComments({
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1">
                   {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
+                  {comment.lastEdited && (
+                    <span className="ml-2 italic">
+                      (edited {formatDate(new Date(comment.lastEdited), "MMM d, h:mm a")})
+                    </span>
+                  )}
                 </p>
               </div>
             ))}

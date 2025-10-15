@@ -226,7 +226,10 @@ export class DatabaseStorage implements IStorage {
   async updateComment(id: string, updateData: Partial<InsertComment>): Promise<Comment | undefined> {
     const [comment] = await db
       .update(comments)
-      .set(updateData)
+      .set({
+        ...updateData,
+        lastEdited: new Date(),
+      })
       .where(eq(comments.id, id))
       .returning();
     return comment || undefined;

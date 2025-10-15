@@ -46,6 +46,7 @@ export const comments = pgTable("comments", {
   content: text("content").notNull(),
   visibleToStudent: integer("visible_to_student").notNull().default(0), // 0 = false, 1 = true
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  lastEdited: timestamp("last_edited"),
 });
 
 // Notes table
