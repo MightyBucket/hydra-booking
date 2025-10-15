@@ -342,7 +342,14 @@ export default function LessonCard({ lesson, comments = [], onEdit, onDelete, on
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setEditingCommentId(comment.id)}
+                            onClick={() => {
+                              onEditComment(comment.id, {
+                                title: comment.title,
+                                content: comment.content,
+                                visibleToStudent: comment.visibleToStudent,
+                              });
+                              setViewComments(false);
+                            }}
                             className="h-6 w-6 p-0"
                             data-testid={`button-edit-comment-${comment.id}`}
                           >
