@@ -52,6 +52,7 @@ import {
   useCommentsByLesson,
   useCreateComment,
   useDeleteComment,
+  useUpdateComment,
 } from "./hooks/useComments";
 import {
   useNotesByStudent,
@@ -804,7 +805,7 @@ function StudentsPage() {
               Notes for {(studentsData as any[]).find(s => s.id === selectedStudentForNotes)?.firstName} {(studentsData as any[]).find(s => s.id === selectedStudentForNotes)?.lastName || ''}
             </DialogTitle>
           </DialogHeader>
-          
+
           {showNoteForm ? (
             <NoteForm
               initialData={editingNote ? { id: editingNote.id, title: editingNote.title, content: editingNote.content } : undefined}
@@ -929,7 +930,7 @@ function SchedulePage() {
     const lesson = typeof lessonIdOrLesson === 'string' 
       ? (lessonsData as any[]).find((l: any) => l.id === lessonIdOrLesson)
       : lessonIdOrLesson;
-    
+
     if (lesson) {
       setEditingLesson(lesson);
       setShowLessonForm(true);
@@ -940,7 +941,7 @@ function SchedulePage() {
     const lesson = typeof lessonIdOrLesson === 'string' 
       ? (lessonsData as any[]).find((l: any) => l.id === lessonIdOrLesson)
       : lessonIdOrLesson;
-    
+
     if (lesson) {
       setLessonToDelete(lesson);
       setDeleteAllFuture(false);
@@ -1019,10 +1020,28 @@ function SchedulePage() {
         title: "Success",
         description: "Comment deleted successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to delete comment",
+        description: error.message || "Failed to delete comment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateCommentMutation = useUpdateComment();
+
+  const handleEditComment = async (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => {
+    try {
+      await updateCommentMutation.mutateAsync({ id: commentId, ...data });
+      toast({
+        title: "Success",
+        description: "Comment updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update comment",
         variant: "destructive",
       });
     }
@@ -1176,6 +1195,8 @@ function SchedulePage() {
                             onUpdatePaymentStatus={handleUpdatePaymentStatus} 
                             onAddComment={() => handleAddCommentFromLesson(lesson.id)}
                             onViewComments={setViewCommentsLessonId}
+                            onEditComment={handleEditComment}
+                            onDeleteComment={handleDeleteComment}
                           />
                         ) : (
                           <LessonCardWithComments
@@ -1187,6 +1208,7 @@ function SchedulePage() {
                             onUpdatePaymentStatus={handleUpdatePaymentStatus}
                             onAddComment={(lessonId) => setCommentFormLessonId(lessonId)}
                             onDeleteComment={handleDeleteComment}
+                            onEditComment={handleEditComment}
                           />
                         )
                       ))}
@@ -1330,7 +1352,7 @@ function ScheduleCommentsDialog({
   isStudentView?: boolean;
 }) {
   const { data: comments = [] } = useCommentsByLesson(lessonId || '');
-  
+
   return (
     <Dialog open={!!lessonId} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import CommentForm from '@/components/CommentForm';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,12 +45,14 @@ interface LessonCardProps {
   onUpdatePaymentStatus?: (lessonId: string, status: 'pending' | 'paid' | 'overdue' | 'unpaid' | 'free') => void;
   onAddComment?: (lessonId: string) => void;
   onDeleteComment?: (commentId: string) => void;
+  onEditComment?: (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => void;
   showCommentActions?: boolean;
   isStudentView?: boolean;
 }
 
-export default function LessonCard({ lesson, comments = [], onEdit, onDelete, onJoinLesson, onUpdatePaymentStatus, onAddComment, onDeleteComment, showCommentActions = true, isStudentView = false }: LessonCardProps) {
+export default function LessonCard({ lesson, comments = [], onEdit, onDelete, onJoinLesson, onUpdatePaymentStatus, onAddComment, onDeleteComment, onEditComment, showCommentActions = true, isStudentView = false }: LessonCardProps) {
   const [viewComments, setViewComments] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
@@ -236,21 +239,41 @@ export default function LessonCard({ lesson, comments = [], onEdit, onDelete, on
                       <EyeOff className="h-3 w-3 text-muted-foreground" title="Not visible to student" />
                     )}
                   </div>
-                  {showCommentActions && onDeleteComment && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDeleteComment(comment.id)}
-                      className="h-5 w-5 p-0 text-destructive hover:text-destructive"
-                      data-testid={`button-delete-comment-${comment.id}`}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                  {showCommentActions && (
+                    <div className="flex gap-1">
+                      {onEditComment && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingCommentId(comment.id)}
+                          className="h-5 w-5 p-0"
+                          data-testid={`button-edit-comment-${comment.id}`}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {onDeleteComment && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDeleteComment(comment.id)}
+                          className="h-5 w-5 p-0 text-destructive hover:text-destructive"
+                          data-testid={`button-delete-comment-${comment.id}`}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className="text-muted-foreground">{comment.content}</div>
                 <div className="text-[10px] text-muted-foreground">
                   {format(new Date(comment.createdAt), 'MMM d, yyyy h:mm a')}
+                  {comment.lastEdited && (
+                    <span className="ml-2 italic">
+                      (edited {format(new Date(comment.lastEdited), 'MMM d, h:mm a')})
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -266,44 +289,86 @@ export default function LessonCard({ lesson, comments = [], onEdit, onDelete, on
           <div className="space-y-4">
             {comments.map((comment) => (
               <div key={comment.id} className="border-l-2 border-primary/20 pl-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="text-sm font-semibold">{comment.title}</h4>
-                      {comment.visibleToStudent === 1 ? (
-                        <Badge variant="outline" className="text-xs">
-                          <Eye className="h-3 w-3 mr-1" />
-                          Visible to Student
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
-                          <EyeOff className="h-3 w-3 mr-1" />
-                          Private
-                        </Badge>
-                      )}
+                {editingCommentId === comment.id ? (
+                  <CommentForm
+                    initialData={{
+                      title: comment.title,
+                      content: comment.content,
+                      visibleToStudent: comment.visibleToStudent === 1,
+                    }}
+                    isEditing={true}
+                    onSubmit={async (data) => {
+                      if (onEditComment) {
+                        await onEditComment(comment.id, {
+                          title: data.title,
+                          content: data.content,
+                          visibleToStudent: data.visibleToStudent ? 1 : 0,
+                        });
+                        setEditingCommentId(null);
+                      }
+                    }}
+                    onCancel={() => setEditingCommentId(null)}
+                  />
+                ) : (
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-sm font-semibold">{comment.title}</h4>
+                        {comment.visibleToStudent === 1 ? (
+                          <Badge variant="outline" className="text-xs">
+                            <Eye className="h-3 w-3 mr-1" />
+                            Visible to Student
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            <EyeOff className="h-3 w-3 mr-1" />
+                            Private
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{comment.content}</p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {format(new Date(comment.createdAt), 'MMM d, yyyy h:mm a')}
+                        {comment.lastEdited && (
+                          <span className="ml-2 italic">
+                            (edited {format(new Date(comment.lastEdited), 'MMM d, h:mm a')})
+                          </span>
+                        )}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">{comment.content}</p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {format(new Date(comment.createdAt), 'MMM d, yyyy h:mm a')}
-                    </p>
+                    {showCommentActions && (
+                      <div className="flex gap-1">
+                        {onEditComment && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingCommentId(comment.id)}
+                            className="h-6 w-6 p-0"
+                            data-testid={`button-edit-comment-${comment.id}`}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        )}
+                        {onDeleteComment && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              onDeleteComment(comment.id);
+                              if (comments.length === 1) {
+                                setViewComments(false);
+                              }
+                            }}
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                            data-testid={`button-delete-comment-${comment.id}`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {showCommentActions && onDeleteComment && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        onDeleteComment(comment.id);
-                        if (comments.length === 1) {
-                          setViewComments(false);
-                        }
-                      }}
-                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                      data-testid={`button-delete-comment-${comment.id}`}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
+                )}
               </div>
             ))}
           </div>

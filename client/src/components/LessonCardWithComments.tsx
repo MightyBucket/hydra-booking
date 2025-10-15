@@ -10,6 +10,7 @@ interface LessonCardWithCommentsProps {
   onUpdatePaymentStatus?: (lessonId: string, status: 'pending' | 'paid' | 'overdue' | 'unpaid' | 'free') => void;
   onAddComment?: (lessonId: string) => void;
   onDeleteComment?: (commentId: string) => void;
+  onEditComment?: (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => void;
   showCommentActions?: boolean;
   isStudentView?: boolean;
 }
