@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MessageSquare, Clock, Trash2, ChevronDown, ExternalLink } from 'lucide-react';
+import { MessageSquare, Clock, Trash2, ChevronDown, ExternalLink, Edit } from 'lucide-react';
 import { useCommentsByLesson } from '@/hooks/useComments';
 import { format as formatDate } from 'date-fns';
 
@@ -52,6 +52,8 @@ interface LessonWithCommentsProps {
   onAddComment?: () => void;
   isStudentView?: boolean;
   onViewComments?: (lessonId: string) => void;
+  onEditComment?: (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => void;
+  onDeleteComment?: (commentId: string) => void;
 }
 
 // Helper function to detect and linkify URLs
@@ -90,6 +92,8 @@ export default function LessonWithComments({
   onAddComment,
   isStudentView = false,
   onViewComments,
+  onEditComment,
+  onDeleteComment,
 }: LessonWithCommentsProps) {
   const { data: comments = [] } = useCommentsByLesson(lesson.id);
   const hasComments = comments.length > 0;
@@ -273,25 +277,59 @@ export default function LessonWithComments({
                 key={comment.id}
                 className="border-l-2 border-primary/20 pl-2"
               >
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-medium">{comment.title}</p>
-                  {comment.visibleToStudent === 1 && (
-                    <Badge variant="outline" className="text-[10px] px-1 py-0">
-                      Visible
-                    </Badge>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-medium">{comment.title}</p>
+                      {comment.visibleToStudent === 1 && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">
+                          Visible
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {linkifyText(comment.content)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
+                      {comment.lastEdited && (
+                        <span className="ml-2 italic">
+                          (edited {formatDate(new Date(comment.lastEdited), "MMM d, h:mm a")})
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  {!isStudentView && onEditComment && onDeleteComment && (
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditComment(comment.id, {
+                            title: comment.title,
+                            content: comment.content,
+                            visibleToStudent: comment.visibleToStudent,
+                          });
+                        }}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteComment(comment.id);
+                        }}
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {linkifyText(comment.content)}
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
-                  {comment.lastEdited && (
-                    <span className="ml-2 italic">
-                      (edited {formatDate(new Date(comment.lastEdited), "MMM d, h:mm a")})
-                    </span>
-                  )}
-                </p>
               </div>
             ))}
           </div>
