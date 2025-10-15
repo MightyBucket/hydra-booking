@@ -1042,6 +1042,7 @@ function SchedulePage() {
       });
       setEditingCommentId(null);
       setEditingCommentData(null);
+      setShowCommentForm(false);
     } catch (error: any) {
       toast({
         title: "Error",
