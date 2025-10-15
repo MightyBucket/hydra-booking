@@ -23,6 +23,81 @@ import {
 import { useCommentsByLesson } from "@/hooks/useComments";
 import { format as formatDate } from "date-fns";
 import LessonWithComments from "@/components/LessonWithComments";
+import { useMutation } from "@tanstack/react-query";
+
+// Mock API calls for mutations
+const deleteComment = async (id: string) => {
+  // Replace with actual API call
+  console.log("Deleting comment:", id);
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return { id };
+};
+
+const updateComment = async ({ id, ...data }: { id: string; title: string; content: string; visibleToStudent: number }) => {
+  // Replace with actual API call
+  console.log("Updating comment:", id, data);
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return { ...data, id, lastEdited: new Date().toISOString() };
+};
+
+// Mock CommentForm component
+const CommentForm = ({
+  initialData,
+  onSubmit,
+  onCancel,
+  isEditing,
+}: {
+  initialData?: { title: string; content: string; visibleToStudent: boolean };
+  onSubmit: (data: { title: string; content: string; visibleToStudent: boolean }) => Promise<void>;
+  onCancel: () => void;
+  isEditing: boolean;
+}) => {
+  const [title, setTitle] = useState(initialData?.title || "");
+  const [content, setContent] = useState(initialData?.content || "");
+  const [visibleToStudent, setVisibleToStudent] = useState(initialData?.visibleToStudent || false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({ title, content, visibleToStudent });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2">
+      <input
+        type="text"
+        placeholder="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        className="w-full p-2 border rounded text-xs"
+      />
+      <textarea
+        placeholder="Content"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        className="w-full p-2 border rounded text-xs min-h-[80px]"
+      />
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="visibleToStudent"
+          checked={visibleToStudent}
+          onChange={(e) => setVisibleToStudent(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+        />
+        <label htmlFor="visibleToStudent" className="text-xs text-muted-foreground">Visible to Student</label>
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" size="sm">
+          {isEditing ? "Update" : "Save"}
+        </Button>
+      </div>
+    </form>
+  );
+};
+
 
 // Helper function to detect and linkify URLs
 const linkifyText = (text: string): JSX.Element => {
@@ -323,7 +398,23 @@ export default function CalendarView({
   const [lastTapDate, setLastTapDate] = useState<Date | null>(null);
   const isMobile = useIsMobile();
   const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
-  const { data: viewCommentsData = [] } = useCommentsByLesson(viewCommentsLessonId || '');
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null); // State for editing comment
+  const { data: viewCommentsData = [], refetch: refetchComments } = useCommentsByLesson(viewCommentsLessonId || '');
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: deleteComment,
+    onSuccess: () => {
+      refetchComments(); // Refetch comments after deletion
+    },
+  });
+
+  const updateCommentMutation = useMutation({
+    mutationFn: updateComment,
+    onSuccess: () => {
+      refetchComments(); // Refetch comments after update
+    },
+  });
+
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -716,7 +807,7 @@ export default function CalendarView({
         )}
       </CardContent>
 
-      <Dialog open={!!viewCommentsLessonId} onOpenChange={() => setViewCommentsLessonId(null)}>
+      <Dialog open={!!viewCommentsLessonId} onOpenChange={() => { setViewCommentsLessonId(null); setEditingCommentId(null); }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Comments</DialogTitle>
@@ -726,71 +817,84 @@ export default function CalendarView({
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {viewCommentsData.map((comment) => (
                   <div key={comment.id} className="border-l-2 border-primary/20 pl-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs font-medium">{comment.title}</p>
-                          {!focusedStudentId && comment.visibleToStudent === 1 && (
-                            <Badge variant="outline" className="text-[10px] px-1 py-0">
-                              Visible
-                            </Badge>
-                          )}
+                    {editingCommentId === comment.id ? (
+                      <CommentForm
+                        initialData={{
+                          title: comment.title,
+                          content: comment.content,
+                          visibleToStudent: comment.visibleToStudent === 1,
+                        }}
+                        isEditing={true}
+                        onSubmit={async (data) => {
+                          try {
+                            await updateCommentMutation.mutateAsync({
+                              id: comment.id,
+                              title: data.title,
+                              content: data.content,
+                              visibleToStudent: data.visibleToStudent ? 1 : 0,
+                            });
+                            setEditingCommentId(null); // Exit editing mode on successful update
+                          } catch (error) {
+                            console.error('Error updating comment:', error);
+                          }
+                        }}
+                        onCancel={() => setEditingCommentId(null)}
+                      />
+                    ) : (
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-medium">{comment.title}</p>
+                            {!focusedStudentId && comment.visibleToStudent === 1 && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                Visible
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {linkifyText(comment.content)}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
+                            {comment.lastEdited && (
+                              <span className="ml-2 italic">
+                                (edited {formatDate(new Date(comment.lastEdited), "MMM d, h:mm a")})
+                              </span>
+                            )}
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {linkifyText(comment.content)}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground mt-1">
-                          {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
-                          {comment.lastEdited && (
-                            <span className="ml-2 italic">
-                              (edited {formatDate(new Date(comment.lastEdited), "MMM d, h:mm a")})
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      {!focusedStudentId && (
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              // Edit functionality would go here
-                              console.log('Edit comment:', comment.id);
-                            }}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(`/api/comments/${comment.id}`, {
-                                  method: "DELETE",
-                                  headers: {
-                                    'Authorization': `Bearer ${localStorage.getItem('sessionId') || ''}`,
-                                  },
-                                  credentials: "include",
-                                });
-
-                                if (response.ok) {
+                        {!focusedStudentId && (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingCommentId(comment.id)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await deleteCommentMutation.mutateAsync(comment.id);
                                   // Close dialog if this was the last comment
                                   if (viewCommentsData.length === 1) {
                                     setViewCommentsLessonId(null);
                                   }
+                                } catch (error) {
+                                  console.error('Error deleting comment:', error);
                                 }
-                              } catch (error) {
-                                console.error('Error deleting comment:', error);
-                              }
-                            }}
-                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                              }}
+                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -805,3 +909,4 @@ export default function CalendarView({
     </Card>
   );
 }
+</replit_final_file>
