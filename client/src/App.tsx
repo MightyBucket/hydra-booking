@@ -1054,6 +1054,7 @@ function SchedulePage() {
   const handleStartEditComment = (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => {
     setEditingCommentId(commentId);
     setEditingCommentData(data);
+    setViewCommentsLessonId(null); // Close the comments dialog
     setShowCommentForm(true);
   };
 
