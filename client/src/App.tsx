@@ -878,6 +878,8 @@ function SchedulePage() {
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [commentFormLessonId, setCommentFormLessonId] = useState<string | null>(null);
   const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentData, setEditingCommentData] = useState<{ title: string; content: string; visibleToStudent: number } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
@@ -1038,6 +1040,8 @@ function SchedulePage() {
         title: "Success",
         description: "Comment updated successfully",
       });
+      setEditingCommentId(null);
+      setEditingCommentData(null);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -1045,6 +1049,12 @@ function SchedulePage() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleStartEditComment = (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => {
+    setEditingCommentId(commentId);
+    setEditingCommentData(data);
+    setShowCommentForm(true);
   };
 
   // Auto-scroll to today's section on mount
@@ -1195,7 +1205,7 @@ function SchedulePage() {
                             onUpdatePaymentStatus={handleUpdatePaymentStatus} 
                             onAddComment={() => handleAddCommentFromLesson(lesson.id)}
                             onViewComments={setViewCommentsLessonId}
-                            onEditComment={handleEditComment}
+                            onEditComment={handleStartEditComment}
                             onDeleteComment={handleDeleteComment}
                           />
                         ) : (
@@ -1292,13 +1302,31 @@ function SchedulePage() {
       <Dialog open={showCommentForm} onOpenChange={setShowCommentForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Comment</DialogTitle>
+            <DialogTitle>{editingCommentId ? 'Edit Comment' : 'Add Comment'}</DialogTitle>
           </DialogHeader>
           <CommentForm
-            onSubmit={handleCommentSubmit}
+            initialData={editingCommentData ? {
+              title: editingCommentData.title,
+              content: editingCommentData.content,
+              visibleToStudent: editingCommentData.visibleToStudent === 1,
+            } : undefined}
+            isEditing={!!editingCommentId}
+            onSubmit={async (data) => {
+              if (editingCommentId) {
+                await handleEditComment(editingCommentId, {
+                  title: data.title,
+                  content: data.content,
+                  visibleToStudent: data.visibleToStudent ? 1 : 0,
+                });
+              } else {
+                await handleCommentSubmit(data);
+              }
+            }}
             onCancel={() => {
               setShowCommentForm(false);
               setCommentFormLessonId(null);
+              setEditingCommentId(null);
+              setEditingCommentData(null);
             }}
           />
         </DialogContent>
@@ -1308,6 +1336,7 @@ function SchedulePage() {
         lessonId={viewCommentsLessonId}
         onClose={() => setViewCommentsLessonId(null)}
         onDeleteComment={handleDeleteComment}
+        onEditComment={handleStartEditComment}
       />
     </>
   );
@@ -1344,11 +1373,13 @@ function ScheduleCommentsDialog({
   lessonId, 
   onClose, 
   onDeleteComment,
+  onEditComment,
   isStudentView = false
 }: { 
   lessonId: string | null; 
   onClose: () => void;
   onDeleteComment: (commentId: string) => void;
+  onEditComment?: (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => void;
   isStudentView?: boolean;
 }) {
   const { data: comments = [] } = useCommentsByLesson(lessonId || '');
@@ -1379,22 +1410,46 @@ function ScheduleCommentsDialog({
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-1">
                         {format(new Date(comment.createdAt), "MMM d, h:mm a")}
+                        {comment.lastEdited && (
+                          <span className="ml-2 italic">
+                            (edited {format(new Date(comment.lastEdited), "MMM d, h:mm a")})
+                          </span>
+                        )}
                       </p>
                     </div>
                     {!isStudentView && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          onDeleteComment(comment.id);
-                          if (comments.length === 1) {
-                            onClose();
-                          }
-                        }}
-                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <div className="flex gap-1">
+                        {onEditComment && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              onEditComment(comment.id, {
+                                title: comment.title,
+                                content: comment.content,
+                                visibleToStudent: comment.visibleToStudent,
+                              });
+                              onClose();
+                            }}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            onDeleteComment(comment.id);
+                            if (comments.length === 1) {
+                              onClose();
+                            }
+                          }}
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
