@@ -837,12 +837,13 @@ export default function CalendarView({
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              onEditComment(comment.id, {
-                                title: comment.title,
-                                content: comment.content,
-                                visibleToStudent: comment.visibleToStudent,
-                              });
-                              setViewCommentsLessonId(null);
+                              if (onEditComment) {
+                                onEditComment(comment.id, {
+                                  title: comment.title,
+                                  content: comment.content,
+                                  visibleToStudent: comment.visibleToStudent,
+                                });
+                              }
                             }}
                             className="h-6 w-6 p-0"
                           >
