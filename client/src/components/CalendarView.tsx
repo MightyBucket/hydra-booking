@@ -20,84 +20,26 @@ import {
   Download,
   Edit,
 } from "lucide-react";
-import { useCommentsByLesson, useDeleteComment, useUpdateComment } from "@/hooks/useComments";
+import { useCommentsByLesson, useDeleteComment } from "@/hooks/useComments";
 import { format as formatDate } from "date-fns";
 import LessonWithComments from "@/components/LessonWithComments";
-import { useMutation } from "@tanstack/react-query";
-
-// Mock API calls for mutations
-const deleteComment = async (id: string) => {
-  // Replace with actual API call
-  console.log("Deleting comment:", id);
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  return { id };
-};
-
-const updateComment = async ({ id, ...data }: { id: string; title: string; content: string; visibleToStudent: number }) => {
-  // Replace with actual API call
-  console.log("Updating comment:", id, data);
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  return { ...data, id, lastEdited: new Date().toISOString() };
-};
-
-// Mock CommentForm component
-const CommentForm = ({
-  initialData,
-  onSubmit,
-  onCancel,
-  isEditing,
-}: {
-  initialData?: { title: string; content: string; visibleToStudent: boolean };
-  onSubmit: (data: { title: string; content: string; visibleToStudent: boolean }) => Promise<void>;
-  onCancel: () => void;
-  isEditing: boolean;
-}) => {
-  const [title, setTitle] = useState(initialData?.title || "");
-  const [content, setContent] = useState(initialData?.content || "");
-  const [visibleToStudent, setVisibleToStudent] = useState(initialData?.visibleToStudent || false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({ title, content, visibleToStudent });
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-2">
-      <input
-        type="text"
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="w-full p-2 border rounded text-xs"
-      />
-      <textarea
-        placeholder="Content"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        className="w-full p-2 border rounded text-xs min-h-[80px]"
-      />
-      <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          id="visibleToStudent"
-          checked={visibleToStudent}
-          onChange={(e) => setVisibleToStudent(e.target.checked)}
-          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-        />
-        <label htmlFor="visibleToStudent" className="text-xs text-muted-foreground">Visible to Student</label>
-      </div>
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" size="sm">
-          {isEditing ? "Update" : "Save"}
-        </Button>
-      </div>
-    </form>
-  );
-};
-
+import {
+  format,
+  startOfWeek,
+  addDays,
+  isSameDay,
+  startOfMonth,
+  endOfMonth,
+  addMonths,
+  subMonths,
+  isSameMonth,
+} from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Helper function to detect and linkify URLs
 const linkifyText = (text: string): JSX.Element => {
@@ -125,25 +67,6 @@ const linkifyText = (text: string): JSX.Element => {
     </>
   );
 };
-import {
-  format,
-  startOfWeek,
-  endOfWeek,
-  addDays,
-  isSameDay,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  addMonths,
-  subMonths,
-  isSameMonth,
-} from "date-fns";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 interface Lesson {
   id: string;
