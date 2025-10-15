@@ -1267,7 +1267,7 @@ function SchedulePage() {
                             onUpdatePaymentStatus={handleUpdatePaymentStatus}
                             onAddComment={(lessonId) => setCommentFormLessonId(lessonId)}
                             onDeleteComment={handleDeleteComment}
-                            onEditComment={handleEditComment}
+                            onEditComment={handleStartEditComment}
                           />
                         )
                       ))}
