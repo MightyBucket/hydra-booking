@@ -20,7 +20,7 @@ import {
   Download,
   Edit,
 } from "lucide-react";
-import { useCommentsByLesson } from "@/hooks/useComments";
+import { useCommentsByLesson, useDeleteComment, useUpdateComment } from "@/hooks/useComments";
 import { format as formatDate } from "date-fns";
 import LessonWithComments from "@/components/LessonWithComments";
 import { useMutation } from "@tanstack/react-query";
@@ -398,22 +398,12 @@ export default function CalendarView({
   const [lastTapDate, setLastTapDate] = useState<Date | null>(null);
   const isMobile = useIsMobile();
   const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null); // State for editing comment
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+
   const { data: viewCommentsData = [], refetch: refetchComments } = useCommentsByLesson(viewCommentsLessonId || '');
 
-  const deleteCommentMutation = useMutation({
-    mutationFn: deleteComment,
-    onSuccess: () => {
-      refetchComments(); // Refetch comments after deletion
-    },
-  });
-
-  const updateCommentMutation = useMutation({
-    mutationFn: updateComment,
-    onSuccess: () => {
-      refetchComments(); // Refetch comments after update
-    },
-  });
+  const deleteCommentMutation = useDeleteComment();
+  const updateCommentMutation = useUpdateComment();
 
 
   const monthStart = startOfMonth(currentDate);
