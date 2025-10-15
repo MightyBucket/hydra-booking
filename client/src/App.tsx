@@ -97,6 +97,8 @@ function CalendarPage() {
   const [deleteAllFuture, setDeleteAllFuture] = useState(false);
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [selectedLessonForComment, setSelectedLessonForComment] = useState<string | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentData, setEditingCommentData] = useState<{ title: string; content: string; visibleToStudent: number } | null>(null);
   const { toast } = useToast();
 
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
@@ -106,6 +108,7 @@ function CalendarPage() {
   const updateLessonMutation = useUpdateLesson();
   const deleteLessonMutation = useDeleteLesson();
   const createCommentMutation = useCreateComment();
+  const updateCommentMutation = useUpdateComment();
 
   // Transform lessons data for calendar display
   const displayLessons = (lessonsData as any[]).map((lesson: any) => {
@@ -275,6 +278,31 @@ function CalendarPage() {
     }
   };
 
+  const handleStartEditComment = (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => {
+    setEditingCommentId(commentId);
+    setEditingCommentData(data);
+    setShowCommentForm(true);
+  };
+
+  const handleEditComment = async (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => {
+    try {
+      await updateCommentMutation.mutateAsync({ id: commentId, ...data });
+      toast({
+        title: "Success",
+        description: "Comment updated successfully",
+      });
+      setEditingCommentId(null);
+      setEditingCommentData(null);
+      setShowCommentForm(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update comment",
+        variant: "destructive",
+      });
+    }
+  };
+
   const confirmDeleteLesson = async () => {
     if (!lessonToDelete) return;
 
@@ -423,13 +451,31 @@ function CalendarPage() {
       <Dialog open={showCommentForm} onOpenChange={setShowCommentForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Comment</DialogTitle>
+            <DialogTitle>{editingCommentId ? 'Edit Comment' : 'Add Comment'}</DialogTitle>
           </DialogHeader>
           <CommentForm
-            onSubmit={handleCommentSubmit}
+            initialData={editingCommentData ? {
+              title: editingCommentData.title,
+              content: editingCommentData.content,
+              visibleToStudent: editingCommentData.visibleToStudent === 1,
+            } : undefined}
+            isEditing={!!editingCommentId}
+            onSubmit={async (data) => {
+              if (editingCommentId) {
+                await handleEditComment(editingCommentId, {
+                  title: data.title,
+                  content: data.content,
+                  visibleToStudent: data.visibleToStudent ? 1 : 0,
+                });
+              } else {
+                await handleCommentSubmit(data);
+              }
+            }}
             onCancel={() => {
               setShowCommentForm(false);
               setSelectedLessonForComment(null);
+              setEditingCommentId(null);
+              setEditingCommentData(null);
             }}
           />
         </DialogContent>
