@@ -909,4 +909,3 @@ export default function CalendarView({
     </Card>
   );
 }
-</replit_final_file>
