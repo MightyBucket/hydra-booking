@@ -342,6 +342,7 @@ function CalendarPage() {
         onDeleteLesson={handleDeleteLesson}
         onUpdatePaymentStatus={handleUpdatePaymentStatus}
         onAddComment={handleAddComment}
+        onEditComment={handleStartEditComment}
       />
 
       <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
