@@ -185,13 +185,7 @@ export default function LessonCard({ lesson, comments = [], onEdit, onDelete, on
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  if (comments.length > 0) {
-                    setViewComments(true);
-                  } else {
-                    onAddComment(lesson.id);
-                  }
-                }}
+                onClick={() => onAddComment(lesson.id)}
                 data-testid={`button-add-comment-${lesson.id}`}
                 className="h-8 w-8 p-0"
               >
