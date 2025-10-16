@@ -18,5 +18,11 @@ interface LessonCardWithCommentsProps {
 export default function LessonCardWithComments(props: LessonCardWithCommentsProps) {
   const { data: comments = [] } = useCommentsByLesson(props.lesson.id);
 
-  return <LessonCard {...props} comments={comments} />;
+  return (
+    <LessonCard 
+      {...props} 
+      comments={comments}
+      onAddComment={props.onAddComment}
+    />
+  );
 }
