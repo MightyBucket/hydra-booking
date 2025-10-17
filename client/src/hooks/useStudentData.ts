@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -21,14 +20,19 @@ export function useStudentByStudentId(studentId: string | undefined) {
 // Hook to get lessons for a specific student by their 6-digit studentId (public endpoint)
 export function useStudentLessonsByStudentId(studentId: string | undefined) {
   return useQuery({
-    queryKey: ['/api/student', studentId, 'lessons'],
+    queryKey: [`/api/student/${studentId}/lessons`],
     queryFn: async () => {
-      if (!studentId) return [];
+      if (!studentId) return { lessons: [], blockedSlots: [] }; // Ensure we always return an object with lessons and blockedSlots
       const res = await fetch(`/api/student/${studentId}/lessons`);
       if (!res.ok) {
-        throw new Error('Failed to fetch lessons');
+        throw new Error('Failed to fetch student lessons');
       }
-      return await res.json();
+      const data = await res.json();
+      // Handle both old format (array) and new format (object with lessons and blockedSlots)
+      if (Array.isArray(data)) {
+        return { lessons: data, blockedSlots: [] };
+      }
+      return data;
     },
     enabled: !!studentId,
   });

@@ -157,9 +157,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Student not found" });
       }
       
-      // Get lessons for this student only
-      const lessons = await storage.getLessonsByStudent(student.id);
-      res.json(lessons);
+      // Get lessons for this student
+      const studentLessons = await storage.getLessonsByStudent(student.id);
+      
+      // Get all lessons to find blocked slots
+      const allLessons = await storage.getLessons();
+      
+      // Create blocked slots for other students' lessons (only time and duration)
+      const blockedSlots = allLessons
+        .filter((lesson: any) => lesson.studentId !== student.id)
+        .map((lesson: any) => ({
+          id: lesson.id,
+          dateTime: lesson.dateTime,
+          duration: lesson.duration,
+          isBlocked: true
+        }));
+      
+      // Combine student lessons with blocked slots
+      const response = {
+        lessons: studentLessons,
+        blockedSlots: blockedSlots
+      };
+      
+      res.json(response);
     } catch (error) {
       console.error('Error fetching student lessons:', error);
       res.status(500).json({ error: "Failed to fetch student lessons" });
