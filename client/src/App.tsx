@@ -1695,6 +1695,9 @@ function StudentCalendarPage() {
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(params.studentId);
   const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
 
+  const lessonsData = lessonsResponse?.lessons || [];
+  const blockedSlots = lessonsResponse?.blockedSlots || [];
+
   if (lessonsLoading || studentLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1726,17 +1729,31 @@ function StudentCalendarPage() {
     );
   }
 
-  // Transform lessons data for calendar display
-  const displayLessons = (lessonsData as any[]).map((lesson: any) => {
-    return {
-      ...lesson,
-      dateTime: new Date(lesson.dateTime),
-      studentName: `${student.firstName} ${student.lastName || ""}`,
-      studentColor: student.defaultColor || "#3b82f6",
-      studentId: lesson.studentId,
-      pricePerHour: parseFloat(lesson.pricePerHour),
-    };
-  });
+  // Transform student's lessons
+  const studentLessons = (lessonsData as any[]).map((lesson: any) => ({
+    ...lesson,
+    dateTime: new Date(lesson.dateTime),
+    studentName: `${student.firstName} ${student.lastName || ""}`,
+    studentColor: student.defaultColor || "#3b82f6",
+    studentId: lesson.studentId,
+    pricePerHour: parseFloat(lesson.pricePerHour),
+  }));
+
+  // Transform blocked slots
+  const blockedLessons = (blockedSlots as any[]).map((slot: any) => ({
+    id: slot.id,
+    dateTime: new Date(slot.dateTime),
+    duration: slot.duration,
+    isBlocked: true,
+    studentName: "Occupied",
+    studentColor: "#9ca3af",
+    subject: "",
+    paymentStatus: "pending",
+    pricePerHour: 0,
+  }));
+
+  // Combine student lessons with blocked slots
+  const displayLessons = [...studentLessons, ...blockedLessons];
 
   const handleLessonClick = (lesson: any) => {
     // Only open link for this student's lessons
