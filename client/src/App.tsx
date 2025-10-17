@@ -564,8 +564,10 @@ function StudentsPage() {
     const student = (studentsData as any[]).find(
       (s: any) => s.id === studentId,
     );
-    setSelectedStudentForLesson(student);
-    setShowLessonForm(true);
+    if (student) {
+      setSelectedStudentForLesson(student);
+      setShowLessonForm(true);
+    }
   };
 
   const handleViewLessons = (studentId: string) => {
