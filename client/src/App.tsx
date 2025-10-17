@@ -1693,7 +1693,7 @@ function StudentCalendarPage() {
   const params = useParams<{ studentId: string }>();
 
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(params.studentId);
-  const { data: lessonsData = [], isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
+  const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
 
   if (lessonsLoading || studentLoading) {
     return (
@@ -1779,7 +1779,7 @@ function StudentSchedulePage() {
   const lessonsData = lessonsResponse?.lessons || [];
   const blockedSlots = lessonsResponse?.blockedSlots || [];
 
-  if (studentLoading || lessonsLoading) {
+  if (lessonsLoading || studentLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         Loading schedule...
@@ -1810,40 +1810,31 @@ function StudentSchedulePage() {
     );
   }
 
-  // Transform and filter lessons starting from last week
-  const lastWeek = new Date();
-  lastWeek.setDate(lastWeek.getDate() - 7);
-  lastWeek.setHours(0, 0, 0, 0);
-
   // Transform student's lessons
-  const studentLessons = (lessonsData as any[])
-    .map((lesson: any) => ({
-      ...lesson,
-      dateTime: new Date(lesson.dateTime),
-      studentName: student ? `${student.firstName} ${student.lastName || ""}` : "Unknown",
-      studentColor: student?.defaultColor || "#3b82f6",
-      studentId: student?.id,
-      pricePerHour: parseFloat(lesson.pricePerHour),
-    }));
+  const studentLessons = (lessonsData as any[]).map((lesson: any) => ({
+    ...lesson,
+    dateTime: new Date(lesson.dateTime),
+    studentName: `${student.firstName} ${student.lastName || ""}`,
+    studentColor: student.defaultColor || "#3b82f6",
+    studentId: lesson.studentId,
+    pricePerHour: parseFloat(lesson.pricePerHour),
+  }));
 
   // Transform blocked slots
-  const blockedLessons = (blockedSlots as any[])
-    .map((slot: any) => ({
-      id: slot.id,
-      dateTime: new Date(slot.dateTime),
-      duration: slot.duration,
-      isBlocked: true,
-      studentName: "Blocked",
-      studentColor: "#9ca3af",
-      subject: "",
-      paymentStatus: "pending",
-      pricePerHour: 0,
-    }));
+  const blockedLessons = (blockedSlots as any[]).map((slot: any) => ({
+    id: slot.id,
+    dateTime: new Date(slot.dateTime),
+    duration: slot.duration,
+    isBlocked: true,
+    studentName: "Occupied",
+    studentColor: "#9ca3af",
+    subject: "",
+    paymentStatus: "pending",
+    pricePerHour: 0,
+  }));
 
-  // Combine, filter and sort all lessons
-  const displayLessons = [...studentLessons, ...blockedLessons]
-    .filter((lesson: any) => lesson.dateTime >= lastWeek)
-    .sort((a: any, b: any) => a.dateTime.getTime() - b.dateTime.getTime());
+  // Combine student lessons with blocked slots
+  const displayLessons = [...studentLessons, ...blockedLessons];
 
   const handleJoinLesson = (lesson: Lesson) => {
     if (lesson.lessonLink) {
