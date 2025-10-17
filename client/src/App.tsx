@@ -823,10 +823,7 @@ function StudentsPage() {
       <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Schedule Lesson for {selectedStudentForLesson?.firstName}{" "}
-              {selectedStudentForLesson?.lastName || ""}
-            </DialogTitle>
+            <DialogTitle>Schedule New Lesson</DialogTitle>
           </DialogHeader>
           <LessonForm
             students={studentsData as any[]}
