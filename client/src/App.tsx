@@ -1696,6 +1696,7 @@ function StudentCalendarPage() {
   const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
 
   const lessonsData = lessonsResponse?.lessons || [];
+  const blockedSlots = lessonsResponse?.blockedSlots || [];
 
   if (lessonsLoading || studentLoading) {
     return (
@@ -1728,8 +1729,8 @@ function StudentCalendarPage() {
     );
   }
 
-  // Transform student's lessons only
-  const displayLessons = (lessonsData as any[]).map((lesson: any) => ({
+  // Transform student's lessons
+  const studentLessons = (lessonsData as any[]).map((lesson: any) => ({
     ...lesson,
     dateTime: new Date(lesson.dateTime),
     studentName: `${student.firstName} ${student.lastName || ""}`,
@@ -1737,6 +1738,22 @@ function StudentCalendarPage() {
     studentId: lesson.studentId,
     pricePerHour: parseFloat(lesson.pricePerHour),
   }));
+
+  // Transform blocked slots
+  const blockedLessons = (blockedSlots as any[]).map((slot: any) => ({
+    id: slot.id,
+    dateTime: new Date(slot.dateTime),
+    duration: slot.duration,
+    isBlocked: true,
+    studentName: "Occupied",
+    studentColor: "#9ca3af",
+    subject: "",
+    paymentStatus: "pending",
+    pricePerHour: 0,
+  }));
+
+  // Combine student lessons with blocked slots
+  const displayLessons = [...studentLessons, ...blockedLessons];
 
   const handleLessonClick = (lesson: any) => {
     // Only open link for this student's lessons
@@ -1777,6 +1794,7 @@ function StudentSchedulePage() {
   const deleteCommentMutation = useDeleteComment();
 
   const lessonsData = lessonsResponse?.lessons || [];
+  const blockedSlots = lessonsResponse?.blockedSlots || [];
 
   if (lessonsLoading || studentLoading) {
     return (
@@ -1809,8 +1827,8 @@ function StudentSchedulePage() {
     );
   }
 
-  // Transform student's lessons only
-  const displayLessons = (lessonsData as any[]).map((lesson: any) => ({
+  // Transform student's lessons
+  const studentLessons = (lessonsData as any[]).map((lesson: any) => ({
     ...lesson,
     dateTime: new Date(lesson.dateTime),
     studentName: `${student.firstName} ${student.lastName || ""}`,
@@ -1818,6 +1836,22 @@ function StudentSchedulePage() {
     studentId: lesson.studentId,
     pricePerHour: parseFloat(lesson.pricePerHour),
   }));
+
+  // Transform blocked slots
+  const blockedLessons = (blockedSlots as any[]).map((slot: any) => ({
+    id: slot.id,
+    dateTime: new Date(slot.dateTime),
+    duration: slot.duration,
+    isBlocked: true,
+    studentName: "Occupied",
+    studentColor: "#9ca3af",
+    subject: "",
+    paymentStatus: "pending",
+    pricePerHour: 0,
+  }));
+
+  // Combine student lessons with blocked slots
+  const displayLessons = [...studentLessons, ...blockedLessons];
 
   const handleJoinLesson = (lesson: Lesson) => {
     if (lesson.lessonLink) {
