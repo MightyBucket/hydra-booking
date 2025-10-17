@@ -93,6 +93,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { Badge } from "@/components/ui/badge";
+import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
 
 function CalendarPage() {
   const [showLessonForm, setShowLessonForm] = useState(false);
@@ -1690,8 +1691,7 @@ function SettingsPage() {
 
 function StudentCalendarPage() {
   const params = useParams<{ studentId: string }>();
-  const { useStudentByStudentId, useStudentLessonsByStudentId } = require('@/hooks/useStudentData');
-  
+
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(params.studentId);
   const { data: lessonsData = [], isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
 
@@ -1767,7 +1767,7 @@ function StudentCalendarPage() {
 function StudentSchedulePage() {
   const params = useParams<{ studentId: string }>();
   const { useStudentByStudentId, useStudentLessonsByStudentId } = require('@/hooks/useStudentData');
-  
+
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(params.studentId);
   const { data: lessonsData = [], isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
   const [viewCommentsLessonId, setViewCommentsLessonId] = useState<
