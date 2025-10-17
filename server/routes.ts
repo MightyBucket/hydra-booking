@@ -64,6 +64,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single student by their 6-digit studentId (public for student view)
+  app.get("/api/student/:studentId", async (req, res) => {
+    try {
+      const students = await storage.getStudents();
+      const student = students.find((s: any) => s.studentId === req.params.studentId);
+      
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+      
+      res.json(student);
+    } catch (error) {
+      console.error('Error fetching student:', error);
+      res.status(500).json({ error: "Failed to fetch student" });
+    }
+  });
+
   app.get("/api/students/:id", async (req, res) => {
     try {
       const student = await storage.getStudent(req.params.id);
@@ -126,6 +143,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching lessons:', error);
       res.status(500).json({ error: "Failed to fetch lessons" });
+    }
+  });
+
+  // Get lessons filtered by student's 6-digit studentId (public for student view)
+  app.get("/api/student/:studentId/lessons", async (req, res) => {
+    try {
+      // Find student by their 6-digit studentId
+      const students = await storage.getStudents();
+      const student = students.find((s: any) => s.studentId === req.params.studentId);
+      
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+      
+      // Get lessons for this student only
+      const lessons = await storage.getLessonsByStudent(student.id);
+      res.json(lessons);
+    } catch (error) {
+      console.error('Error fetching student lessons:', error);
+      res.status(500).json({ error: "Failed to fetch student lessons" });
     }
   });
 
@@ -272,6 +309,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const comments = isAuthenticated 
         ? allComments 
         : allComments.filter(comment => comment.visibleToStudent === 1);
+      
+      res.json(comments);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
+
+  // Get comments for lessons belonging to a specific student (public for student view)
+  app.get("/api/student/:studentId/lessons/:lessonId/comments", async (req, res) => {
+    try {
+      // Find student by their 6-digit studentId
+      const students = await storage.getStudents();
+      const student = students.find((s: any) => s.studentId === req.params.studentId);
+      
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+      
+      // Verify lesson belongs to this student
+      const lesson = await storage.getLesson(req.params.lessonId);
+      if (!lesson || lesson.studentId !== student.id) {
+        return res.status(404).json({ error: "Lesson not found" });
+      }
+      
+      // Get comments visible to student only
+      const allComments = await storage.getCommentsByLesson(req.params.lessonId);
+      const comments = allComments.filter(comment => comment.visibleToStudent === 1);
       
       res.json(comments);
     } catch (error) {

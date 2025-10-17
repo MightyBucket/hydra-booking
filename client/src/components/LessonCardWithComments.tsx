@@ -1,6 +1,7 @@
 
 import LessonCard from './LessonCard';
 import { useCommentsByLesson } from '@/hooks/useComments';
+import { useParams } from 'wouter';
 
 interface LessonCardWithCommentsProps {
   lesson: any;
@@ -16,7 +17,23 @@ interface LessonCardWithCommentsProps {
 }
 
 export default function LessonCardWithComments(props: LessonCardWithCommentsProps) {
-  const { data: comments = [] } = useCommentsByLesson(props.lesson.id);
+  const params = useParams<{ studentId?: string }>();
+  const isStudentSpecificView = !!params.studentId;
+  
+  // Use student-specific comments hook if in student view
+  const { useStudentLessonComments } = isStudentSpecificView 
+    ? require('@/hooks/useStudentData') 
+    : { useStudentLessonComments: null };
+  
+  const { data: studentComments = [] } = isStudentSpecificView && useStudentLessonComments
+    ? useStudentLessonComments(params.studentId, props.lesson.id)
+    : { data: [] };
+  
+  const { data: regularComments = [] } = useCommentsByLesson(
+    isStudentSpecificView ? '' : props.lesson.id
+  );
+  
+  const comments = isStudentSpecificView ? studentComments : regularComments;
 
   return (
     <LessonCard 

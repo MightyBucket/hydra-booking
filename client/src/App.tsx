@@ -1511,6 +1511,7 @@ function SchedulePage() {
         onClose={() => setViewCommentsLessonId(null)}
         onDeleteComment={handleDeleteComment}
         onEditComment={handleStartEditComment}
+        isStudentView={true}
       />
     </>
   );
@@ -1549,6 +1550,7 @@ function ScheduleCommentsDialog({
   onDeleteComment,
   onEditComment,
   isStudentView = false,
+  studentId,
 }: {
   lessonId: string | null;
   onClose: () => void;
@@ -1558,6 +1560,7 @@ function ScheduleCommentsDialog({
     data: { title: string; content: string; visibleToStudent: number },
   ) => void;
   isStudentView?: boolean;
+  studentId?: string;
 }) {
   const { data: comments = [] } = useCommentsByLesson(lessonId || "");
 
@@ -1777,6 +1780,8 @@ function StudentSchedulePage() {
     string | null
   >(null);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
+  const deleteCommentMutation = useDeleteComment();
 
   // Find the student by their 6-digit studentId
   const student = (studentsData as any[]).find(
@@ -1846,6 +1851,22 @@ function StudentSchedulePage() {
   const handleJoinLesson = (lesson: Lesson) => {
     if (lesson.lessonLink) {
       window.open(lesson.lessonLink, "_blank");
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await deleteCommentMutation.mutateAsync(commentId);
+      toast({
+        title: "Success",
+        description: "Comment deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete comment",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1951,8 +1972,9 @@ function StudentSchedulePage() {
       <ScheduleCommentsDialog
         lessonId={viewCommentsLessonId}
         onClose={() => setViewCommentsLessonId(null)}
-        onDeleteComment={() => {}}
+        onDeleteComment={handleDeleteComment}
         isStudentView={true}
+        studentId={params.studentId}
       />
     </>
   );
