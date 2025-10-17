@@ -1690,15 +1690,12 @@ function SettingsPage() {
 
 function StudentCalendarPage() {
   const params = useParams<{ studentId: string }>();
-  const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
-  const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
+  const { useStudentByStudentId, useStudentLessonsByStudentId } = require('@/hooks/useStudentData');
+  
+  const { data: student, isLoading: studentLoading } = useStudentByStudentId(params.studentId);
+  const { data: lessonsData = [], isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
 
-  // Find the student by their 6-digit studentId
-  const student = (studentsData as any[]).find(
-    (s: any) => s.studentId === params.studentId,
-  );
-
-  if (lessonsLoading || studentsLoading) {
+  if (lessonsLoading || studentLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         Loading calendar...
@@ -1731,16 +1728,11 @@ function StudentCalendarPage() {
 
   // Transform lessons data for calendar display
   const displayLessons = (lessonsData as any[]).map((lesson: any) => {
-    const lessonStudent = (studentsData as any[]).find(
-      (s: any) => s.id === lesson.studentId,
-    );
     return {
       ...lesson,
       dateTime: new Date(lesson.dateTime),
-      studentName: lessonStudent
-        ? `${lessonStudent.firstName} ${lessonStudent.lastName || ""}`
-        : "Unknown Student",
-      studentColor: lessonStudent?.defaultColor || "#3b82f6",
+      studentName: `${student.firstName} ${student.lastName || ""}`,
+      studentColor: student.defaultColor || "#3b82f6",
       studentId: lesson.studentId,
       pricePerHour: parseFloat(lesson.pricePerHour),
     };
@@ -1774,8 +1766,10 @@ function StudentCalendarPage() {
 
 function StudentSchedulePage() {
   const params = useParams<{ studentId: string }>();
-  const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
-  const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
+  const { useStudentByStudentId, useStudentLessonsByStudentId } = require('@/hooks/useStudentData');
+  
+  const { data: student, isLoading: studentLoading } = useStudentByStudentId(params.studentId);
+  const { data: lessonsData = [], isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
   const [viewCommentsLessonId, setViewCommentsLessonId] = useState<
     string | null
   >(null);
@@ -1783,12 +1777,7 @@ function StudentSchedulePage() {
   const { toast } = useToast();
   const deleteCommentMutation = useDeleteComment();
 
-  // Find the student by their 6-digit studentId
-  const student = (studentsData as any[]).find(
-    (s: any) => s.studentId === params.studentId,
-  );
-
-  if (lessonsLoading || studentsLoading) {
+  if (lessonsLoading || studentLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         Loading schedule...
@@ -1819,13 +1808,12 @@ function StudentSchedulePage() {
     );
   }
 
-  // Filter lessons for only this student, starting from last week
+  // Filter lessons starting from last week
   const lastWeek = new Date();
   lastWeek.setDate(lastWeek.getDate() - 7);
   lastWeek.setHours(0, 0, 0, 0);
 
   const displayLessons = (lessonsData as any[])
-    .filter((lesson: any) => lesson.studentId === student.id)
     .map((lesson: any) => {
       return {
         ...lesson,
