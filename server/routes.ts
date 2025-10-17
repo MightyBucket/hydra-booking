@@ -167,7 +167,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const blockedSlots = allLessons
         .filter((lesson: any) => lesson.studentId !== student.id)
         .map((lesson: any) => ({
-          id: lesson.id,
           dateTime: lesson.dateTime,
           duration: lesson.duration,
           isBlocked: true
