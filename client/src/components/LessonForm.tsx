@@ -108,7 +108,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5" />
-          {initialData ? 'Edit Lesson' : 'Schedule New Lesson'}
+          {initialData && (initialData as any).id ? 'Edit Lesson' : 'Schedule New Lesson'}
         </CardTitle>
       </CardHeader>
 
@@ -325,7 +325,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
               data-testid="button-save-lesson"
             >
               <Save className="h-4 w-4 mr-2" />
-              {initialData ? 'Update Lesson' : 'Schedule Lesson'}
+              {initialData && (initialData as any).id ? 'Update Lesson' : 'Schedule Lesson'}
             </Button>
           </div>
         </form>
