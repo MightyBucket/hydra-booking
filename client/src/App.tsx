@@ -67,7 +67,12 @@ import NotFound from "@/pages/not-found";
 import { useQueryClient } from "@tanstack/react-query";
 import { Lesson } from "./types/Lesson";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   ChevronLeft,
   ChevronRight,
@@ -78,6 +83,8 @@ import {
   Edit,
   ChevronDown,
   MessageSquare,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -87,7 +94,6 @@ import {
 } from "@/components/ui/hover-card";
 import { Badge } from "@/components/ui/badge";
 
-
 function CalendarPage() {
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -96,9 +102,15 @@ function CalendarPage() {
   const [lessonToDelete, setLessonToDelete] = useState<any>(null);
   const [deleteAllFuture, setDeleteAllFuture] = useState(false);
   const [showCommentForm, setShowCommentForm] = useState(false);
-  const [selectedLessonForComment, setSelectedLessonForComment] = useState<string | null>(null);
+  const [selectedLessonForComment, setSelectedLessonForComment] = useState<
+    string | null
+  >(null);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingCommentData, setEditingCommentData] = useState<{ title: string; content: string; visibleToStudent: number } | null>(null);
+  const [editingCommentData, setEditingCommentData] = useState<{
+    title: string;
+    content: string;
+    visibleToStudent: number;
+  } | null>(null);
   const { toast } = useToast();
 
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
@@ -121,7 +133,7 @@ function CalendarPage() {
       studentName: student
         ? `${student.firstName} ${student.lastName || ""}`
         : "Unknown Student",
-      studentColor: student?.defaultColor || '#3b82f6',
+      studentColor: student?.defaultColor || "#3b82f6",
       pricePerHour: parseFloat(lesson.pricePerHour),
     };
   });
@@ -225,9 +237,14 @@ function CalendarPage() {
     setShowDeleteDialog(true);
   };
 
-  const handleUpdatePaymentStatus = async (lessonId: string, status: 'pending' | 'paid' | 'unpaid') => {
+  const handleUpdatePaymentStatus = async (
+    lessonId: string,
+    status: "pending" | "paid" | "unpaid",
+  ) => {
     try {
-      const lessonToUpdate = (lessonsData as any[]).find((l: any) => l.id === lessonId);
+      const lessonToUpdate = (lessonsData as any[]).find(
+        (l: any) => l.id === lessonId,
+      );
       if (lessonToUpdate) {
         await updateLessonMutation.mutateAsync({
           id: lessonId,
@@ -253,7 +270,11 @@ function CalendarPage() {
     setShowCommentForm(true);
   };
 
-  const handleCommentSubmit = async (data: { title: string; content: string; visibleToStudent: boolean }) => {
+  const handleCommentSubmit = async (data: {
+    title: string;
+    content: string;
+    visibleToStudent: boolean;
+  }) => {
     if (!selectedLessonForComment) return;
 
     try {
@@ -278,13 +299,19 @@ function CalendarPage() {
     }
   };
 
-  const handleStartEditComment = (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => {
+  const handleStartEditComment = (
+    commentId: string,
+    data: { title: string; content: string; visibleToStudent: number },
+  ) => {
     setEditingCommentId(commentId);
     setEditingCommentData(data);
     setShowCommentForm(true);
   };
 
-  const handleEditComment = async (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => {
+  const handleEditComment = async (
+    commentId: string,
+    data: { title: string; content: string; visibleToStudent: number },
+  ) => {
     try {
       await updateCommentMutation.mutateAsync({ id: commentId, ...data });
       toast({
@@ -390,8 +417,8 @@ function CalendarPage() {
                     pricePerHour: parseFloat(selectedLesson.pricePerHour),
                   }
                 : selectedDate
-                ? { dateTime: selectedDate }
-                : undefined
+                  ? { dateTime: selectedDate }
+                  : undefined
             }
             onSubmit={handleLessonSubmit}
             onCancel={() => {
@@ -451,14 +478,20 @@ function CalendarPage() {
       <Dialog open={showCommentForm} onOpenChange={setShowCommentForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingCommentId ? 'Edit Comment' : 'Add Comment'}</DialogTitle>
+            <DialogTitle>
+              {editingCommentId ? "Edit Comment" : "Add Comment"}
+            </DialogTitle>
           </DialogHeader>
           <CommentForm
-            initialData={editingCommentData ? {
-              title: editingCommentData.title,
-              content: editingCommentData.content,
-              visibleToStudent: editingCommentData.visibleToStudent === 1,
-            } : undefined}
+            initialData={
+              editingCommentData
+                ? {
+                    title: editingCommentData.title,
+                    content: editingCommentData.content,
+                    visibleToStudent: editingCommentData.visibleToStudent === 1,
+                  }
+                : undefined
+            }
             isEditing={!!editingCommentId}
             onSubmit={async (data) => {
               if (editingCommentId) {
@@ -493,7 +526,9 @@ function StudentsPage() {
     useState<any>(null);
   const [studentToDelete, setStudentToDelete] = useState<any>(null);
   const [showNotesDialog, setShowNotesDialog] = useState(false);
-  const [selectedStudentForNotes, setSelectedStudentForNotes] = useState<string | null>(null);
+  const [selectedStudentForNotes, setSelectedStudentForNotes] = useState<
+    string | null
+  >(null);
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [editingNote, setEditingNote] = useState<any>(null);
   const { toast } = useToast();
@@ -503,7 +538,9 @@ function StudentsPage() {
   const updateStudentMutation = useUpdateStudent();
   const deleteStudentMutation = useDeleteStudent();
   const createLessonMutation = useCreateLesson();
-  const { data: notesData = [] } = useNotesByStudent(selectedStudentForNotes || '');
+  const { data: notesData = [] } = useNotesByStudent(
+    selectedStudentForNotes || "",
+  );
   const createNoteMutation = useCreateNote();
   const updateNoteMutation = useUpdateNote();
   const deleteNoteMutation = useDeleteNote();
@@ -684,7 +721,9 @@ function StudentsPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: editingNote ? "Failed to update note" : "Failed to add note",
+        description: editingNote
+          ? "Failed to update note"
+          : "Failed to add note",
         variant: "destructive",
       });
     }
@@ -849,13 +888,29 @@ function StudentsPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Notes for {(studentsData as any[]).find(s => s.id === selectedStudentForNotes)?.firstName} {(studentsData as any[]).find(s => s.id === selectedStudentForNotes)?.lastName || ''}
+              Notes for{" "}
+              {
+                (studentsData as any[]).find(
+                  (s) => s.id === selectedStudentForNotes,
+                )?.firstName
+              }{" "}
+              {(studentsData as any[]).find(
+                (s) => s.id === selectedStudentForNotes,
+              )?.lastName || ""}
             </DialogTitle>
           </DialogHeader>
 
           {showNoteForm ? (
             <NoteForm
-              initialData={editingNote ? { id: editingNote.id, title: editingNote.title, content: editingNote.content } : undefined}
+              initialData={
+                editingNote
+                  ? {
+                      id: editingNote.id,
+                      title: editingNote.title,
+                      content: editingNote.content,
+                    }
+                  : undefined
+              }
               onSubmit={handleNoteSubmit}
               onCancel={() => {
                 setShowNoteForm(false);
@@ -874,10 +929,17 @@ function StudentsPage() {
                     <div key={note.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
-                          <h4 className="font-semibold text-sm">{note.title}</h4>
-                          <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{note.content}</p>
+                          <h4 className="font-semibold text-sm">
+                            {note.title}
+                          </h4>
+                          <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                            {note.content}
+                          </p>
                           <p className="text-xs text-muted-foreground mt-2">
-                            {format(new Date(note.createdAt), 'MMM d, yyyy h:mm a')}
+                            {format(
+                              new Date(note.createdAt),
+                              "MMM d, yyyy h:mm a",
+                            )}
                           </p>
                         </div>
                         <div className="flex gap-1">
@@ -904,9 +966,7 @@ function StudentsPage() {
                 )}
               </div>
               <div className="flex justify-end pt-4">
-                <Button onClick={handleAddNote}>
-                  Add Note
-                </Button>
+                <Button onClick={handleAddNote}>Add Note</Button>
               </div>
             </>
           )}
@@ -923,16 +983,28 @@ function SchedulePage() {
   const [lessonToDelete, setLessonToDelete] = useState<any>(null);
   const [deleteAllFuture, setDeleteAllFuture] = useState(false);
   const [showCommentForm, setShowCommentForm] = useState(false);
-  const [commentFormLessonId, setCommentFormLessonId] = useState<string | null>(null);
-  const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
+  const [commentFormLessonId, setCommentFormLessonId] = useState<string | null>(
+    null,
+  );
+  const [viewCommentsLessonId, setViewCommentsLessonId] = useState<
+    string | null
+  >(null);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingCommentData, setEditingCommentData] = useState<{ title: string; content: string; visibleToStudent: number } | null>(null);
+  const [editingCommentData, setEditingCommentData] = useState<{
+    title: string;
+    content: string;
+    visibleToStudent: number;
+  } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
-  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
+  const [selectedStudentId, setSelectedStudentId] = useState<
+    string | undefined
+  >(undefined);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [editingLesson, setEditingLesson] = useState<Lesson | undefined>(undefined);
+  const [editingLesson, setEditingLesson] = useState<Lesson | undefined>(
+    undefined,
+  );
   const [isScheduleFormOpen, setIsScheduleFormOpen] = useState(false);
 
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
@@ -958,7 +1030,7 @@ function SchedulePage() {
         studentName: student
           ? `${student.firstName} ${student.lastName || ""}`
           : "Unknown Student",
-        studentColor: student?.defaultColor || '#3b82f6',
+        studentColor: student?.defaultColor || "#3b82f6",
         pricePerHour: parseFloat(lesson.pricePerHour),
       };
     })
@@ -967,7 +1039,7 @@ function SchedulePage() {
 
   // Group lessons by date
   const groupedLessons = displayLessons.reduce((groups: any, lesson: any) => {
-    const dateKey = format(lesson.dateTime, 'yyyy-MM-dd');
+    const dateKey = format(lesson.dateTime, "yyyy-MM-dd");
     if (!groups[dateKey]) {
       groups[dateKey] = [];
     }
@@ -976,9 +1048,10 @@ function SchedulePage() {
   }, {});
 
   const handleEditLesson = (lessonIdOrLesson: string | Lesson) => {
-    const lesson = typeof lessonIdOrLesson === 'string' 
-      ? (lessonsData as any[]).find((l: any) => l.id === lessonIdOrLesson)
-      : lessonIdOrLesson;
+    const lesson =
+      typeof lessonIdOrLesson === "string"
+        ? (lessonsData as any[]).find((l: any) => l.id === lessonIdOrLesson)
+        : lessonIdOrLesson;
 
     if (lesson) {
       setEditingLesson(lesson);
@@ -987,9 +1060,10 @@ function SchedulePage() {
   };
 
   const handleDeleteLesson = (lessonIdOrLesson: string | Lesson) => {
-    const lesson = typeof lessonIdOrLesson === 'string' 
-      ? (lessonsData as any[]).find((l: any) => l.id === lessonIdOrLesson)
-      : lessonIdOrLesson;
+    const lesson =
+      typeof lessonIdOrLesson === "string"
+        ? (lessonsData as any[]).find((l: any) => l.id === lessonIdOrLesson)
+        : lessonIdOrLesson;
 
     if (lesson) {
       setLessonToDelete(lesson);
@@ -1004,9 +1078,14 @@ function SchedulePage() {
     }
   };
 
-  const handleUpdatePaymentStatus = async (lessonId: string, status: 'pending' | 'paid' | 'unpaid' | 'free') => {
+  const handleUpdatePaymentStatus = async (
+    lessonId: string,
+    status: "pending" | "paid" | "unpaid" | "free",
+  ) => {
     try {
-      const lessonToUpdate = (lessonsData as any[]).find((l: any) => l.id === lessonId);
+      const lessonToUpdate = (lessonsData as any[]).find(
+        (l: any) => l.id === lessonId,
+      );
       if (lessonToUpdate) {
         await updateLessonMutation.mutateAsync({
           id: lessonId,
@@ -1037,7 +1116,11 @@ function SchedulePage() {
     setShowCommentForm(true);
   };
 
-  const handleCommentSubmit = async (data: { title: string; content: string; visibleToStudent: boolean }) => {
+  const handleCommentSubmit = async (data: {
+    title: string;
+    content: string;
+    visibleToStudent: boolean;
+  }) => {
     if (!commentFormLessonId) return;
 
     try {
@@ -1080,7 +1163,10 @@ function SchedulePage() {
 
   const updateCommentMutation = useUpdateComment();
 
-  const handleEditComment = async (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => {
+  const handleEditComment = async (
+    commentId: string,
+    data: { title: string; content: string; visibleToStudent: number },
+  ) => {
     try {
       await updateCommentMutation.mutateAsync({ id: commentId, ...data });
       toast({
@@ -1099,7 +1185,10 @@ function SchedulePage() {
     }
   };
 
-  const handleStartEditComment = (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => {
+  const handleStartEditComment = (
+    commentId: string,
+    data: { title: string; content: string; visibleToStudent: number },
+  ) => {
     setEditingCommentId(commentId);
     setEditingCommentData(data);
     setViewCommentsLessonId(null); // Close the comments dialog
@@ -1108,11 +1197,13 @@ function SchedulePage() {
 
   // Auto-scroll to today's section on mount
   useEffect(() => {
-    const todayDateKey = format(new Date(), 'yyyy-MM-dd')
-    const todayElement = document.querySelector(`[data-date-key="${todayDateKey}"]`);
+    const todayDateKey = format(new Date(), "yyyy-MM-dd");
+    const todayElement = document.querySelector(
+      `[data-date-key="${todayDateKey}"]`,
+    );
     if (todayElement) {
       setTimeout(() => {
-        todayElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        todayElement.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
     }
   }, [lessonsLoading]);
@@ -1212,69 +1303,96 @@ function SchedulePage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {Object.entries(groupedLessons).map(([dateKey, lessons]: [string, any], index: number) => {
-                const date = new Date(dateKey);
-                const isToday = format(new Date(), 'yyyy-MM-dd') === dateKey;
-                const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+              {Object.entries(groupedLessons).map(
+                ([dateKey, lessons]: [string, any], index: number) => {
+                  const date = new Date(dateKey);
+                  const isToday = format(new Date(), "yyyy-MM-dd") === dateKey;
+                  const isPast =
+                    date < new Date(new Date().setHours(0, 0, 0, 0));
 
-                // Check if this is the first lesson of a new month
-                const isFirstLessonOfMonth = index === 0 ||
-                  format(date, 'yyyy-MM') !== format(new Date(Object.keys(groupedLessons)[index - 1]), 'yyyy-MM');
+                  // Check if this is the first lesson of a new month
+                  const isFirstLessonOfMonth =
+                    index === 0 ||
+                    format(date, "yyyy-MM") !==
+                      format(
+                        new Date(Object.keys(groupedLessons)[index - 1]),
+                        "yyyy-MM",
+                      );
 
-                return (
-                  <div key={dateKey} className="space-y-3" data-date-key={dateKey}>
-                    {isFirstLessonOfMonth && (
-                      <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-foreground mb-2">
-                          {format(date, 'MMMM yyyy')}
-                        </h2>
-                        <div className="h-px bg-border"></div>
+                  return (
+                    <div
+                      key={dateKey}
+                      className="space-y-3"
+                      data-date-key={dateKey}
+                    >
+                      {isFirstLessonOfMonth && (
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold text-foreground mb-2">
+                            {format(date, "MMMM yyyy")}
+                          </h2>
+                          <div className="h-px bg-border"></div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-3">
+                        <h3
+                          className={`text-lg font-semibold ${isToday ? "text-primary" : isPast ? "text-muted-foreground" : ""}`}
+                        >
+                          {isToday ? "Today" : format(date, "EEE d")}
+                        </h3>
+                        <div className="flex-1 h-px bg-border"></div>
+                        <span className="text-sm text-muted-foreground">
+                          {lessons.length} lesson
+                          {lessons.length !== 1 ? "s" : ""}
+                        </span>
                       </div>
-                    )}
 
-                    <div className="flex items-center gap-3">
-                      <h3 className={`text-lg font-semibold ${isToday ? 'text-primary' : isPast ? 'text-muted-foreground' : ''}`}>
-                        {isToday ? 'Today' : format(date, 'EEE d')}
-                      </h3>
-                      <div className="flex-1 h-px bg-border"></div>
-                      <span className="text-sm text-muted-foreground">
-                        {lessons.length} lesson{lessons.length !== 1 ? 's' : ''}
-                      </span>
+                      <div className="space-y-3 pl-4">
+                        {lessons.map((lesson) =>
+                          isMobile ? (
+                            <LessonWithComments
+                              key={lesson.id}
+                              lesson={lesson}
+                              onEdit={() => handleEditLesson(lesson.id)}
+                              onDelete={() => handleDeleteLesson(lesson.id)}
+                              onJoinLesson={
+                                lesson.lessonLink
+                                  ? () => handleJoinLesson(lesson)
+                                  : undefined
+                              }
+                              onUpdatePaymentStatus={handleUpdatePaymentStatus}
+                              onAddComment={() =>
+                                handleAddCommentFromLesson(lesson.id)
+                              }
+                              onViewComments={setViewCommentsLessonId}
+                              onEditComment={handleStartEditComment}
+                              onDeleteComment={handleDeleteComment}
+                            />
+                          ) : (
+                            <LessonCardWithComments
+                              key={lesson.id}
+                              lesson={lesson}
+                              onEdit={handleEditLesson}
+                              onDelete={handleDeleteLesson}
+                              onJoinLesson={
+                                lesson.lessonLink
+                                  ? () => handleJoinLesson(lesson)
+                                  : undefined
+                              }
+                              onUpdatePaymentStatus={handleUpdatePaymentStatus}
+                              onAddComment={(lessonId) =>
+                                handleAddCommentFromLesson(lesson.id)
+                              }
+                              onDeleteComment={handleDeleteComment}
+                              onEditComment={handleStartEditComment}
+                            />
+                          ),
+                        )}
+                      </div>
                     </div>
-
-                    <div className="space-y-3 pl-4">
-                      {lessons.map((lesson) => (
-                        isMobile ? (
-                          <LessonWithComments 
-                            key={lesson.id} 
-                            lesson={lesson} 
-                            onEdit={() => handleEditLesson(lesson.id)} 
-                            onDelete={() => handleDeleteLesson(lesson.id)} 
-                            onJoinLesson={lesson.lessonLink ? () => handleJoinLesson(lesson) : undefined} 
-                            onUpdatePaymentStatus={handleUpdatePaymentStatus} 
-                            onAddComment={() => handleAddCommentFromLesson(lesson.id)}
-                            onViewComments={setViewCommentsLessonId}
-                            onEditComment={handleStartEditComment}
-                            onDeleteComment={handleDeleteComment}
-                          />
-                        ) : (
-                          <LessonCardWithComments
-                            key={lesson.id}
-                            lesson={lesson}
-                            onEdit={handleEditLesson}
-                            onDelete={handleDeleteLesson}
-                            onJoinLesson={handleJoinLesson}
-                            onUpdatePaymentStatus={handleUpdatePaymentStatus}
-                            onAddComment={(lessonId) => setCommentFormLessonId(lessonId)}
-                            onDeleteComment={handleDeleteComment}
-                            onEditComment={handleStartEditComment}
-                          />
-                        )
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                },
+              )}
             </div>
           )}
         </CardContent>
@@ -1283,7 +1401,9 @@ function SchedulePage() {
       <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingLesson ? "Edit Lesson" : "Schedule New Lesson"}</DialogTitle>
+            <DialogTitle>
+              {editingLesson ? "Edit Lesson" : "Schedule New Lesson"}
+            </DialogTitle>
           </DialogHeader>
           <LessonForm
             students={studentsData as any[]}
@@ -1295,8 +1415,8 @@ function SchedulePage() {
                     pricePerHour: parseFloat(editingLesson.pricePerHour),
                   }
                 : selectedDate
-                ? { dateTime: selectedDate }
-                : undefined
+                  ? { dateTime: selectedDate }
+                  : undefined
             }
             onSubmit={handleLessonSubmit}
             onCancel={() => {
@@ -1351,14 +1471,20 @@ function SchedulePage() {
       <Dialog open={showCommentForm} onOpenChange={setShowCommentForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingCommentId ? 'Edit Comment' : 'Add Comment'}</DialogTitle>
+            <DialogTitle>
+              {editingCommentId ? "Edit Comment" : "Add Comment"}
+            </DialogTitle>
           </DialogHeader>
           <CommentForm
-            initialData={editingCommentData ? {
-              title: editingCommentData.title,
-              content: editingCommentData.content,
-              visibleToStudent: editingCommentData.visibleToStudent === 1,
-            } : undefined}
+            initialData={
+              editingCommentData
+                ? {
+                    title: editingCommentData.title,
+                    content: editingCommentData.content,
+                    visibleToStudent: editingCommentData.visibleToStudent === 1,
+                  }
+                : undefined
+            }
             isEditing={!!editingCommentId}
             onSubmit={async (data) => {
               if (editingCommentId) {
@@ -1381,7 +1507,7 @@ function SchedulePage() {
         </DialogContent>
       </Dialog>
 
-      <ScheduleCommentsDialog 
+      <ScheduleCommentsDialog
         lessonId={viewCommentsLessonId}
         onClose={() => setViewCommentsLessonId(null)}
         onDeleteComment={handleDeleteComment}
@@ -1418,20 +1544,23 @@ const linkifyText = (text: string): JSX.Element => {
   );
 };
 
-function ScheduleCommentsDialog({ 
-  lessonId, 
-  onClose, 
+function ScheduleCommentsDialog({
+  lessonId,
+  onClose,
   onDeleteComment,
   onEditComment,
-  isStudentView = false
-}: { 
-  lessonId: string | null; 
+  isStudentView = false,
+}: {
+  lessonId: string | null;
   onClose: () => void;
   onDeleteComment: (commentId: string) => void;
-  onEditComment?: (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => void;
+  onEditComment?: (
+    commentId: string,
+    data: { title: string; content: string; visibleToStudent: number },
+  ) => void;
   isStudentView?: boolean;
 }) {
-  const { data: comments = [] } = useCommentsByLesson(lessonId || '');
+  const { data: comments = [] } = useCommentsByLesson(lessonId || "");
 
   return (
     <Dialog open={!!lessonId} onOpenChange={onClose}>
@@ -1443,15 +1572,24 @@ function ScheduleCommentsDialog({
           <div className="grid gap-4 py-4">
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {comments.map((comment) => (
-                <div key={comment.id} className="border-l-2 border-primary/20 pl-2">
+                <div
+                  key={comment.id}
+                  className="border-l-2 border-primary/20 pl-2"
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="text-xs font-medium">{comment.title}</p>
-                        {!isStudentView && comment.visibleToStudent === 1 && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0">
-                            Visible
-                          </Badge>
+                        {!isStudentView && comment.visibleToStudent ? (
+                          <Eye
+                            className="h-3 w-3 text-muted-foreground"
+                            title="Visible to student"
+                          />
+                        ) : (
+                          <EyeOff
+                            className="h-3 w-3 text-muted-foreground"
+                            title="Not visible to student"
+                          />
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -1461,7 +1599,12 @@ function ScheduleCommentsDialog({
                         {format(new Date(comment.createdAt), "MMM d, h:mm a")}
                         {comment.lastEdited && (
                           <span className="ml-2 italic">
-                            (edited {format(new Date(comment.lastEdited), "MMM d, h:mm a")})
+                            (edited{" "}
+                            {format(
+                              new Date(comment.lastEdited),
+                              "MMM d, h:mm a",
+                            )}
+                            )
                           </span>
                         )}
                       </p>
@@ -1550,7 +1693,7 @@ function StudentCalendarPage() {
 
   // Find the student by their 6-digit studentId
   const student = (studentsData as any[]).find(
-    (s: any) => s.studentId === params.studentId
+    (s: any) => s.studentId === params.studentId,
   );
 
   if (lessonsLoading || studentsLoading) {
@@ -1566,10 +1709,16 @@ function StudentCalendarPage() {
       <Card>
         <CardContent className="p-8">
           <div className="text-center" data-testid="student-not-found">
-            <h2 className="text-2xl font-bold mb-2" data-testid="text-not-found-title">
+            <h2
+              className="text-2xl font-bold mb-2"
+              data-testid="text-not-found-title"
+            >
               Student Not Found
             </h2>
-            <p className="text-muted-foreground" data-testid="text-not-found-message">
+            <p
+              className="text-muted-foreground"
+              data-testid="text-not-found-message"
+            >
               No student found with ID: {params.studentId}
             </p>
           </div>
@@ -1581,7 +1730,7 @@ function StudentCalendarPage() {
   // Transform lessons data for calendar display
   const displayLessons = (lessonsData as any[]).map((lesson: any) => {
     const lessonStudent = (studentsData as any[]).find(
-      (s: any) => s.id === lesson.studentId
+      (s: any) => s.id === lesson.studentId,
     );
     return {
       ...lesson,
@@ -1589,7 +1738,7 @@ function StudentCalendarPage() {
       studentName: lessonStudent
         ? `${lessonStudent.firstName} ${lessonStudent.lastName || ""}`
         : "Unknown Student",
-      studentColor: lessonStudent?.defaultColor || '#3b82f6',
+      studentColor: lessonStudent?.defaultColor || "#3b82f6",
       studentId: lesson.studentId,
       pricePerHour: parseFloat(lesson.pricePerHour),
     };
@@ -1606,7 +1755,8 @@ function StudentCalendarPage() {
     <>
       <div className="mb-4">
         <h1 className="text-2xl font-bold" data-testid="student-name">
-          Calendar for {student.firstName} {student.lastName || ""} (ID: {student.studentId})
+          Calendar for {student.firstName} {student.lastName || ""} (ID:{" "}
+          {student.studentId})
         </h1>
       </div>
       <CalendarView
@@ -1624,12 +1774,14 @@ function StudentSchedulePage() {
   const params = useParams<{ studentId: string }>();
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
   const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
-  const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
+  const [viewCommentsLessonId, setViewCommentsLessonId] = useState<
+    string | null
+  >(null);
   const isMobile = useIsMobile();
 
   // Find the student by their 6-digit studentId
   const student = (studentsData as any[]).find(
-    (s: any) => s.studentId === params.studentId
+    (s: any) => s.studentId === params.studentId,
   );
 
   if (lessonsLoading || studentsLoading) {
@@ -1645,10 +1797,16 @@ function StudentSchedulePage() {
       <Card>
         <CardContent className="p-8">
           <div className="text-center" data-testid="student-not-found">
-            <h2 className="text-2xl font-bold mb-2" data-testid="text-not-found-title">
+            <h2
+              className="text-2xl font-bold mb-2"
+              data-testid="text-not-found-title"
+            >
               Student Not Found
             </h2>
-            <p className="text-muted-foreground" data-testid="text-not-found-message">
+            <p
+              className="text-muted-foreground"
+              data-testid="text-not-found-message"
+            >
               No student found with ID: {params.studentId}
             </p>
           </div>
@@ -1669,7 +1827,7 @@ function StudentSchedulePage() {
         ...lesson,
         dateTime: new Date(lesson.dateTime),
         studentName: `${student.firstName} ${student.lastName || ""}`,
-        studentColor: student.defaultColor || '#3b82f6',
+        studentColor: student.defaultColor || "#3b82f6",
         pricePerHour: parseFloat(lesson.pricePerHour),
       };
     })
@@ -1678,7 +1836,7 @@ function StudentSchedulePage() {
 
   // Group lessons by date
   const groupedLessons = displayLessons.reduce((groups: any, lesson: any) => {
-    const dateKey = format(lesson.dateTime, 'yyyy-MM-dd');
+    const dateKey = format(lesson.dateTime, "yyyy-MM-dd");
     if (!groups[dateKey]) {
       groups[dateKey] = [];
     }
@@ -1697,7 +1855,8 @@ function StudentSchedulePage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Schedule for {student.firstName} {student.lastName || ""} ({displayLessons.length})
+            Schedule for {student.firstName} {student.lastName || ""} (
+            {displayLessons.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -1707,71 +1866,90 @@ function StudentSchedulePage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {Object.entries(groupedLessons).map(([dateKey, lessons]: [string, any], index: number) => {
-                const date = new Date(dateKey);
-                const isToday = format(new Date(), 'yyyy-MM-dd') === dateKey;
-                const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+              {Object.entries(groupedLessons).map(
+                ([dateKey, lessons]: [string, any], index: number) => {
+                  const date = new Date(dateKey);
+                  const isToday = format(new Date(), "yyyy-MM-dd") === dateKey;
+                  const isPast =
+                    date < new Date(new Date().setHours(0, 0, 0, 0));
 
-                // Check if this is the first lesson of a new month
-                const isFirstLessonOfMonth = index === 0 ||
-                  format(date, 'yyyy-MM') !== format(new Date(Object.keys(groupedLessons)[index - 1]), 'yyyy-MM');
+                  // Check if this is the first lesson of a new month
+                  const isFirstLessonOfMonth =
+                    index === 0 ||
+                    format(date, "yyyy-MM") !==
+                      format(
+                        new Date(Object.keys(groupedLessons)[index - 1]),
+                        "yyyy-MM",
+                      );
 
-                return (
-                  <div key={dateKey} className="space-y-3" data-date-key={dateKey}>
-                    {isFirstLessonOfMonth && (
-                      <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-foreground mb-2">
-                          {format(date, 'MMMM yyyy')}
-                        </h2>
-                        <div className="h-px bg-border"></div>
+                  return (
+                    <div
+                      key={dateKey}
+                      className="space-y-3"
+                      data-date-key={dateKey}
+                    >
+                      {isFirstLessonOfMonth && (
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold text-foreground mb-2">
+                            {format(date, "MMMM yyyy")}
+                          </h2>
+                          <div className="h-px bg-border"></div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-3">
+                        <h3
+                          className={`text-lg font-semibold ${isToday ? "text-primary" : isPast ? "text-muted-foreground" : ""}`}
+                        >
+                          {isToday ? "Today" : format(date, "EEE d")}
+                        </h3>
+                        <div className="flex-1 h-px bg-border"></div>
+                        <span className="text-sm text-muted-foreground">
+                          {lessons.length} lesson
+                          {lessons.length !== 1 ? "s" : ""}
+                        </span>
                       </div>
-                    )}
 
-                    <div className="flex items-center gap-3">
-                      <h3 className={`text-lg font-semibold ${isToday ? 'text-primary' : isPast ? 'text-muted-foreground' : ''}`}>
-                        {isToday ? 'Today' : format(date, 'EEE d')}
-                      </h3>
-                      <div className="flex-1 h-px bg-border"></div>
-                      <span className="text-sm text-muted-foreground">
-                        {lessons.length} lesson{lessons.length !== 1 ? 's' : ''}
-                      </span>
+                      <div className="space-y-3 pl-4">
+                        {lessons.map((lesson) =>
+                          isMobile ? (
+                            <LessonWithComments
+                              key={lesson.id}
+                              lesson={lesson}
+                              onEdit={() => {}}
+                              onDelete={() => {}}
+                              onJoinLesson={
+                                lesson.lessonLink
+                                  ? () => handleJoinLesson(lesson)
+                                  : undefined
+                              }
+                              onUpdatePaymentStatus={() => {}}
+                              onViewComments={setViewCommentsLessonId}
+                              isStudentView={true}
+                            />
+                          ) : (
+                            <LessonCardWithComments
+                              key={lesson.id}
+                              lesson={lesson}
+                              onEdit={() => {}}
+                              onDelete={() => {}}
+                              onJoinLesson={handleJoinLesson}
+                              showCommentActions={false}
+                              isStudentView={true}
+                            />
+                          ),
+                        )}
+                      </div>
                     </div>
-
-                    <div className="space-y-3 pl-4">
-                      {lessons.map((lesson) => (
-                        isMobile ? (
-                          <LessonWithComments 
-                            key={lesson.id} 
-                            lesson={lesson} 
-                            onEdit={() => {}}
-                            onDelete={() => {}}
-                            onJoinLesson={lesson.lessonLink ? () => handleJoinLesson(lesson) : undefined}
-                            onUpdatePaymentStatus={() => {}}
-                            onViewComments={setViewCommentsLessonId}
-                            isStudentView={true}
-                          />
-                        ) : (
-                          <LessonCardWithComments
-                            key={lesson.id}
-                            lesson={lesson}
-                            onEdit={() => {}}
-                            onDelete={() => {}}
-                            onJoinLesson={handleJoinLesson}
-                            showCommentActions={false}
-                            isStudentView={true}
-                          />
-                        )
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                },
+              )}
             </div>
           )}
         </CardContent>
       </Card>
 
-      <ScheduleCommentsDialog 
+      <ScheduleCommentsDialog
         lessonId={viewCommentsLessonId}
         onClose={() => setViewCommentsLessonId(null)}
         onDeleteComment={() => {}}
@@ -1977,7 +2155,11 @@ function AuthenticatedApp() {
   }
 
   // Show login form if not authenticated and not on public route
-  if (!isStudentCalendarView && !isStudentScheduleView && !authData?.authenticated) {
+  if (
+    !isStudentCalendarView &&
+    !isStudentScheduleView &&
+    !authData?.authenticated
+  ) {
     return <LoginForm />;
   }
 

@@ -10,6 +10,9 @@ import {
   Edit,
   Calendar,
   Trash2,
+  NotebookText,
+  CalendarPlus,
+  PencilLine,
 } from "lucide-react";
 
 interface Student {
@@ -55,14 +58,14 @@ export default function StudentCard({
     <Card className="hover-elevate" data-testid={`student-card-${student.id}`}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
         <div className="flex items-center gap-3">
-          <div 
+          <div
             className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
-            style={{ backgroundColor: student.defaultColor || '#3b82f6' }}
+            style={{ backgroundColor: student.defaultColor || "#3b82f6" }}
             title="Student color"
           />
           <div>
             <CardTitle className="text-lg font-semibold">
-              {student.firstName} {student.lastName || ''}
+              {student.firstName} {student.lastName || ""}
             </CardTitle>
             <div className="text-xs text-muted-foreground mt-0.5">
               ID: {student.studentId}
@@ -117,21 +120,12 @@ export default function StudentCard({
         <div className="flex flex-col gap-2 pt-2">
           <div className="flex items-center gap-2">
             <Button
-              variant="default"
-              size="sm"
+              variant="ghost"
+              size="icon"
               onClick={() => onScheduleLesson(student.id)}
               data-testid={`button-schedule-lesson-${student.id}`}
             >
-              <Calendar className="h-4 w-4 mr-2" />
-              Schedule
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onViewLessons(student.id)}
-              data-testid={`button-view-lessons-${student.id}`}
-            >
-              View Lessons
+              <CalendarPlus className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
@@ -151,15 +145,27 @@ export default function StudentCard({
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onViewNotes(student.id)}
-            data-testid={`button-view-notes-${student.id}`}
-            className="w-full"
-          >
-            View Notes
-          </Button>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewLessons(student.id)}
+              data-testid={`button-view-lessons-${student.id}`}
+            >
+              <NotebookText />
+              Schedule
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewNotes(student.id)}
+              data-testid={`button-view-notes-${student.id}`}
+            >
+              <PencilLine />
+              Notes
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

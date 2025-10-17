@@ -1,19 +1,28 @@
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from '@/components/ui/hover-card';
+} from "@/components/ui/hover-card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MessageSquare, Clock, Trash2, ChevronDown, ExternalLink, Edit } from 'lucide-react';
-import { useCommentsByLesson } from '@/hooks/useComments';
-import { format as formatDate } from 'date-fns';
+import {
+  MessageSquare,
+  Clock,
+  Trash2,
+  ChevronDown,
+  ExternalLink,
+  Edit,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { useCommentsByLesson } from "@/hooks/useComments";
+import { format as formatDate } from "date-fns";
 
 interface Lesson {
   id: string;
@@ -48,11 +57,17 @@ interface LessonWithCommentsProps {
   onEdit: () => void;
   onDelete: () => void;
   onJoinLesson?: () => void;
-  onUpdatePaymentStatus: (lessonId: string, status: Lesson["paymentStatus"]) => void;
+  onUpdatePaymentStatus: (
+    lessonId: string,
+    status: Lesson["paymentStatus"],
+  ) => void;
   onAddComment?: () => void;
   isStudentView?: boolean;
   onViewComments?: (lessonId: string) => void;
-  onEditComment?: (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => void;
+  onEditComment?: (
+    commentId: string,
+    data: { title: string; content: string; visibleToStudent: number },
+  ) => void;
   onDeleteComment?: (commentId: string) => void;
 }
 
@@ -133,13 +148,19 @@ export default function LessonWithComments({
               }}
             >
               <MessageSquare className="h-3.5 w-3.5 sm:h-3 sm:w-3 text-primary" />
-              <span className="text-xs sm:text-[10px] font-medium text-primary">{comments.length}</span>
+              <span className="text-xs sm:text-[10px] font-medium text-primary">
+                {comments.length}
+              </span>
             </div>
           )}
         </div>
         <div className="flex items-center justify-between gap-2 mt-1">
-          <div className="truncate font-semibold text-sm sm:text-xs leading-tight">{lesson.studentName}</div>
-          <div className="truncate text-muted-foreground text-sm sm:text-xs leading-tight">{lesson.subject}</div>
+          <div className="truncate font-semibold text-sm sm:text-xs leading-tight">
+            {lesson.studentName}
+          </div>
+          <div className="truncate text-muted-foreground text-sm sm:text-xs leading-tight">
+            {lesson.subject}
+          </div>
         </div>
       </div>
 
@@ -155,7 +176,6 @@ export default function LessonWithComments({
             className="h-7 flex-1 text-xs sm:text-xs px-2"
           >
             <ExternalLink className="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1 sm:mr-1" />
-
           </Button>
         )}
         {!isStudentView && onAddComment && (
@@ -188,15 +208,17 @@ export default function LessonWithComments({
         {!isStudentView && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              {<Button
-                variant="ghost"
-                size="sm"
-                className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-7 text-xs font-medium border-0`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                &nbsp;&nbsp;&nbsp;
-              </Button>}
-              
+              {
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-7 text-xs font-medium border-0`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  &nbsp;&nbsp;&nbsp;
+                </Button>
+              }
+
               {/*<button
                 className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
                 onClick={(e) => e.stopPropagation()}
@@ -211,7 +233,9 @@ export default function LessonWithComments({
                   e.stopPropagation();
                   onUpdatePaymentStatus(lesson.id, "pending");
                 }}
-                className={lesson.paymentStatus === "pending" ? "bg-accent" : ""}
+                className={
+                  lesson.paymentStatus === "pending" ? "bg-accent" : ""
+                }
               >
                 <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
                 Pending
@@ -270,7 +294,9 @@ export default function LessonWithComments({
         sideOffset={8}
       >
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold">Comments ({comments.length})</h4>
+          <h4 className="text-sm font-semibold">
+            Comments ({comments.length})
+          </h4>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {comments.map((comment) => (
               <div
@@ -281,10 +307,16 @@ export default function LessonWithComments({
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-xs font-medium">{comment.title}</p>
-                      {comment.visibleToStudent === 1 && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0">
-                          Visible
-                        </Badge>
+                      {comment.visibleToStudent === 1 ? (
+                        <Eye
+                          className="h-3 w-3 text-muted-foreground"
+                          title="Visible to student"
+                        />
+                      ) : (
+                        <EyeOff
+                          className="h-3 w-3 text-muted-foreground"
+                          title="Not visible to student"
+                        />
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -294,7 +326,12 @@ export default function LessonWithComments({
                       {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
                       {comment.lastEdited && (
                         <span className="ml-2 italic">
-                          (edited {formatDate(new Date(comment.lastEdited), "MMM d, h:mm a")})
+                          (edited{" "}
+                          {formatDate(
+                            new Date(comment.lastEdited),
+                            "MMM d, h:mm a",
+                          )}
+                          )
                         </span>
                       )}
                     </p>

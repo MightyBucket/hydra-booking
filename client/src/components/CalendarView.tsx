@@ -19,6 +19,8 @@ import {
   ChevronDown,
   Download,
   Edit,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useCommentsByLesson, useDeleteComment } from "@/hooks/useComments";
 import { format as formatDate } from "date-fns";
@@ -92,7 +94,10 @@ interface CalendarViewProps {
     status: Lesson["paymentStatus"],
   ) => void;
   onAddComment?: (lessonId: string) => void;
-  onEditComment?: (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => void;
+  onEditComment?: (
+    commentId: string,
+    data: { title: string; content: string; visibleToStudent: number },
+  ) => void;
   focusedStudentId?: string;
 }
 
@@ -318,16 +323,20 @@ export default function CalendarView({
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"month" | "week">("month");
-  const [selectedMobileDate, setSelectedMobileDate] = useState<Date | null>(null);
+  const [selectedMobileDate, setSelectedMobileDate] = useState<Date | null>(
+    null,
+  );
   const [lastTapTime, setLastTapTime] = useState<number>(0);
   const [lastTapDate, setLastTapDate] = useState<Date | null>(null);
   const isMobile = useIsMobile();
-  const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
+  const [viewCommentsLessonId, setViewCommentsLessonId] = useState<
+    string | null
+  >(null);
 
-  const { data: viewCommentsData = [], refetch: refetchComments } = useCommentsByLesson(viewCommentsLessonId || '');
+  const { data: viewCommentsData = [], refetch: refetchComments } =
+    useCommentsByLesson(viewCommentsLessonId || "");
 
   const deleteCommentMutation = useDeleteComment();
-
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -407,36 +416,38 @@ export default function CalendarView({
     : [];
 
   const handleSyncToCalendar = () => {
-    const token = localStorage.getItem('sessionId');
+    const token = localStorage.getItem("sessionId");
     const baseUrl = window.location.origin;
     const icsUrl = `${baseUrl}/api/calendar/ics`;
 
     // Create a temporary link to download the .ics file
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = icsUrl;
-    link.setAttribute('download', 'lessons.ics');
+    link.setAttribute("download", "lessons.ics");
 
     // Add authorization header via fetch and trigger download
     fetch(icsUrl, {
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     })
-    .then(response => response.blob())
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      link.href = url;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    })
-    .catch(error => {
-      console.error('Error downloading calendar:', error);
-    });
+      .then((response) => response.blob())
+      .then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      })
+      .catch((error) => {
+        console.error("Error downloading calendar:", error);
+      });
   };
 
-  const viewedLesson = viewCommentsLessonId ? lessons.find(l => l.id === viewCommentsLessonId) : null;
+  const viewedLesson = viewCommentsLessonId
+    ? lessons.find((l) => l.id === viewCommentsLessonId)
+    : null;
 
   return (
     <Card className="w-full h-full" data-testid="calendar-view">
@@ -532,22 +543,25 @@ export default function CalendarView({
             const dayLessons = getLessonsForDate(day);
             const isToday = isSameDay(day, new Date());
             const isCurrentMonth = isSameMonth(day, currentDate);
-            const isSelected = selectedMobileDate && isSameDay(day, selectedMobileDate);
+            const isSelected =
+              selectedMobileDate && isSameDay(day, selectedMobileDate);
 
             return (
               <div
                 key={day.toISOString()}
                 className={`
-                  ${isMobile ? 'min-h-11 p-0.5' : 'min-h-16 sm:min-h-24 p-1 sm:p-2'} border rounded-sm cursor-pointer hover-elevate
+                  ${isMobile ? "min-h-11 p-0.5" : "min-h-16 sm:min-h-24 p-1 sm:p-2"} border rounded-sm cursor-pointer hover-elevate
                   ${isToday ? "bg-accent" : "bg-card"}
                   ${isSelected && isMobile ? "ring-2 ring-primary" : ""}
                   ${!isCurrentMonth ? "opacity-40" : ""}
                 `}
-                onClick={() => isMobile ? handleMobileDateClick(day) : onDateClick(day)}
+                onClick={() =>
+                  isMobile ? handleMobileDateClick(day) : onDateClick(day)
+                }
                 data-testid={`calendar-day-${format(day, "yyyy-MM-dd")}`}
               >
                 <div
-                  className={`${isMobile ? 'text-[9px]' : 'text-[10px] sm:text-sm'} font-medium mb-0.5 sm:mb-1 ${isToday ? "text-primary" : ""}`}
+                  className={`${isMobile ? "text-[9px]" : "text-[10px] sm:text-sm"} font-medium mb-0.5 sm:mb-1 ${isToday ? "text-primary" : ""}`}
                 >
                   {format(day, "d")}
                 </div>
@@ -556,7 +570,8 @@ export default function CalendarView({
                   <div className="space-y-[2px]">
                     {dayLessons.slice(0, 2).map((lesson) => {
                       const isOtherStudent =
-                        focusedStudentId && lesson.studentId !== focusedStudentId;
+                        focusedStudentId &&
+                        lesson.studentId !== focusedStudentId;
 
                       return (
                         <div
@@ -564,8 +579,8 @@ export default function CalendarView({
                           className="h-1 rounded-full"
                           style={{
                             backgroundColor: isOtherStudent
-                              ? '#9ca3af'
-                              : (lesson.studentColor || '#3b82f6')
+                              ? "#9ca3af"
+                              : lesson.studentColor || "#3b82f6",
                           }}
                         />
                       );
@@ -580,7 +595,8 @@ export default function CalendarView({
                   <div className="space-y-0.5 sm:space-y-1">
                     {dayLessons.slice(0, 3).map((lesson) => {
                       const isOtherStudent =
-                        focusedStudentId && lesson.studentId !== focusedStudentId;
+                        focusedStudentId &&
+                        lesson.studentId !== focusedStudentId;
 
                       if (isOtherStudent) {
                         return (
@@ -645,15 +661,18 @@ export default function CalendarView({
         {isMobile && selectedMobileDate && (
           <div className="mt-4 pt-4 pb-4 px-4 -mx-2 border-t border-x border-b rounded-b-lg bg-card">
             <h3 className="text-sm font-semibold mb-3">
-              {format(selectedMobileDate, 'EEEE, MMMM d')}
+              {format(selectedMobileDate, "EEEE, MMMM d")}
               {selectedMobileLessons.length > 0 && (
                 <span className="ml-2 text-muted-foreground">
-                  ({selectedMobileLessons.length} {selectedMobileLessons.length === 1 ? 'lesson' : 'lessons'})
+                  ({selectedMobileLessons.length}{" "}
+                  {selectedMobileLessons.length === 1 ? "lesson" : "lessons"})
                 </span>
               )}
             </h3>
             {selectedMobileLessons.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No lessons scheduled</p>
+              <p className="text-sm text-muted-foreground">
+                No lessons scheduled
+              </p>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {selectedMobileLessons.map((lesson) => {
@@ -696,9 +715,7 @@ export default function CalendarView({
                       }
                       onUpdatePaymentStatus={onUpdatePaymentStatus}
                       onAddComment={
-                        onAddComment
-                          ? () => onAddComment(lesson.id)
-                          : undefined
+                        onAddComment ? () => onAddComment(lesson.id) : undefined
                       }
                       isStudentView={!!focusedStudentId}
                       onViewComments={setViewCommentsLessonId}
@@ -722,7 +739,10 @@ export default function CalendarView({
         )}
       </CardContent>
 
-      <Dialog open={!!viewCommentsLessonId} onOpenChange={() => setViewCommentsLessonId(null)}>
+      <Dialog
+        open={!!viewCommentsLessonId}
+        onOpenChange={() => setViewCommentsLessonId(null)}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Comments</DialogTitle>
@@ -731,25 +751,43 @@ export default function CalendarView({
             <div className="grid gap-4 py-4">
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {viewCommentsData.map((comment) => (
-                  <div key={comment.id} className="border-l-2 border-primary/20 pl-2">
+                  <div
+                    key={comment.id}
+                    className="border-l-2 border-primary/20 pl-2"
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <p className="text-xs font-medium">{comment.title}</p>
-                          {!focusedStudentId && comment.visibleToStudent === 1 && (
-                            <Badge variant="outline" className="text-[10px] px-1 py-0">
-                              Visible
-                            </Badge>
+                          {!focusedStudentId &&
+                          comment.visibleToStudent === 1 ? (
+                            <Eye
+                              className="h-3 w-3 text-muted-foreground"
+                              title="Visible to student"
+                            />
+                          ) : (
+                            <EyeOff
+                              className="h-3 w-3 text-muted-foreground"
+                              title="Not visible to student"
+                            />
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {linkifyText(comment.content)}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-1">
-                          {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
+                          {formatDate(
+                            new Date(comment.createdAt),
+                            "MMM d, h:mm a",
+                          )}
                           {comment.lastEdited && (
                             <span className="ml-2 italic">
-                              (edited {formatDate(new Date(comment.lastEdited), "MMM d, h:mm a")})
+                              (edited{" "}
+                              {formatDate(
+                                new Date(comment.lastEdited),
+                                "MMM d, h:mm a",
+                              )}
+                              )
                             </span>
                           )}
                         </p>
@@ -777,13 +815,15 @@ export default function CalendarView({
                             size="sm"
                             onClick={async () => {
                               try {
-                                await deleteCommentMutation.mutateAsync(comment.id);
+                                await deleteCommentMutation.mutateAsync(
+                                  comment.id,
+                                );
                                 // Close dialog if this was the last comment
                                 if (viewCommentsData.length === 1) {
                                   setViewCommentsLessonId(null);
                                 }
                               } catch (error) {
-                                console.error('Error deleting comment:', error);
+                                console.error("Error deleting comment:", error);
                               }
                             }}
                             className="h-6 w-6 p-0 text-destructive hover:text-destructive"
