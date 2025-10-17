@@ -53,8 +53,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Student routes (read endpoints are public for student calendar view, write endpoints are protected)
-  app.get("/api/students", async (req, res) => {
+  // Student routes (global endpoint requires auth, individual student endpoint is public)
+  app.get("/api/students", requireAuth, async (req, res) => {
     try {
       const students = await storage.getStudents();
       res.json(students);
@@ -135,8 +135,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Lesson routes (read endpoints are public for student calendar view, write endpoints are protected)
-  app.get("/api/lessons", async (req, res) => {
+  // Lesson routes (global endpoint requires auth, student-specific endpoint is public)
+  app.get("/api/lessons", requireAuth, async (req, res) => {
     try {
       const lessons = await storage.getLessons();
       res.json(lessons);
