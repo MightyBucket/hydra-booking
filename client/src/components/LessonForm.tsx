@@ -99,6 +99,8 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
     const lessonData = {
       ...formData,
       dateTime: new Date(formData.dateTime),
+      pricePerHour: Number(formData.pricePerHour),
+      duration: Number(formData.duration),
     };
     onSubmit(lessonData);
   };
@@ -170,7 +172,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
               <Label htmlFor="duration">Duration (minutes)</Label>
               <Select 
                 value={formData.duration.toString()} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, duration: parseInt(value) }))}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, duration: parseInt(value, 10) }))}
               >
                 <SelectTrigger data-testid="select-duration">
                   <SelectValue />
@@ -195,7 +197,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
                 step="0.01"
                 min="0"
                 value={formData.pricePerHour}
-                onChange={(e) => setFormData(prev => ({ ...prev, pricePerHour: parseFloat(e.target.value) }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, pricePerHour: parseFloat(e.target.value) || 0 }))}
                 required
                 data-testid="input-price"
               />
