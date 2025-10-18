@@ -46,7 +46,7 @@ export function useLessonDelete(lessonsData: any[]) {
       if (deleteAllFuture) {
         const lessonDate = new Date(lessonToDelete.dateTime);
         const dayOfWeek = lessonDate.getDay();
-        const timeString = lessonToDelete.dateTime.slice(11, 19);
+        const timeString = lessonDate.toISOString().slice(11, 19);
 
         const futureRecurringLessons = lessonsData.filter((lesson: any) => {
           const lessonDateTime = new Date(lesson.dateTime);
