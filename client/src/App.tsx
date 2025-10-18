@@ -61,10 +61,11 @@ import { handleJoinLessonLink, calculateStudentStats } from "@/utils/lessonHelpe
  * Handles lesson creation, editing, deletion, and payment status updates
  */
 function CalendarPage() {
-  // Fetch lesson and student data
+  // Fetch lesson and student data from the database
   const { lessonsData, studentsData, displayLessons, lessonsLoading } = useLessonData();
 
   // Handle lesson deletion with option to delete recurring lessons
+  // Provides dialog state and handlers for confirming deletion
   const {
     showDeleteDialog,
     setShowDeleteDialog,
@@ -75,8 +76,11 @@ function CalendarPage() {
   } = useLessonDelete(lessonsData as any[]);
 
   // Handle payment status updates (pending, paid, overdue, etc.)
+  // Provides mutation handler for updating lesson payment status
   const { handleUpdatePaymentStatus } = usePaymentStatus(lessonsData as any[]);
 
+  // Manage comment form state and handlers
+  // Handles adding, editing, and submitting comments for lessons
   const {
     showCommentForm,
     setShowCommentForm,
@@ -89,6 +93,8 @@ function CalendarPage() {
     resetCommentForm,
   } = useCommentHandlers();
 
+  // Manage lesson form state and handlers
+  // Controls lesson creation/editing dialog and form submission
   const {
     showLessonForm,
     selectedLesson,
@@ -98,6 +104,10 @@ function CalendarPage() {
     handleSubmit: handleLessonSubmit,
   } = useLessonForm();
 
+  /**
+   * Handle lesson click event
+   * Finds the original lesson data and opens the edit form
+   */
   const handleLessonClick = (lesson: any) => {
     const originalLesson = (lessonsData as any[]).find(
       (l: any) => l.id === lesson.id,
@@ -107,14 +117,23 @@ function CalendarPage() {
     }
   };
 
+  /**
+   * Handle date click event in calendar
+   * Opens lesson form with the selected date pre-filled
+   */
   const handleDateClick = (date: Date) => {
     handleOpenLessonForm({ date });
   };
 
+  /**
+   * Handle join lesson button click
+   * Opens the lesson link in a new window
+   */
   const handleJoinLesson = (lesson: any) => {
     handleJoinLessonLink(lesson.lessonLink);
   };
 
+  // Show loading state while fetching lessons
   if (lessonsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -197,18 +216,21 @@ function CalendarPage() {
  * Allows adding, editing, deleting students and viewing their lessons/notes
  */
 function StudentsPage() {
-  // Track delete confirmation input and selected student for notes dialog
+  // Track delete confirmation input to ensure user confirms deletion
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+  // Track which student's notes are being viewed
   const [selectedStudentForNotes, setSelectedStudentForNotes] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Fetch students and lessons data
+  // Fetch students and lessons data from the database
   const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
   const { data: lessonsData = [] } = useLessons();
   const deleteStudentMutation = useDeleteStudent();
 
+  // Manage delete confirmation dialog state
   const { isOpen: showDeleteDialog, data: studentToDelete, open: openDeleteDialog, close: closeDeleteDialog } = useDialogState<any>();
 
+  // Manage student form state (add/edit student)
   const {
     showStudentForm,
     selectedStudent,
@@ -217,6 +239,7 @@ function StudentsPage() {
     handleSubmit: handleStudentSubmit,
   } = useStudentForm();
 
+  // Manage lesson form state for scheduling lessons for a student
   const {
     showLessonForm,
     prefilledStudentId,
@@ -226,6 +249,7 @@ function StudentsPage() {
     handleSubmit: handleLessonSubmit,
   } = useLessonForm();
 
+  // Manage notes dialog and form state for viewing/editing student notes
   const {
     showNotesDialog,
     showNoteForm,
@@ -241,11 +265,19 @@ function StudentsPage() {
     setEditingNote,
   } = useStudentNotes(selectedStudentForNotes);
 
+  /**
+   * Handle edit student button click
+   * Opens the student form with the selected student's data
+   */
   const handleEditStudent = (studentId: string) => {
     const student = (studentsData as any[]).find((s: any) => s.id === studentId);
     handleOpenStudentForm(student);
   };
 
+  /**
+   * Handle schedule lesson button click
+   * Opens lesson form pre-filled with student data
+   */
   const handleScheduleLesson = (studentId: string) => {
     const student = (studentsData as any[]).find((s: any) => s.id === studentId);
     if (student) {
@@ -253,6 +285,10 @@ function StudentsPage() {
     }
   };
 
+  /**
+   * Handle view lessons button click
+   * Navigates to the student's calendar view
+   */
   const handleViewLessons = (studentId: string) => {
     const student = (studentsData as any[]).find((s: any) => s.id === studentId);
     if (student?.studentId) {
@@ -260,11 +296,19 @@ function StudentsPage() {
     }
   };
 
+  /**
+   * Handle view notes button click
+   * Opens the notes dialog for the selected student
+   */
   const handleViewNotes = (studentId: string) => {
     setSelectedStudentForNotes(studentId);
     handleOpenNotes();
   };
 
+  /**
+   * Handle delete student button click
+   * Opens delete confirmation dialog
+   */
   const handleDeleteStudent = (studentId: string) => {
     const student = (studentsData as any[]).find(
       (s: any) => s.id === studentId,
@@ -273,9 +317,14 @@ function StudentsPage() {
     setDeleteConfirmationText("");
   };
 
+  /**
+   * Confirm student deletion
+   * Validates confirmation text and deletes student with all associated data
+   */
   const confirmDeleteStudent = async () => {
     if (!studentToDelete) return;
 
+    // Ensure user typed the student's first name to confirm
     if (deleteConfirmationText !== studentToDelete.firstName) {
       toast({
         title: "Error",
@@ -286,6 +335,7 @@ function StudentsPage() {
     }
 
     try {
+      // Delete student and all associated lessons
       await deleteStudentMutation.mutateAsync(studentToDelete.id);
       toast({
         title: "Success",
@@ -302,11 +352,16 @@ function StudentsPage() {
     }
   };
 
+  /**
+   * Cancel student deletion
+   * Closes the dialog and resets confirmation text
+   */
   const cancelDeleteStudent = () => {
     closeDeleteDialog();
     setDeleteConfirmationText("");
   };
 
+  // Show loading state while fetching students
   if (studentsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -315,7 +370,7 @@ function StudentsPage() {
     );
   }
 
-  // Calculate lesson stats for each student
+  // Calculate lesson statistics (count, hours, earnings) for each student
   const studentsWithStats = (studentsData as any[]).map((student: any) => 
     calculateStudentStats(student, lessonsData as any[])
   );

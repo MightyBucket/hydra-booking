@@ -67,46 +67,62 @@ export default function CalendarView({
   onEditComment,
   focusedStudentId,
 }: CalendarViewProps) {
-  // Calendar state management
+  // Calendar state management - tracks the currently displayed month/week
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"month" | "week">("month");
   
   // Mobile-specific state for date selection
+  // When a user taps a date on mobile, show lessons for that date below the calendar
   const [selectedMobileDate, setSelectedMobileDate] = useState<Date | null>(null);
   
   // Double-tap detection for mobile booking
+  // Track last tap time and date to detect double-tap gesture
   const [lastTapTime, setLastTapTime] = useState<number>(0);
   const [lastTapDate, setLastTapDate] = useState<Date | null>(null);
   
+  // Check if the user is on a mobile device
   const isMobile = useIsMobile();
+  // Track which lesson's comments are being viewed in the dialog
   const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
 
+  // Mutation hook for deleting comments
   const deleteCommentMutation = useDeleteComment();
 
   // Calculate calendar grid boundaries
+  // Start of the currently viewed month
   const monthStart = startOfMonth(currentDate);
 
   // For month view, calculate the full calendar grid including days from previous/next months
+  // This ensures we always show complete weeks (starting from Sunday)
   const calendarStart = startOfWeek(monthStart);
 
   // Generate exactly 42 days (6 weeks) to ensure a complete calendar grid
+  // This provides a consistent layout regardless of how the month starts
   const monthDays = Array.from({ length: 42 }, (_, index) =>
     addDays(calendarStart, index),
   );
 
+  // For week view, generate 7 days starting from Sunday
   const weekStart = startOfWeek(currentDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
+  // Use month or week days based on current view
   const days = view === "month" ? monthDays : weekDays;
 
-  // Get all lessons for a specific date, sorted by time
+  /**
+   * Get all lessons for a specific date, sorted by time
+   * Filters lessons to match the given date and sorts chronologically
+   */
   const getLessonsForDate = (date: Date) => {
     return lessons
       .filter((lesson) => isSameDay(lesson.dateTime, date))
       .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
   };
 
-  // Navigate to previous or next month
+  /**
+   * Navigate to previous or next month
+   * Updates the currentDate state to move the calendar view
+   */
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentDate(
       direction === "next"
@@ -115,55 +131,67 @@ export default function CalendarView({
     );
   };
 
-  // Jump back to today's date
+  /**
+   * Jump back to today's date
+   * Resets the calendar view to the current month
+   */
   const setToToday = () => {
     setCurrentDate(new Date());
   };
 
   /**
-   * Handle date clicks on mobile
-   * Single tap: select date to view lessons
-   * Double tap: open booking form (if not in student view)
+   * Handle date clicks on mobile devices
+   * Implements a double-tap gesture:
+   * - Single tap: select date to view its lessons in the panel below
+   * - Double tap: open booking form to create a new lesson (teacher view only)
    */
   const handleMobileDateClick = (date: Date) => {
     const now = Date.now();
-    const DOUBLE_TAP_DELAY = 300; // milliseconds
+    const DOUBLE_TAP_DELAY = 300; // milliseconds - max time between taps to count as double-tap
 
-    // Check if this is a double-tap on the same date
+    // Check if this is a double-tap on the same date within the delay threshold
     if (
-      !focusedStudentId &&
+      !focusedStudentId && // Only allow booking in teacher view
       lastTapDate &&
       isSameDay(lastTapDate, date) &&
       now - lastTapTime < DOUBLE_TAP_DELAY
     ) {
       // Double-tap detected - open booking form
       onDateClick(date);
-      // Reset tap tracking
+      // Reset tap tracking to prevent triple-tap issues
       setLastTapTime(0);
       setLastTapDate(null);
     } else {
-      // Single tap - just select the date
+      // Single tap - select the date to view lessons
       setSelectedMobileDate(date);
+      // Track this tap for double-tap detection
       setLastTapTime(now);
       setLastTapDate(date);
     }
   };
 
+  // Get lessons for the currently selected mobile date (if any)
   const selectedMobileLessons = selectedMobileDate
     ? getLessonsForDate(selectedMobileDate)
     : [];
 
+  /**
+   * Handle calendar sync/export
+   * Downloads all lessons as an .ics file that can be imported into
+   * Google Calendar, Apple Calendar, Outlook, etc.
+   */
   const handleSyncToCalendar = () => {
+    // Get authentication token from local storage
     const token = localStorage.getItem("sessionId");
     const baseUrl = window.location.origin;
     const icsUrl = `${baseUrl}/api/calendar/ics`;
 
-    // Create a temporary link to download the .ics file
+    // Create a temporary link element for download
     const link = document.createElement("a");
     link.href = icsUrl;
     link.setAttribute("download", "lessons.ics");
 
-    // Add authorization header via fetch and trigger download
+    // Fetch the .ics file with authentication and trigger download
     fetch(icsUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -171,10 +199,12 @@ export default function CalendarView({
     })
       .then((response) => response.blob())
       .then((blob) => {
+        // Create object URL from blob and trigger download
         const url = window.URL.createObjectURL(blob);
         link.href = url;
         document.body.appendChild(link);
         link.click();
+        // Clean up
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
       })
