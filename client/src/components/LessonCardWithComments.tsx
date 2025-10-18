@@ -20,23 +20,9 @@ interface LessonCardWithCommentsProps {
 export default function LessonCardWithComments(props: LessonCardWithCommentsProps) {
   const params = useParams<{ studentId?: string }>();
   const isStudentSpecificView = !!params.studentId;
-  
-  // Use student-specific comments hook if in student view
-  const { data: studentComments = [] } = isStudentSpecificView
-    ? useStudentLessonComments(params.studentId!, props.lesson.id)
-    : { data: [] };
-  
-  const { data: regularComments = [] } = useCommentsByLesson(
-    isStudentSpecificView ? '' : props.lesson.id
-  );
-  
+  const { data: studentComments = [] } = isStudentSpecificView ? useStudentLessonComments(params.studentId!, props.lesson.id) : { data: [] };
+  const { data: regularComments = [] } = useCommentsByLesson(isStudentSpecificView ? '' : props.lesson.id);
   const comments = isStudentSpecificView ? studentComments : regularComments;
 
-  return (
-    <LessonCard 
-      {...props} 
-      comments={comments}
-      onAddComment={props.onAddComment}
-    />
-  );
+  return <LessonCard {...props} comments={comments} onAddComment={props.onAddComment} />;
 }

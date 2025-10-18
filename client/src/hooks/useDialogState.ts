@@ -6,9 +6,7 @@ export function useDialogState<T = any>(initialState: T | null = null) {
   const [data, setData] = useState<T | null>(initialState);
 
   const open = (dialogData?: T) => {
-    if (dialogData !== undefined) {
-      setData(dialogData);
-    }
+    if (dialogData !== undefined) setData(dialogData);
     setIsOpen(true);
   };
 
@@ -17,17 +15,7 @@ export function useDialogState<T = any>(initialState: T | null = null) {
     setData(null);
   };
 
-  const update = (newData: T) => {
-    setData(newData);
-  };
+  const update = (newData: T) => setData(newData);
 
-  return {
-    isOpen,
-    data,
-    open,
-    close,
-    update,
-    setIsOpen,
-    setData,
-  };
+  return { isOpen, data, open, close, update, setIsOpen, setData };
 }
