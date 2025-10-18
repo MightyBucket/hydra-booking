@@ -32,54 +32,31 @@ export function useLessonForm() {
 
   const handleSubmit = async (lessonData: any) => {
     try {
-      // Clean up the data before submission
-      const cleanedData = {
+      const { isRecurring, frequency, endDate, ...cleanedData } = {
         ...lessonData,
         lessonLink: lessonData.lessonLink?.trim() || null,
         pricePerHour: Number(lessonData.pricePerHour),
         duration: Number(lessonData.duration),
       };
 
-      // Remove fields that aren't part of the lesson schema
-      const { isRecurring, frequency, endDate, ...lessonOnlyData } = cleanedData;
-
       if (formData?.lesson) {
-        await updateLessonMutation.mutateAsync({
-          id: formData.lesson.id,
-          ...lessonOnlyData,
+        await updateLessonMutation.mutateAsync({ id: formData.lesson.id, ...cleanedData });
+        toast({ title: "Success", description: "Lesson updated successfully" });
+      } else if (isRecurring) {
+        await createRecurringMutation.mutateAsync({
+          lesson: cleanedData,
+          recurring: { frequency, endDate }
         });
-        toast({
-          title: "Success",
-          description: "Lesson updated successfully",
-        });
+        toast({ title: "Success", description: "Recurring lessons created successfully" });
       } else {
-        if (isRecurring) {
-          // For recurring lessons, send both lesson data and recurring metadata
-          await createRecurringMutation.mutateAsync({
-            lesson: lessonOnlyData,
-            recurring: {
-              frequency,
-              endDate
-            }
-          });
-          toast({
-            title: "Success",
-            description: "Recurring lessons created successfully",
-          });
-        } else {
-          await createLessonMutation.mutateAsync(lessonOnlyData);
-          toast({
-            title: "Success",
-            description: "Lesson created successfully",
-          });
-        }
+        await createLessonMutation.mutateAsync(cleanedData);
+        toast({ title: "Success", description: "Lesson created successfully" });
       }
       handleCloseForm();
     } catch (error: any) {
-      console.error("Lesson submission error:", error);
       toast({
         title: "Error",
-        description: error?.message || (formData?.lesson ? "Failed to update lesson" : "Failed to create lesson"),
+        description: error?.message || `Failed to ${formData?.lesson ? "update" : "create"} lesson`,
         variant: "destructive",
       });
     }

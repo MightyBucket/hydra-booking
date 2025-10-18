@@ -9,83 +9,65 @@ export function useLessonDelete(lessonsData: any[]) {
   const { toast } = useToast();
   const deleteLessonMutation = useDeleteLesson();
 
-  const handleDeleteLesson = (lessonOrId: string | any) => {
-    const lesson = typeof lessonOrId === 'string' 
+  const findLesson = (lessonOrId: string | any) => 
+    typeof lessonOrId === 'string' 
       ? lessonsData.find((l: any) => l.id === lessonOrId)
       : lessonOrId;
-    
+
+  const handleDeleteLesson = (lessonOrId: string | any) => {
+    const lesson = findLesson(lessonOrId);
     if (!lesson) {
-      console.error("Lesson not found:", lessonOrId);
-      toast({
-        title: "Error",
-        description: "Lesson not found",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Lesson not found", variant: "destructive" });
       return;
     }
-    
     openDeleteDialog(lesson);
     setDeleteAllFuture(false);
   };
 
+  const getFutureRecurringLessons = (baseLesson: any) => {
+    const lessonDate = new Date(baseLesson.dateTime);
+    const dayOfWeek = lessonDate.getDay();
+    const timeString = lessonDate.toISOString().slice(11, 19);
+
+    return lessonsData.filter((lesson: any) => {
+      const lessonDateTime = new Date(lesson.dateTime);
+      return (
+        lessonDateTime >= lessonDate &&
+        lessonDateTime.getDay() === dayOfWeek &&
+        lessonDateTime.toISOString().slice(11, 19) === timeString &&
+        lesson.studentId === baseLesson.studentId
+      );
+    });
+  };
+
   const confirmDeleteLesson = async () => {
     if (!lessonToDelete) {
-      console.error("No lesson to delete");
-      toast({
-        title: "Error",
-        description: "No lesson selected for deletion",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "No lesson selected for deletion", variant: "destructive" });
       closeDeleteDialog();
       return;
     }
 
-    console.log("Deleting lesson:", lessonToDelete.id, "deleteAllFuture:", deleteAllFuture);
-
     try {
       if (deleteAllFuture) {
-        const lessonDate = new Date(lessonToDelete.dateTime);
-        const dayOfWeek = lessonDate.getDay();
-        const timeString = lessonDate.toISOString().slice(11, 19);
-
-        const futureRecurringLessons = lessonsData.filter((lesson: any) => {
-          const lessonDateTime = new Date(lesson.dateTime);
-          return (
-            lessonDateTime >= lessonDate &&
-            lessonDateTime.getDay() === dayOfWeek &&
-            lessonDateTime.toISOString().slice(11, 19) === timeString &&
-            lesson.studentId === lessonToDelete.studentId
-          );
-        });
-
-        console.log("Deleting future recurring lessons:", futureRecurringLessons.length);
-
-        // Delete lessons sequentially
-        for (const lesson of futureRecurringLessons) {
-          console.log("Deleting lesson:", lesson.id);
+        const lessonsToDelete = getFutureRecurringLessons(lessonToDelete);
+        for (const lesson of lessonsToDelete) {
           await deleteLessonMutation.mutateAsync(lesson.id);
         }
-
         toast({
           title: "Success",
-          description: `Deleted ${futureRecurringLessons.length} lesson${futureRecurringLessons.length !== 1 ? "s" : ""} successfully`,
+          description: `Deleted ${lessonsToDelete.length} lesson${lessonsToDelete.length !== 1 ? "s" : ""}`,
         });
       } else {
-        // Delete single lesson
-        console.log("Deleting single lesson:", lessonToDelete.id);
         await deleteLessonMutation.mutateAsync(lessonToDelete.id);
-        console.log("Lesson deleted successfully");
         toast({ title: "Success", description: "Lesson deleted successfully" });
       }
     } catch (error: any) {
-      console.error("Delete lesson error:", error);
       toast({
         title: "Error",
         description: error?.message || "Failed to delete lesson",
         variant: "destructive",
       });
     } finally {
-      // Always close dialog and reset state
       closeDeleteDialog();
       setDeleteAllFuture(false);
     }

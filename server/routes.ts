@@ -210,23 +210,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/lessons", requireAuth, async (req, res) => {
     try {
-      console.log('Creating lesson with data:', req.body);
-      console.log('pricePerHour type:', typeof req.body.pricePerHour, 'value:', req.body.pricePerHour);
-      console.log('duration type:', typeof req.body.duration, 'value:', req.body.duration);
-      
-      // Explicitly coerce numeric fields before validation
       const preprocessedData = {
         ...req.body,
         pricePerHour: parseFloat(req.body.pricePerHour),
         duration: parseInt(req.body.duration, 10),
       };
       
-      console.log('Preprocessed lesson data:', preprocessedData);
-      console.log('pricePerHour after conversion:', typeof preprocessedData.pricePerHour, preprocessedData.pricePerHour);
-      console.log('duration after conversion:', typeof preprocessedData.duration, preprocessedData.duration);
-      
       const validatedData = insertLessonSchema.parse(preprocessedData);
-      console.log('Validated lesson data:', validatedData);
       const lesson = await storage.createLesson(validatedData);
       res.status(201).json(lesson);
     } catch (error) {
@@ -258,9 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/lessons/:id", requireAuth, async (req, res) => {
     try {
-      console.log('Deleting lesson:', req.params.id);
       await storage.deleteLesson(req.params.id);
-      console.log('Lesson deleted successfully:', req.params.id);
       res.status(204).send();
     } catch (error) {
       console.error('Error deleting lesson:', error);

@@ -10,25 +10,14 @@ export function usePaymentStatus(lessonsData: any[]) {
     lessonId: string,
     status: "pending" | "paid" | "unpaid" | "free",
   ) => {
+    const lesson = lessonsData.find((l: any) => l.id === lessonId);
+    if (!lesson) return;
+
     try {
-      const lessonToUpdate = lessonsData.find((l: any) => l.id === lessonId);
-      if (lessonToUpdate) {
-        await updateLessonMutation.mutateAsync({
-          id: lessonId,
-          ...lessonToUpdate,
-          paymentStatus: status,
-        });
-        toast({
-          title: "Success",
-          description: `Payment status updated to ${status}`,
-        });
-      }
+      await updateLessonMutation.mutateAsync({ id: lessonId, ...lesson, paymentStatus: status });
+      toast({ title: "Success", description: `Payment status updated to ${status}` });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update payment status",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to update payment status", variant: "destructive" });
     }
   };
 

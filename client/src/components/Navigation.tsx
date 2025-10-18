@@ -34,53 +34,18 @@ export default function Navigation({
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
 
-  // Student view navigation items
-  const studentNavItems = studentId ? [
-    {
-      path: `/${studentId}/calendar`,
-      label: 'Calendar',
-      icon: Calendar,
-    },
-    {
-      path: `/${studentId}/schedule`,
-      label: 'Schedule',
-      icon: GraduationCap,
-    },
-  ] : [];
-
-  // Regular navigation items
-  const regularNavItems = [
-    {
-      path: '/',
-      label: 'Calendar',
-      icon: Calendar,
-      badge: lessonCount > 0 ? lessonCount.toString() : undefined,
-    },
-    {
-      path: '/schedule',
-      label: 'Schedule',
-      icon: GraduationCap,
-      badge: lessonCount > 0 ? lessonCount.toString() : undefined,
-    },
-    {
-      path: '/students',
-      label: 'Students',
-      icon: Users,
-      badge: studentCount > 0 ? studentCount.toString() : undefined,
-    },
-    {
-      path: '/analytics',
-      label: 'Analytics',
-      icon: BarChart3,
-    },
-    {
-      path: '/settings',
-      label: 'Settings',
-      icon: Settings,
-    },
-  ];
-
-  const navItems = isStudentView ? studentNavItems : regularNavItems;
+  const navItems = isStudentView && studentId
+    ? [
+        { path: `/${studentId}/calendar`, label: 'Calendar', icon: Calendar },
+        { path: `/${studentId}/schedule`, label: 'Schedule', icon: GraduationCap },
+      ]
+    : [
+        { path: '/', label: 'Calendar', icon: Calendar, badge: lessonCount || undefined },
+        { path: '/schedule', label: 'Schedule', icon: GraduationCap, badge: lessonCount || undefined },
+        { path: '/students', label: 'Students', icon: Users, badge: studentCount || undefined },
+        { path: '/analytics', label: 'Analytics', icon: BarChart3 },
+        { path: '/settings', label: 'Settings', icon: Settings },
+      ];
 
   const isActiveRoute = (path: string) => {
     if (path === '/') return location === '/';
