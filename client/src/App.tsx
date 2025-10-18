@@ -36,6 +36,7 @@ import StudentCard from "./components/StudentCard";
 import LessonCard from "./components/LessonCard";
 import LessonCardWithComments from "./components/LessonCardWithComments";
 import LessonWithComments from "./components/LessonWithComments";
+import ScheduleCommentsDialog from "./components/ScheduleCommentsDialog";
 import {
   useStudents,
   useCreateStudent,
@@ -1736,15 +1737,22 @@ function StudentSchedulePage() {
     );
   }
 
-  // Transform student's lessons only (no blocked slots for schedule view)
-  const displayLessons = (lessonsData as any[]).map((lesson: any) => ({
-    ...lesson,
-    dateTime: new Date(lesson.dateTime),
-    studentName: `${student.firstName} ${student.lastName || ""}`,
-    studentColor: student.defaultColor || "#3b82f6",
-    studentId: lesson.studentId,
-    pricePerHour: parseFloat(lesson.pricePerHour),
-  }));
+  // Transform and filter lessons starting from last week
+  const lastWeek = new Date();
+  lastWeek.setDate(lastWeek.getDate() - 7);
+  lastWeek.setHours(0, 0, 0, 0);
+
+  const displayLessons = (lessonsData as any[])
+    .map((lesson: any) => ({
+      ...lesson,
+      dateTime: new Date(lesson.dateTime),
+      studentName: `${student.firstName} ${student.lastName || ""}`,
+      studentColor: student.defaultColor || "#3b82f6",
+      studentId: lesson.studentId,
+      pricePerHour: parseFloat(lesson.pricePerHour),
+    }))
+    .filter((lesson: any) => lesson.dateTime >= lastWeek)
+    .sort((a: any, b: any) => a.dateTime.getTime() - b.dateTime.getTime());
 
   const handleJoinLesson = (lesson: Lesson) => {
     if (lesson.lessonLink) {
@@ -1861,17 +1869,17 @@ function StudentSchedulePage() {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <h3
                       className={`text-lg font-semibold ${isToday ? "text-primary" : isPast ? "text-muted-foreground" : ""}`}
                     >
-                      {isToday ? "Today" : format(date, "EEEE, MMMM d")}
+                      {isToday ? "Today" : format(date, "EEE d")}
                     </h3>
-                    {isPast && !isToday && (
-                      <Badge variant="outline" className="text-xs">
-                        Past
-                      </Badge>
-                    )}
+                    <div className="flex-1 h-px bg-border"></div>
+                    <span className="text-sm text-muted-foreground">
+                      {lessons.length} lesson
+                      {lessons.length !== 1 ? "s" : ""}
+                    </span>
                   </div>
 
                   <div className="space-y-3 pl-4">
