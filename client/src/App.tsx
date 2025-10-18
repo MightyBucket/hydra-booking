@@ -1314,9 +1314,7 @@ function SchedulePage() {
                     dateTime: new Date(editingLesson.dateTime),
                     pricePerHour: parseFloat(editingLesson.pricePerHour),
                   }
-                : selectedDate
-                  ? { dateTime: selectedDate }
-                  : undefined
+                : undefined
             }
             onSubmit={handleLessonSubmit}
             onCancel={() => {
