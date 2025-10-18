@@ -14,17 +14,11 @@ import {
   ChevronRight,
   Calendar,
   Clock,
-  ExternalLink,
-  Trash2,
-  ChevronDown,
   Download,
-  Edit,
-  Eye,
-  EyeOff,
 } from "lucide-react";
-import { useCommentsByLesson, useDeleteComment } from "@/hooks/useComments";
-import { format as formatDate } from "date-fns";
+import { useDeleteComment } from "@/hooks/useComments";
 import LessonWithComments from "@/components/LessonWithComments";
+import ScheduleCommentsDialog from "@/components/ScheduleCommentsDialog";
 import {
   format,
   startOfWeek,
@@ -36,39 +30,6 @@ import {
   subMonths,
   isSameMonth,
 } from "date-fns";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
-// Helper function to detect and linkify URLs
-const linkifyText = (text: string): JSX.Element => {
-  const urlRegex = /(https?:\/\/[^\s]+)/gi;
-  const parts = text.split(urlRegex);
-  return (
-    <>
-      {parts.map((part, index) => {
-        // Check if the part matches a URL
-        if (part.match(urlRegex)) {
-          return (
-            <a
-              key={index}
-              href={part}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline"
-            >
-              {part}
-            </a>
-          );
-        }
-        return part;
-      })}
-    </>
-  );
-};
 
 interface Lesson {
   id: string;
@@ -325,9 +286,6 @@ export default function CalendarView({
     string | null
   >(null);
 
-  const { data: viewCommentsData = [], refetch: refetchComments } =
-    useCommentsByLesson(viewCommentsLessonId || "");
-
   const deleteCommentMutation = useDeleteComment();
 
   const monthStart = startOfMonth(currentDate);
@@ -437,65 +395,62 @@ export default function CalendarView({
       });
   };
 
-  const viewedLesson = viewCommentsLessonId
-    ? lessons.find((l) => l.id === viewCommentsLessonId)
-    : null;
-
   return (
-    <Card className="w-full h-full" data-testid="calendar-view">
-      <CardHeader className="space-y-0 pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            {format(currentDate, "MMMM yyyy")}
-          </CardTitle>
+    <>
+      <Card className="w-full h-full" data-testid="calendar-view">
+        <CardHeader className="space-y-0 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              {format(currentDate, "MMMM yyyy")}
+            </CardTitle>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            {!focusedStudentId && (
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              {!focusedStudentId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSyncToCalendar}
+                  data-testid="button-sync-calendar"
+                  className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
+                >
+                  <Download className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Sync to Calendar</span>
+                  <span className="sm:hidden ml-1">Sync</span>
+                </Button>
+              )}
+
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleSyncToCalendar}
-                data-testid="button-sync-calendar"
+                onClick={() => setToToday()}
+                data-testid="button-today"
                 className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
               >
-                <Download className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Sync to Calendar</span>
-                <span className="sm:hidden ml-1">Sync</span>
+                Today
               </Button>
-            )}
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setToToday()}
-              data-testid="button-today"
-              className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
-            >
-              Today
-            </Button>
-
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigateMonth("prev")}
-              data-testid="button-prev-month"
-              className="h-8 w-8 sm:h-9 sm:w-9"
-            >
-              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigateMonth("next")}
-              data-testid="button-next-month"
-              className="h-8 w-8 sm:h-9 sm:w-9"
-            >
-              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
-            </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigateMonth("prev")}
+                data-testid="button-prev-month"
+                className="h-8 w-8 sm:h-9 sm:w-9"
+              >
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigateMonth("next")}
+                data-testid="button-next-month"
+                className="h-8 w-8 sm:h-9 sm:w-9"
+              >
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
 
       <CardContent className={isMobile ? "px-2 pb-0" : ""}>
         <div className="grid grid-cols-7 gap-0.5 sm:gap-2 mb-2 sm:mb-4">
@@ -709,112 +664,21 @@ export default function CalendarView({
           </div>
         )}
       </CardContent>
+      </Card>
 
-      <Dialog
-        open={!!viewCommentsLessonId}
-        onOpenChange={() => setViewCommentsLessonId(null)}
-      >
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Comments</DialogTitle>
-          </DialogHeader>
-          {viewCommentsData.length > 0 ? (
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {viewCommentsData.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className="border-l-2 border-primary/20 pl-2"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs font-medium">{comment.title}</p>
-                          {!focusedStudentId &&
-                          comment.visibleToStudent === 1 ? (
-                            <Eye
-                              className="h-3 w-3 text-muted-foreground"
-                              title="Visible to student"
-                            />
-                          ) : (
-                            <EyeOff
-                              className="h-3 w-3 text-muted-foreground"
-                              title="Not visible to student"
-                            />
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {linkifyText(comment.content)}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground mt-1">
-                          {formatDate(
-                            new Date(comment.createdAt),
-                            "MMM d, h:mm a",
-                          )}
-                          {comment.lastEdited && (
-                            <span className="ml-2 italic">
-                              (edited{" "}
-                              {formatDate(
-                                new Date(comment.lastEdited),
-                                "MMM d, h:mm a",
-                              )}
-                              )
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      {!focusedStudentId && onEditComment && (
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              if (onEditComment) {
-                                onEditComment(comment.id, {
-                                  title: comment.title,
-                                  content: comment.content,
-                                  visibleToStudent: comment.visibleToStudent,
-                                });
-                              }
-                            }}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={async () => {
-                              try {
-                                await deleteCommentMutation.mutateAsync(
-                                  comment.id,
-                                );
-                                // Close dialog if this was the last comment
-                                if (viewCommentsData.length === 1) {
-                                  setViewCommentsLessonId(null);
-                                }
-                              } catch (error) {
-                                console.error("Error deleting comment:", error);
-                              }
-                            }}
-                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              No comments available
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </Card>
+      <ScheduleCommentsDialog
+        lessonId={viewCommentsLessonId}
+        onClose={() => setViewCommentsLessonId(null)}
+        onDeleteComment={async (commentId) => {
+          try {
+            await deleteCommentMutation.mutateAsync(commentId);
+          } catch (error) {
+            console.error("Error deleting comment:", error);
+          }
+        }}
+        onEditComment={onEditComment}
+        isStudentView={!!focusedStudentId}
+      />
+    </>
   );
 }
