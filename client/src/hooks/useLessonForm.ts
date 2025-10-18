@@ -32,24 +32,30 @@ export function useLessonForm() {
 
   const handleSubmit = async (lessonData: any) => {
     try {
+      // Clean up the data before submission
+      const cleanedData = {
+        ...lessonData,
+        lessonLink: lessonData.lessonLink?.trim() || null,
+      };
+
       if (formData?.lesson) {
         await updateLessonMutation.mutateAsync({
           id: formData.lesson.id,
-          ...lessonData,
+          ...cleanedData,
         });
         toast({
           title: "Success",
           description: "Lesson updated successfully",
         });
       } else {
-        if (lessonData.isRecurring) {
-          await createRecurringMutation.mutateAsync(lessonData);
+        if (cleanedData.isRecurring) {
+          await createRecurringMutation.mutateAsync(cleanedData);
           toast({
             title: "Success",
             description: "Recurring lessons created successfully",
           });
         } else {
-          await createLessonMutation.mutateAsync(lessonData);
+          await createLessonMutation.mutateAsync(cleanedData);
           toast({
             title: "Success",
             description: "Lesson created successfully",
@@ -57,10 +63,11 @@ export function useLessonForm() {
         }
       }
       handleCloseForm();
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Lesson submission error:", error);
       toast({
         title: "Error",
-        description: formData?.lesson ? "Failed to update lesson" : "Failed to create lesson",
+        description: error?.message || (formData?.lesson ? "Failed to update lesson" : "Failed to create lesson"),
         variant: "destructive",
       });
     }

@@ -119,6 +119,10 @@ export const insertLessonSchema = createInsertSchema(lessons).omit({
   id: true,
 }).extend({
   dateTime: z.coerce.date(),
+  lessonLink: z.preprocess(
+    val => val === '' || val === null || val === undefined ? null : val,
+    z.string().url().nullable().optional()
+  ),
 });
 
 export const insertRecurringLessonSchema = createInsertSchema(recurringLessons).omit({

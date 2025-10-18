@@ -210,12 +210,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/lessons", requireAuth, async (req, res) => {
     try {
+      console.log('Creating lesson with data:', req.body);
       const validatedData = insertLessonSchema.parse(req.body);
+      console.log('Validated lesson data:', validatedData);
       const lesson = await storage.createLesson(validatedData);
       res.status(201).json(lesson);
     } catch (error) {
       console.error('Error creating lesson:', error);
       if (error instanceof z.ZodError) {
+        console.error('Validation errors:', error.errors);
         return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create lesson" });
