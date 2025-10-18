@@ -211,7 +211,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/lessons", requireAuth, async (req, res) => {
     try {
       console.log('Creating lesson with data:', req.body);
-      const validatedData = insertLessonSchema.parse(req.body);
+      
+      // Explicitly coerce numeric fields before validation
+      const preprocessedData = {
+        ...req.body,
+        pricePerHour: Number(req.body.pricePerHour),
+        duration: Number(req.body.duration),
+      };
+      
+      console.log('Preprocessed lesson data:', preprocessedData);
+      const validatedData = insertLessonSchema.parse(preprocessedData);
       console.log('Validated lesson data:', validatedData);
       const lesson = await storage.createLesson(validatedData);
       res.status(201).json(lesson);
