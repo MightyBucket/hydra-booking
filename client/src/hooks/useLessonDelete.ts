@@ -46,16 +46,18 @@ export function useLessonDelete(lessonsData: any[]) {
         await deleteLessonMutation.mutateAsync(lessonToDelete.id);
         toast({ title: "Success", description: "Lesson deleted successfully" });
       }
+
+      closeDeleteDialog();
+      setDeleteAllFuture(false);
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete lesson",
         variant: "destructive",
       });
+      closeDeleteDialog();
+      setDeleteAllFuture(false);
     }
-
-    closeDeleteDialog();
-    setDeleteAllFuture(false);
   };
 
   return {
