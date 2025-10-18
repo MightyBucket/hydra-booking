@@ -35,6 +35,7 @@ import StudentCard from "./components/StudentCard";
 import ScheduleCommentsDialog from "./components/ScheduleCommentsDialog";
 import ScheduleView from "./components/ScheduleView";
 import { useStudents, useDeleteStudent } from "./hooks/useStudents";
+import { useLessons } from "./hooks/useLessons";
 import NoteForm from "./components/NoteForm";
 import CommentFormDialog from "./components/CommentFormDialog";
 import DeleteLessonDialog from "./components/DeleteLessonDialog";
