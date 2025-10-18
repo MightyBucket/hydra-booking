@@ -65,12 +65,17 @@ import {
 } from "./hooks/useNotes";
 import NoteForm from "./components/NoteForm";
 import CommentForm from "./components/CommentForm";
+import CommentFormDialog from "./components/CommentFormDialog";
+import DeleteLessonDialog from "./components/DeleteLessonDialog";
 import { format } from "date-fns";
 import NotFound from "@/pages/not-found";
 import { useQueryClient } from "@tanstack/react-query";
 import { Lesson } from "./types/Lesson";
 import { Button } from "@/components/ui/button";
 import { linkifyText } from "@/lib/linkify";
+import { useCommentHandlers } from "./hooks/useCommentHandlers";
+import { useLessonDelete } from "./hooks/useLessonDelete";
+import { usePaymentStatus } from "./hooks/usePaymentStatus";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -103,19 +108,6 @@ function CalendarPage() {
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [lessonToDelete, setLessonToDelete] = useState<any>(null);
-  const [deleteAllFuture, setDeleteAllFuture] = useState(false);
-  const [showCommentForm, setShowCommentForm] = useState(false);
-  const [selectedLessonForComment, setSelectedLessonForComment] = useState<
-    string | null
-  >(null);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingCommentData, setEditingCommentData] = useState<{
-    title: string;
-    content: string;
-    visibleToStudent: number;
-  } | null>(null);
   const { toast } = useToast();
 
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
@@ -123,9 +115,30 @@ function CalendarPage() {
   const createLessonMutation = useCreateLesson();
   const createLessonWithRecurringMutation = useCreateLessonWithRecurring();
   const updateLessonMutation = useUpdateLesson();
-  const deleteLessonMutation = useDeleteLesson();
-  const createCommentMutation = useCreateComment();
-  const updateCommentMutation = useUpdateComment();
+
+  // Use common hooks
+  const {
+    showDeleteDialog,
+    setShowDeleteDialog,
+    deleteAllFuture,
+    setDeleteAllFuture,
+    handleDeleteLesson,
+    confirmDeleteLesson,
+  } = useLessonDelete(lessonsData as any[]);
+
+  const { handleUpdatePaymentStatus } = usePaymentStatus(lessonsData as any[]);
+
+  const {
+    showCommentForm,
+    setShowCommentForm,
+    editingCommentId,
+    editingCommentData,
+    handleAddComment,
+    handleCommentSubmit,
+    handleStartEditComment,
+    handleEditComment,
+    resetCommentForm,
+  } = useCommentHandlers();
 
   // Transform lessons data for calendar display
   const displayLessons = (lessonsData as any[]).map((lesson: any) => {
@@ -236,154 +249,6 @@ function CalendarPage() {
     }
   };
 
-  const handleDeleteLesson = (lesson: any) => {
-    setLessonToDelete(lesson);
-    setDeleteAllFuture(false);
-    setShowDeleteDialog(true);
-  };
-
-  const handleUpdatePaymentStatus = async (
-    lessonId: string,
-    status: "pending" | "paid" | "unpaid",
-  ) => {
-    try {
-      const lessonToUpdate = (lessonsData as any[]).find(
-        (l: any) => l.id === lessonId,
-      );
-      if (lessonToUpdate) {
-        await updateLessonMutation.mutateAsync({
-          id: lessonId,
-          ...lessonToUpdate,
-          paymentStatus: status,
-        });
-        toast({
-          title: "Success",
-          description: `Payment status updated to ${status}`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update payment status",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleAddComment = (lessonId: string) => {
-    setSelectedLessonForComment(lessonId);
-    setShowCommentForm(true);
-  };
-
-  const handleCommentSubmit = async (data: {
-    title: string;
-    content: string;
-    visibleToStudent: boolean;
-  }) => {
-    if (!selectedLessonForComment) return;
-
-    try {
-      await createCommentMutation.mutateAsync({
-        lessonId: selectedLessonForComment,
-        title: data.title,
-        content: data.content,
-        visibleToStudent: data.visibleToStudent ? 1 : 0,
-      });
-      toast({
-        title: "Success",
-        description: "Comment added successfully",
-      });
-      setShowCommentForm(false);
-      setSelectedLessonForComment(null);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add comment",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleStartEditComment = (
-    commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
-  ) => {
-    setEditingCommentId(commentId);
-    setEditingCommentData(data);
-    setShowCommentForm(true);
-  };
-
-  const handleEditComment = async (
-    commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
-  ) => {
-    try {
-      await updateCommentMutation.mutateAsync({ id: commentId, ...data });
-      toast({
-        title: "Success",
-        description: "Comment updated successfully",
-      });
-      setEditingCommentId(null);
-      setEditingCommentData(null);
-      setShowCommentForm(false);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update comment",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const confirmDeleteLesson = async () => {
-    if (!lessonToDelete) return;
-
-    try {
-      if (deleteAllFuture) {
-        // Find all lessons with same day of week and time in the future
-        const lessonDate = new Date(lessonToDelete.dateTime);
-        const dayOfWeek = lessonDate.getDay();
-        const timeString = lessonToDelete.dateTime.slice(11, 19); // HH:MM:SS
-
-        const futureRecurringLessons = (lessonsData as any[]).filter(
-          (lesson: any) => {
-            const lessonDateTime = new Date(lesson.dateTime);
-            return (
-              lessonDateTime >= lessonDate && // Same date or future
-              lessonDateTime.getDay() === dayOfWeek && // Same day of week
-              lessonDateTime.toISOString().slice(11, 19) === timeString && // Same time
-              lesson.studentId === lessonToDelete.studentId // Same student
-            );
-          },
-        );
-
-        // Delete all future recurring lessons
-        for (const lesson of futureRecurringLessons) {
-          await deleteLessonMutation.mutateAsync(lesson.id);
-        }
-
-        toast({
-          title: "Success",
-          description: `Deleted ${futureRecurringLessons.length} lesson${futureRecurringLessons.length !== 1 ? "s" : ""} successfully`,
-        });
-      } else {
-        // Delete only this lesson
-        await deleteLessonMutation.mutateAsync(lessonToDelete.id);
-        toast({ title: "Success", description: "Lesson deleted successfully" });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete lesson",
-        variant: "destructive",
-      });
-    }
-
-    setShowDeleteDialog(false);
-    setLessonToDelete(null);
-    setDeleteAllFuture(false);
-  };
-
   if (lessonsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -435,89 +300,32 @@ function CalendarPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Lesson</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this lesson? This action cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+      <DeleteLessonDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        deleteAllFuture={deleteAllFuture}
+        onDeleteAllFutureChange={setDeleteAllFuture}
+        onConfirm={confirmDeleteLesson}
+      />
 
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="delete-all-future"
-                checked={deleteAllFuture}
-                onCheckedChange={(checked) => setDeleteAllFuture(!!checked)}
-                data-testid="checkbox-delete-all-future"
-              />
-              <Label htmlFor="delete-all-future" className="text-sm">
-                Delete all future lessons on the same day and time
-              </Label>
-            </div>
-            {deleteAllFuture && (
-              <p className="text-sm text-muted-foreground">
-                This will delete all future lessons for the same student that
-                occur on the same day of the week at the same time.
-              </p>
-            )}
-          </div>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDeleteLesson}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-testid="button-confirm-delete"
-            >
-              Delete {deleteAllFuture ? "All Future Lessons" : "Lesson"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Dialog open={showCommentForm} onOpenChange={setShowCommentForm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingCommentId ? "Edit Comment" : "Add Comment"}
-            </DialogTitle>
-          </DialogHeader>
-          <CommentForm
-            initialData={
-              editingCommentData
-                ? {
-                    title: editingCommentData.title,
-                    content: editingCommentData.content,
-                    visibleToStudent: editingCommentData.visibleToStudent === 1,
-                  }
-                : undefined
-            }
-            isEditing={!!editingCommentId}
-            onSubmit={async (data) => {
-              if (editingCommentId) {
-                await handleEditComment(editingCommentId, {
-                  title: data.title,
-                  content: data.content,
-                  visibleToStudent: data.visibleToStudent ? 1 : 0,
-                });
-              } else {
-                await handleCommentSubmit(data);
-              }
-            }}
-            onCancel={() => {
-              setShowCommentForm(false);
-              setSelectedLessonForComment(null);
-              setEditingCommentId(null);
-              setEditingCommentData(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      <CommentFormDialog
+        open={showCommentForm}
+        onOpenChange={setShowCommentForm}
+        editingCommentData={editingCommentData}
+        isEditing={!!editingCommentId}
+        onSubmit={async (data) => {
+          if (editingCommentId) {
+            await handleEditComment(editingCommentId, {
+              title: data.title,
+              content: data.content,
+              visibleToStudent: data.visibleToStudent ? 1 : 0,
+            });
+          } else {
+            await handleCommentSubmit(data);
+          }
+        }}
+        onCancel={resetCommentForm}
+      />
     </>
   );
 }
@@ -1038,35 +846,41 @@ function StudentsPage() {
 
 function SchedulePage() {
   const [showLessonForm, setShowLessonForm] = useState(false);
-  const [selectedLesson, setSelectedLesson] = useState<any>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [lessonToDelete, setLessonToDelete] = useState<any>(null);
-  const [deleteAllFuture, setDeleteAllFuture] = useState(false);
-  const [showCommentForm, setShowCommentForm] = useState(false);
-  const [commentFormLessonId, setCommentFormLessonId] = useState<string | null>(
-    null,
-  );
-  const [viewCommentsLessonId, setViewCommentsLessonId] = useState<
-    string | null
-  >(null);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingCommentData, setEditingCommentData] = useState<{
-    title: string;
-    content: string;
-    visibleToStudent: number;
-  } | null>(null);
-  const { toast } = useToast();
   const [editingLesson, setEditingLesson] = useState<Lesson | undefined>(
     undefined,
   );
+  const { toast } = useToast();
 
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
   const { data: studentsData = [] } = useStudents();
   const updateLessonMutation = useUpdateLesson();
-  const deleteLessonMutation = useDeleteLesson();
-  const createCommentMutation = useCreateComment();
-  const deleteCommentMutation = useDeleteComment();
-  const updateCommentMutation = useUpdateComment();
+
+  // Use common hooks
+  const {
+    showDeleteDialog,
+    setShowDeleteDialog,
+    deleteAllFuture,
+    setDeleteAllFuture,
+    handleDeleteLesson,
+    confirmDeleteLesson,
+  } = useLessonDelete(lessonsData as any[]);
+
+  const { handleUpdatePaymentStatus } = usePaymentStatus(lessonsData as any[]);
+
+  const {
+    showCommentForm,
+    setShowCommentForm,
+    viewCommentsLessonId,
+    setViewCommentsLessonId,
+    editingCommentId,
+    editingCommentData,
+    handleAddComment,
+    handleCommentSubmit,
+    handleStartEditComment,
+    handleEditComment,
+    handleDeleteComment,
+    resetCommentForm,
+  } = useCommentHandlers();
 
   // Transform lessons
   const displayLessons = (lessonsData as any[]).map((lesson: any) => {
@@ -1096,111 +910,10 @@ function SchedulePage() {
     }
   };
 
-  const handleDeleteLesson = (lessonIdOrLesson: string | Lesson) => {
-    const lesson =
-      typeof lessonIdOrLesson === "string"
-        ? (lessonsData as any[]).find((l: any) => l.id === lessonIdOrLesson)
-        : lessonIdOrLesson;
-
-    if (lesson) {
-      setLessonToDelete(lesson);
-      setDeleteAllFuture(false);
-      setShowDeleteDialog(true);
-    }
-  };
-
   const handleJoinLesson = (lesson: Lesson) => {
     if (lesson.lessonLink) {
       window.open(lesson.lessonLink, "_blank");
     }
-  };
-
-  const handleUpdatePaymentStatus = async (
-    lessonId: string,
-    status: "pending" | "paid" | "unpaid" | "free",
-  ) => {
-    try {
-      const lessonToUpdate = (lessonsData as any[]).find(
-        (l: any) => l.id === lessonId,
-      );
-      if (lessonToUpdate) {
-        await updateLessonMutation.mutateAsync({
-          id: lessonId,
-          ...lessonToUpdate,
-          paymentStatus: status,
-        });
-        toast({
-          title: "Success",
-          description: `Payment status updated to ${status}`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update payment status",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleAddCommentFromLesson = (lessonId: string) => {
-    setCommentFormLessonId(lessonId);
-    setShowCommentForm(true);
-  };
-
-  const handleCommentSubmit = async (data: {
-    title: string;
-    content: string;
-    visibleToStudent: boolean;
-  }) => {
-    if (!commentFormLessonId) return;
-
-    try {
-      await createCommentMutation.mutateAsync({
-        lessonId: commentFormLessonId,
-        title: data.title,
-        content: data.content,
-        visibleToStudent: data.visibleToStudent ? 1 : 0,
-      });
-      toast({
-        title: "Success",
-        description: "Comment added successfully",
-      });
-      setShowCommentForm(false);
-      setCommentFormLessonId(null);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add comment",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteComment = async (commentId: string) => {
-    try {
-      await deleteCommentMutation.mutateAsync(commentId);
-      toast({
-        title: "Success",
-        description: "Comment deleted successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete comment",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleStartEditComment = (
-    commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
-  ) => {
-    setEditingCommentId(commentId);
-    setEditingCommentData(data);
-    setViewCommentsLessonId(null);
-    setShowCommentForm(true);
   };
 
   const handleLessonSubmit = async (lessonData: any) => {
@@ -1230,52 +943,6 @@ function SchedulePage() {
     }
   };
 
-  const confirmDeleteLesson = async () => {
-    if (!lessonToDelete) return;
-
-    try {
-      if (deleteAllFuture) {
-        const lessonDate = new Date(lessonToDelete.dateTime);
-        const dayOfWeek = lessonDate.getDay();
-        const timeString = lessonToDelete.dateTime.slice(11, 19);
-
-        const futureRecurringLessons = (lessonsData as any[]).filter(
-          (lesson: any) => {
-            const lessonDateTime = new Date(lesson.dateTime);
-            return (
-              lessonDateTime >= lessonDate &&
-              lessonDateTime.getDay() === dayOfWeek &&
-              lessonDateTime.toISOString().slice(11, 19) === timeString &&
-              lesson.studentId === lessonToDelete.studentId
-            );
-          },
-        );
-
-        for (const lesson of futureRecurringLessons) {
-          await deleteLessonMutation.mutateAsync(lesson.id);
-        }
-
-        toast({
-          title: "Success",
-          description: `Deleted ${futureRecurringLessons.length} lesson${futureRecurringLessons.length !== 1 ? "s" : ""} successfully`,
-        });
-      } else {
-        await deleteLessonMutation.mutateAsync(lessonToDelete.id);
-        toast({ title: "Success", description: "Lesson deleted successfully" });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete lesson",
-        variant: "destructive",
-      });
-    }
-
-    setShowDeleteDialog(false);
-    setLessonToDelete(null);
-    setDeleteAllFuture(false);
-  };
-
   if (lessonsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1292,7 +959,7 @@ function SchedulePage() {
         onDelete={handleDeleteLesson}
         onJoinLesson={handleJoinLesson}
         onUpdatePaymentStatus={handleUpdatePaymentStatus}
-        onAddComment={handleAddCommentFromLesson}
+        onAddComment={handleAddComment}
         onViewComments={setViewCommentsLessonId}
         onEditComment={handleStartEditComment}
         onDeleteComment={handleDeleteComment}
@@ -1325,85 +992,33 @@ function SchedulePage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Lesson</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this lesson? This action cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+      <DeleteLessonDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        deleteAllFuture={deleteAllFuture}
+        onDeleteAllFutureChange={setDeleteAllFuture}
+        onConfirm={confirmDeleteLesson}
+        testIdPrefix="schedule"
+      />
 
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="delete-all-future-schedule"
-                checked={deleteAllFuture}
-                onCheckedChange={(checked) => setDeleteAllFuture(!!checked)}
-              />
-              <Label htmlFor="delete-all-future-schedule" className="text-sm">
-                Delete all future lessons on the same day and time
-              </Label>
-            </div>
-            {deleteAllFuture && (
-              <p className="text-sm text-muted-foreground">
-                This will delete all future lessons for the same student that
-                occur on the same day of the week at the same time.
-              </p>
-            )}
-          </div>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDeleteLesson}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete {deleteAllFuture ? "All Future Lessons" : "Lesson"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Dialog open={showCommentForm} onOpenChange={setShowCommentForm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingCommentId ? "Edit Comment" : "Add Comment"}
-            </DialogTitle>
-          </DialogHeader>
-          <CommentForm
-            initialData={
-              editingCommentData
-                ? {
-                    title: editingCommentData.title,
-                    content: editingCommentData.content,
-                    visibleToStudent: editingCommentData.visibleToStudent === 1,
-                  }
-                : undefined
-            }
-            isEditing={!!editingCommentId}
-            onSubmit={async (data) => {
-              if (editingCommentId) {
-                await handleEditComment(editingCommentId, {
-                  title: data.title,
-                  content: data.content,
-                  visibleToStudent: data.visibleToStudent ? 1 : 0,
-                });
-              } else {
-                await handleCommentSubmit(data);
-              }
-            }}
-            onCancel={() => {
-              setShowCommentForm(false);
-              setCommentFormLessonId(null);
-              setEditingCommentId(null);
-              setEditingCommentData(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      <CommentFormDialog
+        open={showCommentForm}
+        onOpenChange={setShowCommentForm}
+        editingCommentData={editingCommentData}
+        isEditing={!!editingCommentId}
+        onSubmit={async (data) => {
+          if (editingCommentId) {
+            await handleEditComment(editingCommentId, {
+              title: data.title,
+              content: data.content,
+              visibleToStudent: data.visibleToStudent ? 1 : 0,
+            });
+          } else {
+            await handleCommentSubmit(data);
+          }
+        }}
+        onCancel={resetCommentForm}
+      />
 
       <ScheduleCommentsDialog
         lessonId={viewCommentsLessonId}
@@ -1541,20 +1156,20 @@ function StudentSchedulePage() {
 
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(params.studentId);
   const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
-  const [viewCommentsLessonId, setViewCommentsLessonId] = useState<
-    string | null
-  >(null);
-  const isMobile = useIsMobile();
-  const { toast } = useToast();
-  const deleteCommentMutation = useDeleteComment();
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingCommentData, setEditingCommentData] = useState<{
-    title: string;
-    content: string;
-    visibleToStudent: number;
-  } | null>(null);
-  const [showCommentForm, setShowCommentForm] = useState(false);
-  const updateCommentMutation = useUpdateComment();
+
+  // Use common hooks
+  const {
+    showCommentForm,
+    setShowCommentForm,
+    viewCommentsLessonId,
+    setViewCommentsLessonId,
+    editingCommentId,
+    editingCommentData,
+    handleStartEditComment,
+    handleEditComment,
+    handleDeleteComment,
+    resetCommentForm,
+  } = useCommentHandlers();
 
   const lessonsData = lessonsResponse?.lessons || [];
 
@@ -1605,54 +1220,6 @@ function StudentSchedulePage() {
     }
   };
 
-  const handleDeleteComment = async (commentId: string) => {
-    try {
-      await deleteCommentMutation.mutateAsync(commentId);
-      toast({
-        title: "Success",
-        description: "Comment deleted successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete comment",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleStartEditComment = (
-    commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
-  ) => {
-    setEditingCommentId(commentId);
-    setEditingCommentData(data);
-    setViewCommentsLessonId(null);
-    setShowCommentForm(true);
-  };
-
-  const handleEditComment = async (
-    commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
-  ) => {
-    try {
-      await updateCommentMutation.mutateAsync({ id: commentId, ...data });
-      toast({
-        title: "Success",
-        description: "Comment updated successfully",
-      });
-      setEditingCommentId(null);
-      setEditingCommentData(null);
-      setShowCommentForm(false);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update comment",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <>
       <ScheduleView
@@ -1675,39 +1242,22 @@ function StudentSchedulePage() {
         studentId={params.studentId}
       />
 
-      <Dialog open={showCommentForm} onOpenChange={setShowCommentForm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Comment</DialogTitle>
-          </DialogHeader>
-          <CommentForm
-            initialData={
-              editingCommentData
-                ? {
-                    title: editingCommentData.title,
-                    content: editingCommentData.content,
-                    visibleToStudent: editingCommentData.visibleToStudent === 1,
-                  }
-                : undefined
-            }
-            isEditing={true}
-            onSubmit={async (data) => {
-              if (editingCommentId) {
-                await handleEditComment(editingCommentId, {
-                  title: data.title,
-                  content: data.content,
-                  visibleToStudent: data.visibleToStudent ? 1 : 0,
-                });
-              }
-            }}
-            onCancel={() => {
-              setShowCommentForm(false);
-              setEditingCommentId(null);
-              setEditingCommentData(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      <CommentFormDialog
+        open={showCommentForm}
+        onOpenChange={setShowCommentForm}
+        editingCommentData={editingCommentData}
+        isEditing={true}
+        onSubmit={async (data) => {
+          if (editingCommentId) {
+            await handleEditComment(editingCommentId, {
+              title: data.title,
+              content: data.content,
+              visibleToStudent: data.visibleToStudent ? 1 : 0,
+            });
+          }
+        }}
+        onCancel={resetCommentForm}
+      />
     </>
   );
 }
