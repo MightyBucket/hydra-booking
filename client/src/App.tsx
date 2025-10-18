@@ -773,10 +773,18 @@ function StudentsPage() {
 
     let lastLessonDate: Date | undefined;
     if (studentLessons.length > 0) {
-      const sortedLessons = studentLessons.sort(
-        (a: any, b: any) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
+      const now = new Date();
+      // Filter to only past lessons (up to and including today)
+      const pastLessons = studentLessons.filter(
+        (lesson: any) => new Date(lesson.dateTime) <= now
       );
-      lastLessonDate = new Date(sortedLessons[0].dateTime);
+      
+      if (pastLessons.length > 0) {
+        const sortedLessons = pastLessons.sort(
+          (a: any, b: any) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
+        );
+        lastLessonDate = new Date(sortedLessons[0].dateTime);
+      }
     }
 
     return {
