@@ -54,7 +54,14 @@ export function useLessonForm() {
         });
       } else {
         if (isRecurring) {
-          await createRecurringMutation.mutateAsync(cleanedData);
+          // For recurring lessons, send both lesson data and recurring metadata
+          await createRecurringMutation.mutateAsync({
+            lesson: lessonOnlyData,
+            recurring: {
+              frequency,
+              endDate
+            }
+          });
           toast({
             title: "Success",
             description: "Recurring lessons created successfully",
