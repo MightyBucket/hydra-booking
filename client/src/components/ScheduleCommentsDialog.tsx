@@ -5,11 +5,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Eye, EyeOff } from "lucide-react";
 import { useCommentsByLesson } from "@/hooks/useComments";
 import { useStudentLessonComments } from "@/hooks/useStudentData";
-import { linkifyText } from "@/lib/linkify";
 import CommentDisplay from "./CommentDisplay";
 
 interface ScheduleCommentsDialogProps {

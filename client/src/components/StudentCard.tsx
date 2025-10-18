@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Mail,
@@ -45,13 +44,6 @@ export default function StudentCard({
   onViewNotes,
   onDelete,
 }: StudentCardProps) {
-  const firstName = student.firstName || "Unknown";
-  const lastName = student.lastName || "";
-
-  const initials = lastName
-    ? `${firstName.charAt(0)}${lastName.charAt(0)}`
-    : firstName.charAt(0);
-  const fullName = lastName ? `${firstName} ${lastName}` : firstName;
 
   return (
     <Card className="hover-elevate" data-testid={`student-card-${student.id}`}>

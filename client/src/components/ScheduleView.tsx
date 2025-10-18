@@ -1,7 +1,6 @@
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
 import LessonCardWithComments from "@/components/LessonCardWithComments";
