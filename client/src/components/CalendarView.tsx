@@ -627,7 +627,7 @@ export default function CalendarView({
                           key={lesson.id}
                           lesson={lesson}
                           onEdit={() => onLessonClick(lesson)}
-                          onDelete={() => onDeleteLesson?.(lesson)}
+                          onDelete={onDeleteLesson ? () => onDeleteLesson(lesson) : undefined}
                           onJoinLesson={
                             onJoinLesson && lesson.lessonLink
                               ? () => onJoinLesson(lesson)
@@ -707,7 +707,7 @@ export default function CalendarView({
                       key={lesson.id}
                       lesson={lesson}
                       onEdit={() => onLessonClick(lesson)}
-                      onDelete={() => onDeleteLesson?.(lesson)}
+                      onDelete={onDeleteLesson ? () => onDeleteLesson(lesson) : undefined}
                       onJoinLesson={
                         onJoinLesson && lesson.lessonLink
                           ? () => onJoinLesson(lesson)

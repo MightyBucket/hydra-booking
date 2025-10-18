@@ -9,8 +9,21 @@ export function useLessonDelete(lessonsData: any[]) {
   const { toast } = useToast();
   const deleteLessonMutation = useDeleteLesson();
 
-  const handleDeleteLesson = (lessonId: string) => {
-    const lesson = lessonsData.find((l: any) => l.id === lessonId);
+  const handleDeleteLesson = (lessonOrId: string | any) => {
+    const lesson = typeof lessonOrId === 'string' 
+      ? lessonsData.find((l: any) => l.id === lessonOrId)
+      : lessonOrId;
+    
+    if (!lesson) {
+      console.error("Lesson not found:", lessonOrId);
+      toast({
+        title: "Error",
+        description: "Lesson not found",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     openDeleteDialog(lesson);
     setDeleteAllFuture(false);
   };
