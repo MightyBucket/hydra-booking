@@ -72,12 +72,6 @@ export default function StudentCard({
             </div>
           </div>
         </div>
-        {student.email && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Mail className="h-4 w-4" />
-            <span className="truncate">{student.email}</span>
-          </div>
-        )}
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -86,6 +80,13 @@ export default function StudentCard({
             <div className="flex items-center gap-2 text-sm">
               <Phone className="h-4 w-4 text-muted-foreground" />
               <span>{student.phoneNumber}</span>
+            </div>
+          )}
+
+          {student.email && (
+            <div className="flex items-center gap-2 text-sm">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <span className="truncate">{student.email}</span>
             </div>
           )}
 
