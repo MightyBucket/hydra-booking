@@ -55,7 +55,6 @@ export function useLessonDelete(lessonsData: any[]) {
     }
 
     closeDeleteDialog();
-    setLessonToDelete(null);
     setDeleteAllFuture(false);
   };
 
