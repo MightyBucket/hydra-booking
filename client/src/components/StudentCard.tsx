@@ -151,7 +151,7 @@ export default function StudentCard({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.open(`/schedule/${student.studentId}`, '_blank')}
+              onClick={() => window.open(`/${student.studentId}/schedule`, '_blank')}
               data-testid={`button-view-lessons-${student.id}`}
             >
               <NotebookText />
