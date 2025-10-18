@@ -220,13 +220,6 @@ const LessonCard = ({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            {/*<button
-              className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 cursor-pointer mt-1`}
-              onClick={(e) => e.stopPropagation()}
-              data-testid={`dropdown-payment-status-${lesson.id}`}
-            >
-              s:{lesson.paymentStatus}
-            </button>*/}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-24">
             <DropdownMenuItem
@@ -482,27 +475,6 @@ export default function CalendarView({
             >
               Today
             </Button>
-
-            {/*<div className="flex rounded-md border">
-              <Button
-                variant={view === "month" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setView("month")}
-                data-testid="button-month-view"
-                className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
-              >
-                Month
-              </Button>
-              <Button
-                variant={view === "week" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setView("week")}
-                data-testid="button-week-view"
-                className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
-              >
-                Week
-              </Button>
-            </div>*/}
 
             <Button
               variant="outline"
