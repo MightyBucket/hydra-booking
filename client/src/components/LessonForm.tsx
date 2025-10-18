@@ -225,8 +225,8 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
             />
           </div>
 
-          {/* Payment Status Section - Only show when editing */}
-          {initialData && (
+          {/* Payment Status Section - Only show when editing an existing lesson */}
+          {initialData && (initialData as any).id && (
             <div className="space-y-2">
               <Label htmlFor="paymentStatus">Payment Status</Label>
               <Select 

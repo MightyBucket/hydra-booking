@@ -38,24 +38,27 @@ export function useLessonForm() {
         lessonLink: lessonData.lessonLink?.trim() || null,
       };
 
+      // Remove fields that aren't part of the lesson schema
+      const { isRecurring, frequency, endDate, ...lessonOnlyData } = cleanedData;
+
       if (formData?.lesson) {
         await updateLessonMutation.mutateAsync({
           id: formData.lesson.id,
-          ...cleanedData,
+          ...lessonOnlyData,
         });
         toast({
           title: "Success",
           description: "Lesson updated successfully",
         });
       } else {
-        if (cleanedData.isRecurring) {
+        if (isRecurring) {
           await createRecurringMutation.mutateAsync(cleanedData);
           toast({
             title: "Success",
             description: "Recurring lessons created successfully",
           });
         } else {
-          await createLessonMutation.mutateAsync(cleanedData);
+          await createLessonMutation.mutateAsync(lessonOnlyData);
           toast({
             title: "Success",
             description: "Lesson created successfully",
