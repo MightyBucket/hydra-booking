@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Users, Plus, GraduationCap, BarChart3, Settings, Menu, X } from 'lucide-react';
+import { GiBrainTentacle } from "react-icons/gi";
 
 interface NavigationProps {
   onAddLesson: () => void;
@@ -58,9 +59,9 @@ export default function Navigation({
         {/* Header */}
         <div className="p-6 border-b">
           <div className="flex items-center gap-2">
-            <GraduationCap className="h-8 w-8 text-primary" />
+            <GiBrainTentacle className='h-8 w-8 text-primary'/>
             <div>
-              <h1 className="text-xl font-bold">LessonBook</h1>
+              <h1 className="text-xl font-bold">Hydra</h1>
               <p className="text-sm text-muted-foreground">Manage your lessons</p>
             </div>
           </div>
@@ -105,7 +106,7 @@ export default function Navigation({
         {/* Footer */}
         <div className="p-4 border-t">
           <div className="text-sm text-muted-foreground text-center">
-            <p>© 2024 LessonBook</p>
+            <p>© 2024, Rahul Jhuree</p>
             <p>Lesson Management Made Easy</p>
           </div>
         </div>

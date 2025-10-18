@@ -1,8 +1,8 @@
-# LessonBook - Lesson Booking & Management Application
+# Hydra - Lesson Booking & Management Application
 
 ## Overview
 
-LessonBook is a professional lesson booking and management system designed for educators and tutors. The application provides a comprehensive platform for managing students, scheduling lessons, tracking payments, and organizing educational activities through an intuitive calendar interface. Built with modern web technologies, it emphasizes efficiency, clarity, and ease of use for educational professionals.
+Hydra is a professional lesson booking and management system designed for educators and tutors. The application provides a comprehensive platform for managing students, scheduling lessons, tracking payments, and organizing educational activities through an intuitive calendar interface. Built with modern web technologies, it emphasizes efficiency, clarity, and ease of use for educational professionals.
 
 ## User Preferences
 
