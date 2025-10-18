@@ -1808,6 +1808,16 @@ function StudentSchedulePage() {
     }
   };
 
+  // Auto-scroll to today's section on mount
+  useEffect(() => {
+    const todayElement = document.querySelector('[data-today-section="true"]');
+    if (todayElement) {
+      setTimeout(() => {
+        todayElement.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [lessonsLoading]);
+
   // Group lessons by date
   const groupedLessons = displayLessons.reduce((groups: any, lesson: any) => {
     const dateKey = format(lesson.dateTime, "yyyy-MM-dd");
