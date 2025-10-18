@@ -1563,149 +1563,6 @@ function SchedulePage() {
   );
 }
 
-// Helper function to detect and linkify URLs (used for comments and notes)
-const linkifyText = (text: string): JSX.Element => {
-  const urlRegex = /(https?:\/\/[^\s]+)/gi;
-  const parts = text.split(urlRegex);
-  return (
-    <>
-      {parts.map((part, index) => {
-        // Check if the part matches a URL
-        if (part.match(urlRegex)) {
-          return (
-            <a
-              key={index}
-              href={part}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline"
-            >
-              {part}
-            </a>
-          );
-        }
-        return part;
-      })}
-    </>
-  );
-};
-
-function ScheduleCommentsDialog({
-  lessonId,
-  onClose,
-  onDeleteComment,
-  onEditComment,
-  isStudentView = false,
-  studentId,
-}: {
-  lessonId: string | null;
-  onClose: () => void;
-  onDeleteComment: (commentId: string) => void;
-  onEditComment?: (
-    commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
-  ) => void;
-  isStudentView?: boolean;
-  studentId?: string;
-}) {
-  const { data: comments = [] } = useCommentsByLesson(lessonId || "");
-
-  return (
-    <Dialog open={!!lessonId} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Comments</DialogTitle>
-        </DialogHeader>
-        {comments.length > 0 ? (
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="border-l-2 border-primary/20 pl-2"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs font-medium">{comment.title}</p>
-                        {!isStudentView && comment.visibleToStudent ? (
-                          <Eye
-                            className="h-3 w-3 text-muted-foreground"
-                            title="Visible to student"
-                          />
-                        ) : (
-                          <EyeOff
-                            className="h-3 w-3 text-muted-foreground"
-                            title="Not visible to student"
-                          />
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {linkifyText(comment.content)}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        {format(new Date(comment.createdAt), "MMM d, h:mm a")}
-                        {comment.lastEdited && (
-                          <span className="ml-2 italic">
-                            (edited{" "}
-                            {format(
-                              new Date(comment.lastEdited),
-                              "MMM d, h:mm a",
-                            )}
-                            )
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    {!isStudentView && (
-                      <div className="flex gap-1">
-                        {onEditComment && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              onEditComment(comment.id, {
-                                title: comment.title,
-                                content: comment.content,
-                                visibleToStudent: comment.visibleToStudent,
-                              });
-                              onClose();
-                            }}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            onDeleteComment(comment.id);
-                            if (comments.length === 1) {
-                              onClose();
-                            }
-                          }}
-                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="py-8 text-center text-sm text-muted-foreground">
-            No comments available
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function AnalyticsPage() {
   return (
     <Card>
@@ -1953,6 +1810,16 @@ function StudentSchedulePage() {
     return groups;
   }, {});
 
+  // Ensure today's date is in the grouped lessons (even if empty)
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  if (!groupedLessons[todayKey]) {
+    groupedLessons[todayKey] = [];
+  }
+
+  // Sort the dates to ensure proper chronological order
+  const sortedDates = Object.keys(groupedLessons).sort((a, b) => {
+    return new Date(a).getTime() - new Date(b).getTime();
+  });
 
   return (
     <>
@@ -1964,92 +1831,95 @@ function StudentSchedulePage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {displayLessons.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No lessons scheduled from last week onwards.</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {Object.entries(groupedLessons).map(
-                ([dateKey, lessons]: [string, any], index: number) => {
-                  const date = new Date(dateKey);
-                  const isToday = format(new Date(), "yyyy-MM-dd") === dateKey;
-                  const isPast =
-                    date < new Date(new Date().setHours(0, 0, 0, 0));
+          <div className="space-y-6">
+            {sortedDates.map((dateKey, index) => {
+              const lessons = groupedLessons[dateKey];
+              const date = new Date(dateKey);
+              const isToday = todayKey === dateKey;
+              const isPast =
+                date < new Date(new Date().setHours(0, 0, 0, 0));
 
-                  // Check if this is the first lesson of a new month
-                  const isFirstLessonOfMonth =
-                    index === 0 ||
-                    format(date, "yyyy-MM") !==
-                      format(
-                        new Date(Object.keys(groupedLessons)[index - 1]),
-                        "yyyy-MM",
-                      );
+              // Check if this is the first lesson of a new month
+              const isFirstLessonOfMonth =
+                index === 0 ||
+                format(date, "yyyy-MM") !==
+                  format(new Date(sortedDates[index - 1]), "yyyy-MM");
 
-                  return (
-                    <div
-                      key={dateKey}
-                      className="space-y-3"
-                      data-date-key={dateKey}
-                    >
-                      {isFirstLessonOfMonth && (
-                        <div className="mb-6">
-                          <h2 className="text-2xl font-bold text-foreground mb-2">
-                            {format(date, "MMMM yyyy")}
-                          </h2>
-                          <div className="h-px bg-border"></div>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-3">
-                        <h3
-                          className={`text-lg font-semibold ${isToday ? "text-primary" : isPast ? "text-muted-foreground" : ""}`}
-                        >
-                          {isToday ? "Today" : format(date, "EEE d")}
-                        </h3>
-                        <div className="flex-1 h-px bg-border"></div>
-                        <span className="text-sm text-muted-foreground">
-                          {lessons.length} lesson
-                          {lessons.length !== 1 ? "s" : ""}
-                        </span>
-                      </div>
-
-                      <div className="space-y-3 pl-4">
-                        {lessons.map((lesson) =>
-                          isMobile ? (
-                            <LessonWithComments
-                              key={lesson.id}
-                              lesson={lesson}
-                              onEdit={() => {}}
-                              onDelete={() => {}}
-                              onJoinLesson={
-                                lesson.lessonLink
-                                  ? () => handleJoinLesson(lesson)
-                                  : undefined
-                              }
-                              onUpdatePaymentStatus={() => {}}
-                              onViewComments={setViewCommentsLessonId}
-                              isStudentView={true}
-                            />
-                          ) : (
-                            <LessonCardWithComments
-                              key={lesson.id}
-                              lesson={lesson}
-                              onEdit={() => {}}
-                              onDelete={() => {}}
-                              onJoinLesson={handleJoinLesson}
-                              showCommentActions={false}
-                              isStudentView={true}
-                            />
-                          ),
-                        )}
-                      </div>
+              return (
+                <div
+                  key={dateKey}
+                  className="space-y-3"
+                  data-date-key={dateKey}
+                  data-today-section={isToday ? "true" : undefined}
+                >
+                  {isFirstLessonOfMonth && (
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-bold text-foreground mb-2">
+                        {format(date, "MMMM yyyy")}
+                      </h2>
+                      <div className="h-px bg-border"></div>
                     </div>
-                  );
-                },
-              )}
-            </div>
-          )}
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <h3
+                      className={`text-lg font-semibold ${isToday ? "text-primary" : isPast ? "text-muted-foreground" : ""}`}
+                    >
+                      {isToday ? "Today" : format(date, "EEEE, MMMM d")}
+                    </h3>
+                    {isPast && !isToday && (
+                      <Badge variant="outline" className="text-xs">
+                        Past
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 pl-4">
+                    {lessons.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">
+                        No lessons scheduled
+                      </div>
+                    ) : (
+                      lessons.map((lesson) =>
+                        isMobile ? (
+                          <LessonWithComments
+                            key={lesson.id}
+                            lesson={lesson}
+                            onEdit={() => {}}
+                            onDelete={() => {}}
+                            onJoinLesson={
+                              lesson.lessonLink
+                                ? () => handleJoinLesson(lesson)
+                                : undefined
+                            }
+                            onUpdatePaymentStatus={() => {}}
+                            onViewComments={setViewCommentsLessonId}
+                            isStudentView={true}
+                          />
+                        ) : (
+                          <LessonCardWithComments
+                            key={lesson.id}
+                            lesson={lesson}
+                            onEdit={() => {}}
+                            onDelete={() => {}}
+                            onJoinLesson={handleJoinLesson}
+                            showCommentActions={false}
+                            isStudentView={true}
+                          />
+                        ),
+                      )
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {displayLessons.length === 0 && sortedDates.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No lessons scheduled from last week onwards.</p>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
