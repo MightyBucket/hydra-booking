@@ -37,6 +37,7 @@ import LessonCard from "./components/LessonCard";
 import LessonCardWithComments from "./components/LessonCardWithComments";
 import LessonWithComments from "./components/LessonWithComments";
 import ScheduleCommentsDialog from "./components/ScheduleCommentsDialog";
+import ScheduleView from "./components/ScheduleView";
 import {
   useStudents,
   useCreateStudent,
@@ -1055,16 +1056,9 @@ function SchedulePage() {
     visibleToStudent: number;
   } | null>(null);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
-  const [selectedStudentId, setSelectedStudentId] = useState<
-    string | undefined
-  >(undefined);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [editingLesson, setEditingLesson] = useState<Lesson | undefined>(
     undefined,
   );
-  const [isScheduleFormOpen, setIsScheduleFormOpen] = useState(false);
 
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
   const { data: studentsData = [] } = useStudents();
@@ -1074,48 +1068,20 @@ function SchedulePage() {
   const deleteCommentMutation = useDeleteComment();
   const updateCommentMutation = useUpdateComment();
 
-  // Transform and filter lessons starting from last week
-  const lastWeek = new Date();
-  lastWeek.setDate(lastWeek.getDate() - 7);
-  lastWeek.setHours(0, 0, 0, 0);
-
-  const displayLessons = (lessonsData as any[])
-    .map((lesson: any) => {
-      const student = (studentsData as any[]).find(
-        (s: any) => s.id === lesson.studentId,
-      );
-      return {
-        ...lesson,
-        dateTime: new Date(lesson.dateTime),
-        studentName: student
-          ? `${student.firstName} ${student.lastName || ""}`
-          : "Unknown Student",
-        studentColor: student?.defaultColor || "#3b82f6",
-        pricePerHour: parseFloat(lesson.pricePerHour),
-      };
-    })
-    .filter((lesson: any) => lesson.dateTime >= lastWeek)
-    .sort((a: any, b: any) => a.dateTime.getTime() - b.dateTime.getTime());
-
-  // Group lessons by date
-  const groupedLessons = displayLessons.reduce((groups: any, lesson: any) => {
-    const dateKey = format(lesson.dateTime, "yyyy-MM-dd");
-    if (!groups[dateKey]) {
-      groups[dateKey] = [];
-    }
-    groups[dateKey].push(lesson);
-    return groups;
-  }, {});
-
-  // Ensure today's date is in the grouped lessons (even if empty)
-  const todayKey = format(new Date(), "yyyy-MM-dd");
-  if (!groupedLessons[todayKey]) {
-    groupedLessons[todayKey] = [];
-  }
-
-  // Sort the dates to ensure proper chronological order
-  const sortedDates = Object.keys(groupedLessons).sort((a, b) => {
-    return new Date(a).getTime() - new Date(b).getTime();
+  // Transform lessons
+  const displayLessons = (lessonsData as any[]).map((lesson: any) => {
+    const student = (studentsData as any[]).find(
+      (s: any) => s.id === lesson.studentId,
+    );
+    return {
+      ...lesson,
+      dateTime: new Date(lesson.dateTime),
+      studentName: student
+        ? `${student.firstName} ${student.lastName || ""}`
+        : "Unknown Student",
+      studentColor: student?.defaultColor || "#3b82f6",
+      pricePerHour: parseFloat(lesson.pricePerHour),
+    };
   });
 
   const handleEditLesson = (lessonIdOrLesson: string | Lesson) => {
@@ -1177,11 +1143,6 @@ function SchedulePage() {
     }
   };
 
-  const handleAddComment = (lessonId: string) => {
-    setCommentFormLessonId(lessonId);
-    setShowCommentForm(true);
-  };
-
   const handleAddCommentFromLesson = (lessonId: string) => {
     setCommentFormLessonId(lessonId);
     setShowCommentForm(true);
@@ -1238,19 +1199,9 @@ function SchedulePage() {
   ) => {
     setEditingCommentId(commentId);
     setEditingCommentData(data);
-    setViewCommentsLessonId(null); // Close the comments dialog
+    setViewCommentsLessonId(null);
     setShowCommentForm(true);
   };
-
-  // Auto-scroll to today's section on mount
-  useEffect(() => {
-    const todayElement = document.querySelector('[data-today-section="true"]');
-    if (todayElement) {
-      setTimeout(() => {
-        todayElement.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
-    }
-  }, [lessonsLoading]);
 
   const handleLessonSubmit = async (lessonData: any) => {
     try {
@@ -1335,115 +1286,17 @@ function SchedulePage() {
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Schedule ({displayLessons.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {sortedDates.map((dateKey, index) => {
-              const lessons = groupedLessons[dateKey];
-              const date = new Date(dateKey);
-              const isToday = todayKey === dateKey;
-              const isPast =
-                date < new Date(new Date().setHours(0, 0, 0, 0));
-
-              // Check if this is the first lesson of a new month
-              const isFirstLessonOfMonth =
-                index === 0 ||
-                format(date, "yyyy-MM") !==
-                  format(new Date(sortedDates[index - 1]), "yyyy-MM");
-
-              return (
-                <div
-                  key={dateKey}
-                  className="space-y-3"
-                  data-date-key={dateKey}
-                  data-today-section={isToday ? "true" : undefined}
-                >
-                  {isFirstLessonOfMonth && (
-                    <div className="mb-6">
-                      <h2 className="text-2xl font-bold text-foreground mb-2">
-                        {format(date, "MMMM yyyy")}
-                      </h2>
-                      <div className="h-px bg-border"></div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3">
-                    <h3
-                      className={`text-lg font-semibold ${isToday ? "text-primary" : isPast ? "text-muted-foreground" : ""}`}
-                    >
-                      {isToday ? "Today" : format(date, "EEE d")}
-                    </h3>
-                    <div className="flex-1 h-px bg-border"></div>
-                    <span className="text-sm text-muted-foreground">
-                      {lessons.length} lesson
-                      {lessons.length !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-
-                  <div className="space-y-3 pl-4">
-                    {lessons.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">
-                        No lessons scheduled
-                      </div>
-                    ) : (
-                      lessons.map((lesson) =>
-                        isMobile ? (
-                          <LessonWithComments
-                            key={lesson.id}
-                            lesson={lesson}
-                            onEdit={() => handleEditLesson(lesson.id)}
-                            onDelete={() => handleDeleteLesson(lesson.id)}
-                            onJoinLesson={
-                              lesson.lessonLink
-                                ? () => handleJoinLesson(lesson)
-                                : undefined
-                            }
-                            onUpdatePaymentStatus={handleUpdatePaymentStatus}
-                            onAddComment={() =>
-                              handleAddCommentFromLesson(lesson.id)
-                            }
-                            onViewComments={setViewCommentsLessonId}
-                            onEditComment={handleStartEditComment}
-                            onDeleteComment={handleDeleteComment}
-                          />
-                        ) : (
-                          <LessonCardWithComments
-                            key={lesson.id}
-                            lesson={lesson}
-                            onEdit={handleEditLesson}
-                            onDelete={handleDeleteLesson}
-                            onJoinLesson={
-                              lesson.lessonLink
-                                ? () => handleJoinLesson(lesson)
-                                : undefined
-                            }
-                            onUpdatePaymentStatus={handleUpdatePaymentStatus}
-                            onAddComment={(lessonId) =>
-                              handleAddCommentFromLesson(lesson.id)
-                            }
-                            onDeleteComment={handleDeleteComment}
-                            onEditComment={handleStartEditComment}
-                          />
-                        ),
-                      )
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {displayLessons.length === 0 && sortedDates.length === 1 && (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No lessons scheduled from last week onwards.</p>
-                <p>Click "Schedule Lesson" in the sidebar to get started.</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <ScheduleView
+        lessons={displayLessons}
+        onEdit={handleEditLesson}
+        onDelete={handleDeleteLesson}
+        onJoinLesson={handleJoinLesson}
+        onUpdatePaymentStatus={handleUpdatePaymentStatus}
+        onAddComment={handleAddCommentFromLesson}
+        onViewComments={setViewCommentsLessonId}
+        onEditComment={handleStartEditComment}
+        onDeleteComment={handleDeleteComment}
+      />
 
       <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -1707,18 +1560,6 @@ function StudentSchedulePage() {
 
   const lessonsData = lessonsResponse?.lessons || [];
 
-  // Auto-scroll to today's section on mount (must be before any conditional returns)
-  useEffect(() => {
-    if (!lessonsLoading && !studentLoading && student) {
-      const todayElement = document.querySelector('[data-today-section="true"]');
-      if (todayElement) {
-        setTimeout(() => {
-          todayElement.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 100);
-      }
-    }
-  }, [lessonsLoading, studentLoading, student]);
-
   if (lessonsLoading || studentLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1750,22 +1591,15 @@ function StudentSchedulePage() {
     );
   }
 
-  // Transform and filter lessons starting from last week
-  const lastWeek = new Date();
-  lastWeek.setDate(lastWeek.getDate() - 7);
-  lastWeek.setHours(0, 0, 0, 0);
-
-  const displayLessons = (lessonsData as any[])
-    .map((lesson: any) => ({
-      ...lesson,
-      dateTime: new Date(lesson.dateTime),
-      studentName: `${student.firstName} ${student.lastName || ""}`,
-      studentColor: student.defaultColor || "#3b82f6",
-      studentId: lesson.studentId,
-      pricePerHour: parseFloat(lesson.pricePerHour),
-    }))
-    .filter((lesson: any) => lesson.dateTime >= lastWeek)
-    .sort((a: any, b: any) => a.dateTime.getTime() - b.dateTime.getTime());
+  // Transform lessons
+  const displayLessons = (lessonsData as any[]).map((lesson: any) => ({
+    ...lesson,
+    dateTime: new Date(lesson.dateTime),
+    studentName: `${student.firstName} ${student.lastName || ""}`,
+    studentColor: student.defaultColor || "#3b82f6",
+    studentId: lesson.studentId,
+    pricePerHour: parseFloat(lesson.pricePerHour),
+  }));
 
   const handleJoinLesson = (lesson: Lesson) => {
     if (lesson.lessonLink) {
@@ -1821,128 +1655,18 @@ function StudentSchedulePage() {
     }
   };
 
-  // Group lessons by date
-  const groupedLessons = displayLessons.reduce((groups: any, lesson: any) => {
-    const dateKey = format(lesson.dateTime, "yyyy-MM-dd");
-    if (!groups[dateKey]) {
-      groups[dateKey] = [];
-    }
-    groups[dateKey].push(lesson);
-    return groups;
-  }, {});
-
-  // Ensure today's date is in the grouped lessons (even if empty)
-  const todayKey = format(new Date(), "yyyy-MM-dd");
-  if (!groupedLessons[todayKey]) {
-    groupedLessons[todayKey] = [];
-  }
-
-  // Sort the dates to ensure proper chronological order
-  const sortedDates = Object.keys(groupedLessons).sort((a, b) => {
-    return new Date(a).getTime() - new Date(b).getTime();
-  });
-
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Schedule for {student.firstName} {student.lastName || ""} (
-            {displayLessons.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {sortedDates.map((dateKey, index) => {
-              const lessons = groupedLessons[dateKey];
-              const date = new Date(dateKey);
-              const isToday = todayKey === dateKey;
-              const isPast =
-                date < new Date(new Date().setHours(0, 0, 0, 0));
-
-              // Check if this is the first lesson of a new month
-              const isFirstLessonOfMonth =
-                index === 0 ||
-                format(date, "yyyy-MM") !==
-                  format(new Date(sortedDates[index - 1]), "yyyy-MM");
-
-              return (
-                <div
-                  key={dateKey}
-                  className="space-y-3"
-                  data-date-key={dateKey}
-                  data-today-section={isToday ? "true" : undefined}
-                >
-                  {isFirstLessonOfMonth && (
-                    <div className="mb-6">
-                      <h2 className="text-2xl font-bold text-foreground mb-2">
-                        {format(date, "MMMM yyyy")}
-                      </h2>
-                      <div className="h-px bg-border"></div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3">
-                    <h3
-                      className={`text-lg font-semibold ${isToday ? "text-primary" : isPast ? "text-muted-foreground" : ""}`}
-                    >
-                      {isToday ? "Today" : format(date, "EEE d")}
-                    </h3>
-                    <div className="flex-1 h-px bg-border"></div>
-                    <span className="text-sm text-muted-foreground">
-                      {lessons.length} lesson
-                      {lessons.length !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-
-                  <div className="space-y-3 pl-4">
-                    {lessons.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">
-                        No lessons scheduled
-                      </div>
-                    ) : (
-                      lessons.map((lesson) =>
-                        isMobile ? (
-                          <LessonWithComments
-                            key={lesson.id}
-                            lesson={lesson}
-                            onEdit={() => {}}
-                            onDelete={() => {}}
-                            onJoinLesson={
-                              lesson.lessonLink
-                                ? () => handleJoinLesson(lesson)
-                                : undefined
-                            }
-                            onUpdatePaymentStatus={() => {}}
-                            onViewComments={setViewCommentsLessonId}
-                            isStudentView={true}
-                          />
-                        ) : (
-                          <LessonCardWithComments
-                            key={lesson.id}
-                            lesson={lesson}
-                            onEdit={() => {}}
-                            onDelete={() => {}}
-                            onJoinLesson={handleJoinLesson}
-                            showCommentActions={false}
-                            isStudentView={true}
-                          />
-                        ),
-                      )
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {displayLessons.length === 0 && sortedDates.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No lessons scheduled from last week onwards.</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <ScheduleView
+        lessons={displayLessons}
+        onJoinLesson={handleJoinLesson}
+        onViewComments={setViewCommentsLessonId}
+        onEditComment={handleStartEditComment}
+        onDeleteComment={handleDeleteComment}
+        isStudentView={true}
+        title={`Schedule for ${student.firstName} ${student.lastName || ""}`}
+        showCommentActions={false}
+      />
 
       <ScheduleCommentsDialog
         lessonId={viewCommentsLessonId}
