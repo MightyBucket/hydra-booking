@@ -535,6 +535,8 @@ function StudentsPage() {
   const { toast } = useToast();
 
   const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
+  // Correctly destructure lessonsData here
+  const { data: lessonsData = [] } = useLessons();
   const createStudentMutation = useCreateStudent();
   const updateStudentMutation = useUpdateStudent();
   const deleteStudentMutation = useDeleteStudent();
@@ -766,9 +768,9 @@ function StudentsPage() {
     const studentLessons = (lessonsData as any[]).filter(
       (lesson: any) => lesson.studentId === student.id
     );
-    
+
     const lessonCount = studentLessons.length;
-    
+
     let lastLessonDate: Date | undefined;
     if (studentLessons.length > 0) {
       const sortedLessons = studentLessons.sort(
@@ -776,7 +778,7 @@ function StudentsPage() {
       );
       lastLessonDate = new Date(sortedLessons[0].dateTime);
     }
-    
+
     return {
       ...student,
       defaultRate: student.defaultRate ? parseFloat(student.defaultRate) : undefined,
