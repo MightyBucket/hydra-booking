@@ -63,22 +63,16 @@ import { linkifyText } from "@/lib/linkify";
 import { useCommentHandlers } from "./hooks/useCommentHandlers";
 import { useLessonDelete } from "./hooks/useLessonDelete";
 import { usePaymentStatus } from "./hooks/usePaymentStatus";
+import { useLessonForm } from "./hooks/useLessonForm";
+import { useStudentForm } from "./hooks/useStudentForm";
+import { useStudentNotes } from "./hooks/useStudentNotes";
 import { Edit, Trash2 } from "lucide-react";
 import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
 
 function CalendarPage() {
-  const [showLessonForm, setShowLessonForm] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedLesson, setSelectedLesson] = useState<any>(null);
-  const { toast } = useToast();
-
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
   const { data: studentsData = [] } = useStudents();
-  const createLessonMutation = useCreateLesson();
-  const createLessonWithRecurringMutation = useCreateLessonWithRecurring();
-  const updateLessonMutation = useUpdateLesson();
 
-  // Use common hooks
   const {
     showDeleteDialog,
     setShowDeleteDialog,
@@ -102,6 +96,15 @@ function CalendarPage() {
     resetCommentForm,
   } = useCommentHandlers();
 
+  const {
+    showLessonForm,
+    selectedLesson,
+    selectedDate,
+    handleOpenForm: handleOpenLessonForm,
+    handleCloseForm: handleCloseLessonForm,
+    handleSubmit: handleLessonSubmit,
+  } = useLessonForm();
+
   // Transform lessons data for calendar display
   const displayLessons = (lessonsData as any[]).map((lesson: any) => {
     const student = (studentsData as any[]).find(
@@ -119,90 +122,16 @@ function CalendarPage() {
   });
 
   const handleLessonClick = (lesson: any) => {
-    // Find the original lesson data from lessonsData
     const originalLesson = (lessonsData as any[]).find(
       (l: any) => l.id === lesson.id,
     );
-
     if (originalLesson) {
-      setSelectedLesson(originalLesson);
-      setShowLessonForm(true);
+      handleOpenLessonForm({ lesson: originalLesson });
     }
   };
 
   const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
-    setSelectedLesson(null);
-    setShowLessonForm(true);
-  };
-
-  const getDefaultDateTime = () => {
-    const now = new Date();
-    // Set to next hour
-    now.setHours(now.getHours() + 1, 0, 0, 0);
-    return now;
-  };
-
-  const handleLessonSubmit = async (lessonData: any) => {
-    try {
-      const formattedData = {
-        ...lessonData,
-        dateTime: new Date(lessonData.dateTime).toISOString(),
-        pricePerHour: lessonData.pricePerHour.toString(),
-      };
-
-      // Remove recurring fields from lesson data
-      const { isRecurring, frequency, endDate, ...lessonOnlyData } =
-        formattedData;
-
-      if (selectedLesson) {
-        // Update existing lesson (no recurring for updates)
-        await updateLessonMutation.mutateAsync({
-          id: selectedLesson.id,
-          ...lessonOnlyData,
-        });
-        toast({ title: "Success", description: "Lesson updated successfully" });
-      } else {
-        // Create new lesson
-        if (isRecurring && endDate && endDate.trim() !== "") {
-          // Create lesson with recurring
-          await createLessonWithRecurringMutation.mutateAsync({
-            lesson: lessonOnlyData,
-            recurring: {
-              frequency: frequency === "biweekly" ? "biweekly" : "weekly",
-              endDate: endDate,
-            },
-          });
-          toast({
-            title: "Success",
-            description: "Recurring lesson series created successfully",
-          });
-        } else {
-          // Create single lesson
-          await createLessonMutation.mutateAsync(lessonOnlyData);
-          toast({
-            title: "Success",
-            description: "Lesson scheduled successfully",
-          });
-        }
-      }
-
-      setShowLessonForm(false);
-      setSelectedLesson(null);
-      setSelectedDate(null);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save lesson",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleLessonCancel = () => {
-    setShowLessonForm(false);
-    setSelectedLesson(null);
-    setSelectedDate(null);
+    handleOpenLessonForm({ date });
   };
 
   const handleJoinLesson = (lesson: any) => {
@@ -232,7 +161,7 @@ function CalendarPage() {
         onEditComment={handleStartEditComment}
       />
 
-      <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
+      <Dialog open={showLessonForm} onOpenChange={handleCloseLessonForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -253,11 +182,7 @@ function CalendarPage() {
                   : undefined
             }
             onSubmit={handleLessonSubmit}
-            onCancel={() => {
-              setShowLessonForm(false);
-              setSelectedLesson(null);
-              setSelectedDate(null);
-            }}
+            onCancel={handleCloseLessonForm}
           />
         </DialogContent>
       </Dialog>
@@ -293,65 +218,62 @@ function CalendarPage() {
 }
 
 function StudentsPage() {
-  const [showStudentForm, setShowStudentForm] = useState(false);
-  const [showLessonForm, setShowLessonForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
-  const [selectedStudentForLesson, setSelectedStudentForLesson] =
-    useState<any>(null);
   const [studentToDelete, setStudentToDelete] = useState<any>(null);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
-  const [showNotesDialog, setShowNotesDialog] = useState(false);
-  const [selectedStudentForNotes, setSelectedStudentForNotes] = useState<
-    string | null
-  >(null);
-  const [showNoteForm, setShowNoteForm] = useState(false);
-  const [editingNote, setEditingNote] = useState<any>(null);
+  const [selectedStudentForNotes, setSelectedStudentForNotes] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
-  // Correctly destructure lessonsData here
   const { data: lessonsData = [] } = useLessons();
-  const createStudentMutation = useCreateStudent();
-  const updateStudentMutation = useUpdateStudent();
   const deleteStudentMutation = useDeleteStudent();
-  const createLessonMutation = useCreateLesson();
-  const { data: notesData = [] } = useNotesByStudent(
-    selectedStudentForNotes || "",
-  );
-  const createNoteMutation = useCreateNote();
-  const updateNoteMutation = useUpdateNote();
-  const deleteNoteMutation = useDeleteNote();
+
+  const {
+    showStudentForm,
+    selectedStudent,
+    handleOpenForm: handleOpenStudentForm,
+    handleCloseForm: handleCloseStudentForm,
+    handleSubmit: handleStudentSubmit,
+  } = useStudentForm();
+
+  const {
+    showLessonForm,
+    prefilledStudentId,
+    getDefaultDateTime,
+    handleOpenForm: handleOpenLessonForm,
+    handleCloseForm: handleCloseLessonForm,
+    handleSubmit: handleLessonSubmit,
+  } = useLessonForm();
+
+  const {
+    showNotesDialog,
+    showNoteForm,
+    editingNote,
+    notesData,
+    handleOpenNotes,
+    handleCloseNotes,
+    handleAddNote,
+    handleEditNote,
+    handleNoteSubmit,
+    handleDeleteNote,
+    setShowNoteForm,
+    setEditingNote,
+  } = useStudentNotes(selectedStudentForNotes);
 
   const handleEditStudent = (studentId: string) => {
-    const student = (studentsData as any[]).find(
-      (s: any) => s.id === studentId,
-    );
-    setSelectedStudent(student);
-    setShowStudentForm(true);
-  };
-
-  const getDefaultDateTime = () => {
-    const now = new Date();
-    // Set to next hour
-    now.setHours(now.getHours() + 1, 0, 0, 0);
-    return now;
+    const student = (studentsData as any[]).find((s: any) => s.id === studentId);
+    handleOpenStudentForm(student);
   };
 
   const handleScheduleLesson = (studentId: string) => {
-    const student = (studentsData as any[]).find(
-      (s: any) => s.id === studentId,
-    );
+    const student = (studentsData as any[]).find((s: any) => s.id === studentId);
     if (student) {
-      setSelectedStudentForLesson(student);
-      setShowLessonForm(true);
+      handleOpenLessonForm({ studentId: student.id });
     }
   };
 
   const handleViewLessons = (studentId: string) => {
-    const student = (studentsData as any[]).find(
-      (s: any) => s.id === studentId,
-    );
+    const student = (studentsData as any[]).find((s: any) => s.id === studentId);
     if (student?.studentId) {
       window.location.href = `/${student.studentId}/calendar`;
     }
@@ -359,7 +281,7 @@ function StudentsPage() {
 
   const handleViewNotes = (studentId: string) => {
     setSelectedStudentForNotes(studentId);
-    setShowNotesDialog(true);
+    handleOpenNotes();
   };
 
   const handleDeleteStudent = (studentId: string) => {
@@ -405,141 +327,6 @@ function StudentsPage() {
     setShowDeleteDialog(false);
     setStudentToDelete(null);
     setDeleteConfirmationText("");
-  };
-
-  const handleStudentSubmit = async (studentData: any) => {
-    try {
-      const formattedData = {
-        ...studentData,
-        defaultRate: studentData.defaultRate
-          ? studentData.defaultRate.toString()
-          : null,
-      };
-
-      if (selectedStudent) {
-        await updateStudentMutation.mutateAsync({
-          id: selectedStudent.id,
-          ...formattedData,
-        });
-        toast({
-          title: "Success",
-          description: "Student updated successfully",
-        });
-      } else {
-        await createStudentMutation.mutateAsync(formattedData);
-        toast({ title: "Success", description: "Student added successfully" });
-      }
-
-      setShowStudentForm(false);
-      setSelectedStudent(null);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save student",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleStudentCancel = () => {
-    setShowStudentForm(false);
-    setSelectedStudent(null);
-  };
-
-  const handleLessonSubmit = async (lessonData: any) => {
-    try {
-      const formattedData = {
-        ...lessonData,
-        dateTime: new Date(lessonData.dateTime).toISOString(),
-        pricePerHour: lessonData.pricePerHour.toString(),
-      };
-
-      await createLessonMutation.mutateAsync(formattedData);
-      toast({ title: "Success", description: "Lesson scheduled successfully" });
-      setShowLessonForm(false);
-      setSelectedStudentForLesson(null);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to schedule lesson",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleLessonCancel = () => {
-    setShowLessonForm(false);
-    setSelectedStudentForLesson(null);
-  };
-
-  const handleAddNote = () => {
-    setEditingNote(null);
-    setShowNoteForm(true);
-  };
-
-  const handleEditNote = (note: any) => {
-    setEditingNote(note);
-    setShowNoteForm(true);
-  };
-
-  const handleNoteSubmit = async (data: { title: string; content: string }) => {
-    if (!selectedStudentForNotes) return;
-
-    try {
-      if (editingNote) {
-        await updateNoteMutation.mutateAsync({
-          id: editingNote.id,
-          studentId: selectedStudentForNotes,
-          title: data.title,
-          content: data.content,
-        });
-        toast({
-          title: "Success",
-          description: "Note updated successfully",
-        });
-      } else {
-        await createNoteMutation.mutateAsync({
-          studentId: selectedStudentForNotes,
-          title: data.title,
-          content: data.content,
-        });
-        toast({
-          title: "Success",
-          description: "Note added successfully",
-        });
-      }
-      setShowNoteForm(false);
-      setEditingNote(null);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: editingNote
-          ? "Failed to update note"
-          : "Failed to add note",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteNote = async (noteId: string) => {
-    if (!selectedStudentForNotes) return;
-
-    try {
-      await deleteNoteMutation.mutateAsync({
-        id: noteId,
-        studentId: selectedStudentForNotes,
-      });
-      toast({
-        title: "Success",
-        description: "Note deleted successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete note",
-        variant: "destructive",
-      });
-    }
   };
 
   if (studentsLoading) {
@@ -612,7 +399,7 @@ function StudentsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={showStudentForm} onOpenChange={setShowStudentForm}>
+      <Dialog open={showStudentForm} onOpenChange={handleCloseStudentForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -631,13 +418,12 @@ function StudentsPage() {
                 : undefined
             }
             onSubmit={handleStudentSubmit}
-            onCancel={handleStudentCancel}
+            onCancel={handleCloseStudentForm}
           />
         </DialogContent>
       </Dialog>
 
-      {/* Lesson Form Modal for Students Page */}
-      <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
+      <Dialog open={showLessonForm} onOpenChange={handleCloseLessonForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Schedule New Lesson</DialogTitle>
@@ -645,20 +431,27 @@ function StudentsPage() {
           <LessonForm
             students={studentsData as any[]}
             initialData={
-              selectedStudentForLesson
-                ? {
-                    studentId: selectedStudentForLesson.id,
-                    subject: selectedStudentForLesson.defaultSubject,
-                    pricePerHour: selectedStudentForLesson.defaultRate
-                      ? parseFloat(selectedStudentForLesson.defaultRate)
-                      : 50,
-                    lessonLink: selectedStudentForLesson.defaultLink,
-                    dateTime: getDefaultDateTime(),
-                  }
+              prefilledStudentId
+                ? (() => {
+                    const student = (studentsData as any[]).find(
+                      (s: any) => s.id === prefilledStudentId
+                    );
+                    return student
+                      ? {
+                          studentId: student.id,
+                          subject: student.defaultSubject,
+                          pricePerHour: student.defaultRate
+                            ? parseFloat(student.defaultRate)
+                            : 50,
+                          lessonLink: student.defaultLink,
+                          dateTime: getDefaultDateTime(),
+                        }
+                      : undefined;
+                  })()
                 : undefined
             }
             onSubmit={handleLessonSubmit}
-            onCancel={handleLessonCancel}
+            onCancel={handleCloseLessonForm}
           />
         </DialogContent>
       </Dialog>
@@ -713,8 +506,7 @@ function StudentsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Notes Dialog */}
-      <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
+      <Dialog open={showNotesDialog} onOpenChange={handleCloseNotes}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -807,17 +599,9 @@ function StudentsPage() {
 }
 
 function SchedulePage() {
-  const [showLessonForm, setShowLessonForm] = useState(false);
-  const [editingLesson, setEditingLesson] = useState<Lesson | undefined>(
-    undefined,
-  );
-  const { toast } = useToast();
-
   const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
   const { data: studentsData = [] } = useStudents();
-  const updateLessonMutation = useUpdateLesson();
 
-  // Use common hooks
   const {
     showDeleteDialog,
     setShowDeleteDialog,
@@ -844,6 +628,14 @@ function SchedulePage() {
     resetCommentForm,
   } = useCommentHandlers();
 
+  const {
+    showLessonForm,
+    selectedLesson,
+    handleOpenForm: handleOpenLessonForm,
+    handleCloseForm: handleCloseLessonForm,
+    handleSubmit: handleLessonSubmit,
+  } = useLessonForm();
+
   // Transform lessons
   const displayLessons = (lessonsData as any[]).map((lesson: any) => {
     const student = (studentsData as any[]).find(
@@ -867,41 +659,13 @@ function SchedulePage() {
         : lessonIdOrLesson;
 
     if (lesson) {
-      setEditingLesson(lesson);
-      setShowLessonForm(true);
+      handleOpenLessonForm({ lesson });
     }
   };
 
   const handleJoinLesson = (lesson: Lesson) => {
     if (lesson.lessonLink) {
       window.open(lesson.lessonLink, "_blank");
-    }
-  };
-
-  const handleLessonSubmit = async (lessonData: any) => {
-    try {
-      const formattedData = {
-        ...lessonData,
-        dateTime: new Date(lessonData.dateTime).toISOString(),
-        pricePerHour: lessonData.pricePerHour.toString(),
-      };
-
-      if (editingLesson) {
-        await updateLessonMutation.mutateAsync({
-          id: editingLesson.id,
-          ...formattedData,
-        });
-        toast({ title: "Success", description: "Lesson updated successfully" });
-      }
-
-      setShowLessonForm(false);
-      setEditingLesson(undefined);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save lesson",
-        variant: "destructive",
-      });
     }
   };
 
@@ -927,29 +691,26 @@ function SchedulePage() {
         onDeleteComment={handleDeleteComment}
       />
 
-      <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
+      <Dialog open={showLessonForm} onOpenChange={handleCloseLessonForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingLesson ? "Edit Lesson" : "Schedule New Lesson"}
+              {selectedLesson ? "Edit Lesson" : "Schedule New Lesson"}
             </DialogTitle>
           </DialogHeader>
           <LessonForm
             students={studentsData as any[]}
             initialData={
-              editingLesson
+              selectedLesson
                 ? {
-                    ...editingLesson,
-                    dateTime: new Date(editingLesson.dateTime),
-                    pricePerHour: parseFloat(editingLesson.pricePerHour),
+                    ...selectedLesson,
+                    dateTime: new Date(selectedLesson.dateTime),
+                    pricePerHour: parseFloat(selectedLesson.pricePerHour),
                   }
                 : undefined
             }
             onSubmit={handleLessonSubmit}
-            onCancel={() => {
-              setShowLessonForm(false);
-              setEditingLesson(undefined);
-            }}
+            onCancel={handleCloseLessonForm}
           />
         </DialogContent>
       </Dialog>
@@ -1240,111 +1001,36 @@ function Router() {
 }
 
 function AppContent() {
-  const [showLessonForm, setShowLessonForm] = useState(false);
-  const [showStudentForm, setShowStudentForm] = useState(false);
   const [location, setLocation] = useLocation();
 
   const { data: studentsData = [] } = useStudents();
   const { data: lessonsData = [] } = useLessons();
-  const createLessonMutation = useCreateLesson();
-  const createLessonWithRecurringMutation = useCreateLessonWithRecurring();
-  const createStudentMutation = useCreateStudent();
-  const { toast } = useToast();
 
-  // Check if we're on a student calendar or schedule view
+  const {
+    showStudentForm,
+    handleOpenForm: handleOpenStudentForm,
+    handleCloseForm: handleCloseStudentForm,
+    handleSubmit: handleStudentSubmit,
+  } = useStudentForm();
+
+  const {
+    showLessonForm,
+    handleOpenForm: handleOpenLessonForm,
+    handleCloseForm: handleCloseLessonForm,
+    handleSubmit: handleLessonSubmit,
+  } = useLessonForm();
+
   const studentViewMatch = location.match(/^\/(\d{6})\/(calendar|schedule)$/);
   const isStudentView = !!studentViewMatch;
   const studentId = studentViewMatch?.[1];
-  const shouldShowNavigation = true; // Always show navigation now
-
-  const getDefaultDateTime = () => {
-    const now = new Date();
-    // Set to next hour
-    now.setHours(now.getHours() + 1, 0, 0, 0);
-    return now;
-  };
+  const shouldShowNavigation = true;
 
   const handleAddLesson = () => {
-    setShowLessonForm(true);
+    handleOpenLessonForm();
   };
 
   const handleAddStudent = () => {
-    setShowStudentForm(true);
-  };
-
-  const handleLessonSubmit = async (lessonData: any) => {
-    try {
-      if (lessonData.isRecurring && lessonData.endDate) {
-        // Handle recurring lesson creation
-        const recurringData = {
-          lesson: {
-            subject: lessonData.subject,
-            dateTime: new Date(lessonData.dateTime),
-            studentId: lessonData.studentId,
-            lessonLink: lessonData.lessonLink,
-            pricePerHour: lessonData.pricePerHour.toString(),
-            duration: lessonData.duration,
-            paymentStatus: lessonData.paymentStatus || "pending",
-          },
-          recurring: {
-            frequency: lessonData.frequency,
-            endDate: lessonData.endDate,
-          },
-        };
-
-        await createLessonWithRecurringMutation.mutateAsync(recurringData);
-        toast({
-          title: "Success",
-          description: "Recurring lessons scheduled successfully",
-        });
-      } else {
-        // Handle single lesson creation
-        const formattedData = {
-          subject: lessonData.subject,
-          dateTime: new Date(lessonData.dateTime),
-          studentId: lessonData.studentId,
-          lessonLink: lessonData.lessonLink,
-          pricePerHour: lessonData.pricePerHour.toString(),
-          duration: lessonData.duration,
-          paymentStatus: lessonData.paymentStatus || "pending",
-        };
-
-        await createLessonMutation.mutateAsync(formattedData);
-        toast({
-          title: "Success",
-          description: "Lesson scheduled successfully",
-        });
-      }
-
-      setShowLessonForm(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to schedule lesson",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleStudentSubmit = async (studentData: any) => {
-    try {
-      const formattedData = {
-        ...studentData,
-        defaultRate: studentData.defaultRate
-          ? studentData.defaultRate.toString()
-          : null,
-      };
-
-      await createStudentMutation.mutateAsync(formattedData);
-      toast({ title: "Success", description: "Student added successfully" });
-      setShowStudentForm(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add student",
-        variant: "destructive",
-      });
-    }
+    handleOpenStudentForm();
   };
 
   return (
@@ -1373,8 +1059,7 @@ function AppContent() {
         </main>
       </div>
 
-      {/* Global Lesson Form Modal */}
-      <Dialog open={showLessonForm} onOpenChange={setShowLessonForm}>
+      <Dialog open={showLessonForm} onOpenChange={handleCloseLessonForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Schedule New Lesson</DialogTitle>
@@ -1382,20 +1067,19 @@ function AppContent() {
           <LessonForm
             students={studentsData as any[]}
             onSubmit={handleLessonSubmit}
-            onCancel={() => setShowLessonForm(false)}
+            onCancel={handleCloseLessonForm}
           />
         </DialogContent>
       </Dialog>
 
-      {/* Global Student Form Modal */}
-      <Dialog open={showStudentForm} onOpenChange={setShowStudentForm}>
+      <Dialog open={showStudentForm} onOpenChange={handleCloseStudentForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Student</DialogTitle>
           </DialogHeader>
           <StudentForm
             onSubmit={handleStudentSubmit}
-            onCancel={() => setShowStudentForm(false)}
+            onCancel={handleCloseStudentForm}
           />
         </DialogContent>
       </Dialog>
