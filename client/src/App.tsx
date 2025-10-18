@@ -1557,7 +1557,7 @@ function SchedulePage() {
         onClose={() => setViewCommentsLessonId(null)}
         onDeleteComment={handleDeleteComment}
         onEditComment={handleStartEditComment}
-        isStudentView={true}
+        isStudentView={false}
       />
     </>
   );
