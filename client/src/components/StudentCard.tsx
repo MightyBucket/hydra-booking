@@ -54,6 +54,18 @@ export default function StudentCard({
     : firstName.charAt(0);
   const fullName = lastName ? `${firstName} ${lastName}` : firstName;
 
+  const handleEdit = (studentId: string) => {
+    console.log('Edit student:', studentId);
+  };
+
+  const handleScheduleLesson = (studentId: string) => {
+    window.open(`/calendar/${studentId}`, '_blank');
+  };
+
+  const handleViewLessons = (studentId: string) => {
+    console.log('View lessons for student:', studentId);
+  };
+
   return (
     <Card className="hover-elevate" data-testid={`student-card-${student.id}`}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
