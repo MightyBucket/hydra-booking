@@ -25,6 +25,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import CalendarView from "./components/CalendarView";
 import Navigation from "./components/Navigation";
@@ -526,6 +527,7 @@ function StudentsPage() {
   const [selectedStudentForLesson, setSelectedStudentForLesson] =
     useState<any>(null);
   const [studentToDelete, setStudentToDelete] = useState<any>(null);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [showNotesDialog, setShowNotesDialog] = useState(false);
   const [selectedStudentForNotes, setSelectedStudentForNotes] = useState<
     string | null
@@ -592,11 +594,21 @@ function StudentsPage() {
       (s: any) => s.id === studentId,
     );
     setStudentToDelete(student);
+    setDeleteConfirmationText("");
     setShowDeleteDialog(true);
   };
 
   const confirmDeleteStudent = async () => {
     if (!studentToDelete) return;
+
+    if (deleteConfirmationText !== studentToDelete.firstName) {
+      toast({
+        title: "Error",
+        description: "Please type the student's first name to confirm deletion",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       await deleteStudentMutation.mutateAsync(studentToDelete.id);
@@ -606,6 +618,7 @@ function StudentsPage() {
       });
       setShowDeleteDialog(false);
       setStudentToDelete(null);
+      setDeleteConfirmationText("");
     } catch (error) {
       toast({
         title: "Error",
@@ -618,6 +631,7 @@ function StudentsPage() {
   const cancelDeleteStudent = () => {
     setShowDeleteDialog(false);
     setStudentToDelete(null);
+    setDeleteConfirmationText("");
   };
 
   const handleStudentSubmit = async (studentData: any) => {
@@ -898,6 +912,19 @@ function StudentsPage() {
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="delete-confirmation" className="text-sm font-medium">
+              Type <strong>{studentToDelete?.firstName}</strong> to confirm:
+            </Label>
+            <Input
+              id="delete-confirmation"
+              type="text"
+              value={deleteConfirmationText}
+              onChange={(e) => setDeleteConfirmationText(e.target.value)}
+              placeholder={studentToDelete?.firstName}
+              className="mt-2"
+            />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelDeleteStudent}>
               Cancel
@@ -905,6 +932,7 @@ function StudentsPage() {
             <AlertDialogAction
               onClick={confirmDeleteStudent}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteConfirmationText !== studentToDelete?.firstName}
             >
               Delete Student
             </AlertDialogAction>
