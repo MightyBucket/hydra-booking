@@ -8,7 +8,6 @@ import {
   BookOpen,
   DollarSign,
   Edit,
-  Calendar,
   Trash2,
   NotebookText,
   CalendarPlus,

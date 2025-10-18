@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Switch, Route, useParams, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -22,7 +22,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,9 +32,6 @@ import LessonForm from "./components/LessonForm";
 import StudentForm from "./components/StudentForm";
 import ThemeToggle from "./components/ThemeToggle";
 import StudentCard from "./components/StudentCard";
-import LessonCard from "./components/LessonCard";
-import LessonCardWithComments from "./components/LessonCardWithComments";
-import LessonWithComments from "./components/LessonWithComments";
 import ScheduleCommentsDialog from "./components/ScheduleCommentsDialog";
 import ScheduleView from "./components/ScheduleView";
 import {
@@ -48,15 +44,8 @@ import {
   useLessons,
   useCreateLesson,
   useUpdateLesson,
-  useDeleteLesson,
   useCreateLessonWithRecurring,
 } from "./hooks/useLessons";
-import {
-  useCommentsByLesson,
-  useCreateComment,
-  useDeleteComment,
-  useUpdateComment,
-} from "./hooks/useComments";
 import {
   useNotesByStudent,
   useCreateNote,
@@ -64,44 +53,17 @@ import {
   useDeleteNote,
 } from "./hooks/useNotes";
 import NoteForm from "./components/NoteForm";
-import CommentForm from "./components/CommentForm";
 import CommentFormDialog from "./components/CommentFormDialog";
 import DeleteLessonDialog from "./components/DeleteLessonDialog";
 import { format } from "date-fns";
 import NotFound from "@/pages/not-found";
-import { useQueryClient } from "@tanstack/react-query";
 import { Lesson } from "./types/Lesson";
 import { Button } from "@/components/ui/button";
 import { linkifyText } from "@/lib/linkify";
 import { useCommentHandlers } from "./hooks/useCommentHandlers";
 import { useLessonDelete } from "./hooks/useLessonDelete";
 import { usePaymentStatus } from "./hooks/usePaymentStatus";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  Clock,
-  ExternalLink,
-  Trash2,
-  Edit,
-  ChevronDown,
-  MessageSquare,
-  Eye,
-  EyeOff,
-} from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import { Badge } from "@/components/ui/badge";
+import { Edit, Trash2 } from "lucide-react";
 import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
 
 function CalendarPage() {
