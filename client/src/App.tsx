@@ -761,29 +761,48 @@ function StudentsPage() {
     );
   }
 
+  // Calculate lesson stats for each student
+  const studentsWithStats = (studentsData as any[]).map((student: any) => {
+    const studentLessons = (lessonsData as any[]).filter(
+      (lesson: any) => lesson.studentId === student.id
+    );
+    
+    const lessonCount = studentLessons.length;
+    
+    let lastLessonDate: Date | undefined;
+    if (studentLessons.length > 0) {
+      const sortedLessons = studentLessons.sort(
+        (a: any, b: any) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
+      );
+      lastLessonDate = new Date(sortedLessons[0].dateTime);
+    }
+    
+    return {
+      ...student,
+      defaultRate: student.defaultRate ? parseFloat(student.defaultRate) : undefined,
+      lessonCount,
+      lastLessonDate,
+    };
+  });
+
   return (
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Students ({(studentsData as any[]).length})</CardTitle>
+          <CardTitle>Students ({studentsWithStats.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {(studentsData as any[]).length === 0 ? (
+          {studentsWithStats.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <p>No students added yet.</p>
               <p>Click "Add Student" in the sidebar to get started.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(studentsData as any[]).map((student: any) => (
+              {studentsWithStats.map((student: any) => (
                 <StudentCard
                   key={student.id}
-                  student={{
-                    ...student,
-                    defaultRate: student.defaultRate
-                      ? parseFloat(student.defaultRate)
-                      : undefined,
-                  }}
+                  student={student}
                   onEdit={handleEditStudent}
                   onScheduleLesson={handleScheduleLesson}
                   onViewLessons={handleViewLessons}
