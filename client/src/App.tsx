@@ -34,24 +34,7 @@ import ThemeToggle from "./components/ThemeToggle";
 import StudentCard from "./components/StudentCard";
 import ScheduleCommentsDialog from "./components/ScheduleCommentsDialog";
 import ScheduleView from "./components/ScheduleView";
-import {
-  useStudents,
-  useCreateStudent,
-  useUpdateStudent,
-  useDeleteStudent,
-} from "./hooks/useStudents";
-import {
-  useLessons,
-  useCreateLesson,
-  useUpdateLesson,
-  useCreateLessonWithRecurring,
-} from "./hooks/useLessons";
-import {
-  useNotesByStudent,
-  useCreateNote,
-  useUpdateNote,
-  useDeleteNote,
-} from "./hooks/useNotes";
+import { useDeleteStudent } from "./hooks/useStudents";
 import NoteForm from "./components/NoteForm";
 import CommentFormDialog from "./components/CommentFormDialog";
 import DeleteLessonDialog from "./components/DeleteLessonDialog";
