@@ -1706,6 +1706,18 @@ function StudentSchedulePage() {
 
   const lessonsData = lessonsResponse?.lessons || [];
 
+  // Auto-scroll to today's section on mount (must be before any conditional returns)
+  useEffect(() => {
+    if (!lessonsLoading && !studentLoading && student) {
+      const todayElement = document.querySelector('[data-today-section="true"]');
+      if (todayElement) {
+        setTimeout(() => {
+          todayElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 100);
+      }
+    }
+  }, [lessonsLoading, studentLoading, student]);
+
   if (lessonsLoading || studentLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1807,16 +1819,6 @@ function StudentSchedulePage() {
       });
     }
   };
-
-  // Auto-scroll to today's section on mount
-  useEffect(() => {
-    const todayElement = document.querySelector('[data-today-section="true"]');
-    if (todayElement) {
-      setTimeout(() => {
-        todayElement.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
-    }
-  }, [lessonsLoading]);
 
   // Group lessons by date
   const groupedLessons = displayLessons.reduce((groups: any, lesson: any) => {
