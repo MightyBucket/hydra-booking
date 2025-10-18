@@ -17,9 +17,15 @@ interface LessonCardWithCommentsProps {
   isStudentView?: boolean;
 }
 
+/**
+ * Wrapper component that fetches and injects comments into LessonCard
+ * Handles different comment fetching logic for student-specific views vs regular views
+ */
 export default function LessonCardWithComments(props: LessonCardWithCommentsProps) {
   const params = useParams<{ studentId?: string }>();
   const isStudentSpecificView = !!params.studentId;
+  
+  // Fetch comments based on view type (student-specific or all comments)
   const { data: studentComments = [] } = isStudentSpecificView ? useStudentLessonComments(params.studentId!, props.lesson.id) : { data: [] };
   const { data: regularComments = [] } = useCommentsByLesson(isStudentSpecificView ? '' : props.lesson.id);
   const comments = isStudentSpecificView ? studentComments : regularComments;

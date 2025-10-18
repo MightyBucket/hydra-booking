@@ -67,22 +67,24 @@ export default function CalendarView({
   onEditComment,
   focusedStudentId,
 }: CalendarViewProps) {
+  // Calendar state management
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"month" | "week">("month");
-  const [selectedMobileDate, setSelectedMobileDate] = useState<Date | null>(
-    null,
-  );
+  
+  // Mobile-specific state for date selection
+  const [selectedMobileDate, setSelectedMobileDate] = useState<Date | null>(null);
+  
+  // Double-tap detection for mobile booking
   const [lastTapTime, setLastTapTime] = useState<number>(0);
   const [lastTapDate, setLastTapDate] = useState<Date | null>(null);
+  
   const isMobile = useIsMobile();
-  const [viewCommentsLessonId, setViewCommentsLessonId] = useState<
-    string | null
-  >(null);
+  const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
 
   const deleteCommentMutation = useDeleteComment();
 
+  // Calculate calendar grid boundaries
   const monthStart = startOfMonth(currentDate);
-  //const monthEnd = endOfMonth(currentDate);
 
   // For month view, calculate the full calendar grid including days from previous/next months
   const calendarStart = startOfWeek(monthStart);
@@ -97,12 +99,14 @@ export default function CalendarView({
 
   const days = view === "month" ? monthDays : weekDays;
 
+  // Get all lessons for a specific date, sorted by time
   const getLessonsForDate = (date: Date) => {
     return lessons
       .filter((lesson) => isSameDay(lesson.dateTime, date))
       .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
   };
 
+  // Navigate to previous or next month
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentDate(
       direction === "next"
@@ -111,10 +115,16 @@ export default function CalendarView({
     );
   };
 
+  // Jump back to today's date
   const setToToday = () => {
     setCurrentDate(new Date());
   };
 
+  /**
+   * Handle date clicks on mobile
+   * Single tap: select date to view lessons
+   * Double tap: open booking form (if not in student view)
+   */
   const handleMobileDateClick = (date: Date) => {
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300; // milliseconds

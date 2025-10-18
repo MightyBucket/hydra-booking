@@ -14,6 +14,11 @@ interface NavigationProps {
   studentId?: string;
 }
 
+/**
+ * Main navigation sidebar component
+ * Shows different navigation items based on whether it's a teacher or student view
+ * Includes quick actions for adding lessons and students (teacher view only)
+ */
 export default function Navigation({ 
   onAddLesson, 
   onAddStudent, 
@@ -25,6 +30,7 @@ export default function Navigation({
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
 
+  // Define navigation items based on view type (student vs teacher)
   const navItems = isStudentView && studentId ? [
     { path: `/${studentId}/calendar`, label: 'Calendar', icon: Calendar },
     { path: `/${studentId}/schedule`, label: 'Schedule', icon: GraduationCap },
@@ -36,6 +42,7 @@ export default function Navigation({
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
+  // Check if a route is currently active
   const isActiveRoute = (path: string) => {
     if (path === '/') return location === '/';
     return location.startsWith(path);

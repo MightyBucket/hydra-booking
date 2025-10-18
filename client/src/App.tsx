@@ -56,9 +56,15 @@ import { Edit, Trash2 } from "lucide-react";
 import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
 import { handleJoinLessonLink, calculateStudentStats } from "@/utils/lessonHelpers";
 
+/**
+ * CalendarPage: Main calendar view showing lessons in a month/week grid
+ * Handles lesson creation, editing, deletion, and payment status updates
+ */
 function CalendarPage() {
+  // Fetch lesson and student data
   const { lessonsData, studentsData, displayLessons, lessonsLoading } = useLessonData();
 
+  // Handle lesson deletion with option to delete recurring lessons
   const {
     showDeleteDialog,
     setShowDeleteDialog,
@@ -68,6 +74,7 @@ function CalendarPage() {
     confirmDeleteLesson,
   } = useLessonDelete(lessonsData as any[]);
 
+  // Handle payment status updates (pending, paid, overdue, etc.)
   const { handleUpdatePaymentStatus } = usePaymentStatus(lessonsData as any[]);
 
   const {
@@ -185,11 +192,17 @@ function CalendarPage() {
   );
 }
 
+/**
+ * StudentsPage: View and manage all students
+ * Allows adding, editing, deleting students and viewing their lessons/notes
+ */
 function StudentsPage() {
+  // Track delete confirmation input and selected student for notes dialog
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [selectedStudentForNotes, setSelectedStudentForNotes] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Fetch students and lessons data
   const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
   const { data: lessonsData = [] } = useLessons();
   const deleteStudentMutation = useDeleteStudent();

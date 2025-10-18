@@ -7,12 +7,20 @@ import {
 } from "./useComments";
 import { useDialogState } from "./useDialogState";
 
+/**
+ * Interface for comment form state
+ * Tracks which lesson the comment belongs to and if we're editing an existing comment
+ */
 interface CommentFormData {
   lessonId: string;
   editingId?: string;
   commentData?: any;
 }
 
+/**
+ * Hook for managing comment CRUD operations
+ * Handles creating, updating, and deleting comments on lessons
+ */
 export function useCommentHandlers() {
   const { isOpen: showCommentForm, data: formData, open: openCommentForm, close: closeCommentForm } = useDialogState<CommentFormData>();
   const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
@@ -22,6 +30,7 @@ export function useCommentHandlers() {
   const updateCommentMutation = useUpdateComment();
   const deleteCommentMutation = useDeleteComment();
 
+  // Open comment form for a specific lesson
   const handleAddComment = (lessonId: string) => {
     openCommentForm({ lessonId });
   };
