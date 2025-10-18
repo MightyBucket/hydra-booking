@@ -67,6 +67,18 @@ export function useDeleteLesson() {
   });
 }
 
+export function useDeleteRecurringLessons() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: string) => apiRequest('DELETE', `/api/lessons/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lessons'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/recurring-lessons'] });
+    },
+  });
+}
+
 // Recurring lesson hooks
 export function useRecurringLessons() {
   return useQuery({
