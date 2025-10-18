@@ -933,7 +933,7 @@ function StudentsPage() {
                             {note.title}
                           </h4>
                           <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                            {note.content}
+                            {linkifyText(note.content)}
                           </p>
                           <p className="text-xs text-muted-foreground mt-2">
                             {format(
@@ -1529,7 +1529,7 @@ function SchedulePage() {
   );
 }
 
-// Helper function to detect and linkify URLs
+// Helper function to detect and linkify URLs (used for comments and notes)
 const linkifyText = (text: string): JSX.Element => {
   const urlRegex = /(https?:\/\/[^\s]+)/gi;
   const parts = text.split(urlRegex);
