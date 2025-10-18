@@ -69,6 +69,7 @@ import NotFound from "@/pages/not-found";
 import { useQueryClient } from "@tanstack/react-query";
 import { Lesson } from "./types/Lesson";
 import { Button } from "@/components/ui/button";
+import { linkifyText } from "@/lib/linkify";
 import {
   DropdownMenu,
   DropdownMenuContent,

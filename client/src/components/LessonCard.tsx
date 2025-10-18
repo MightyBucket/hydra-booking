@@ -27,6 +27,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { format } from "date-fns";
+import { getPaymentStatusColor, PaymentStatus } from "@/lib/paymentStatus";
 
 interface Comment {
   id: string;
@@ -81,23 +82,6 @@ export default function LessonCard({
 }: LessonCardProps) {
   const [viewComments, setViewComments] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-
-  const getPaymentStatusColor = (status: string) => {
-    switch (status) {
-      case "paid":
-        return "bg-lesson-confirmed text-white";
-      case "pending":
-        return "bg-lesson-pending text-black";
-      case "overdue":
-        return "bg-lesson-cancelled text-white";
-      case "unpaid":
-        return "bg-lesson-cancelled text-white";
-      case "free":
-        return "bg-gray-400 text-white";
-      default:
-        return "bg-secondary";
-    }
-  };
 
   const totalPrice = (lesson.pricePerHour * lesson.duration) / 60;
 

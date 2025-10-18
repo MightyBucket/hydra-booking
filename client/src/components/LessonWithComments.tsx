@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { useCommentsByLesson } from "@/hooks/useComments";
 import { format as formatDate } from "date-fns";
+import { getPaymentStatusColor, PaymentStatus } from "@/lib/paymentStatus";
+import { linkifyText } from "@/lib/linkify";
 
 interface Lesson {
   id: string;
@@ -32,25 +34,10 @@ interface Lesson {
   studentColor?: string;
   studentId?: string;
   duration: number;
-  paymentStatus: "pending" | "paid" | "unpaid" | "free";
+  paymentStatus: PaymentStatus;
   pricePerHour: number;
   lessonLink?: string;
 }
-
-const getPaymentStatusColor = (status: string) => {
-  switch (status) {
-    case "paid":
-      return "bg-lesson-confirmed text-white";
-    case "pending":
-      return "bg-lesson-pending text-black";
-    case "unpaid":
-      return "bg-lesson-cancelled text-white";
-    case "free":
-      return "bg-gray-400 text-white";
-    default:
-      return "bg-secondary";
-  }
-};
 
 interface LessonWithCommentsProps {
   lesson: Lesson;
@@ -70,33 +57,6 @@ interface LessonWithCommentsProps {
   ) => void;
   onDeleteComment?: (commentId: string) => void;
 }
-
-// Helper function to detect and linkify URLs
-const linkifyText = (text: string): JSX.Element => {
-  const urlRegex = /(https?:\/\/[^\s]+)/gi;
-  const parts = text.split(urlRegex);
-  return (
-    <>
-      {parts.map((part, index) => {
-        // Check if the part matches a URL
-        if (part.match(urlRegex)) {
-          return (
-            <a
-              key={index}
-              href={part}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline"
-            >
-              {part}
-            </a>
-          );
-        }
-        return part;
-      })}
-    </>
-  );
-};
 
 export default function LessonWithComments({
   lesson,
