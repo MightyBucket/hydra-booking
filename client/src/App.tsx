@@ -68,10 +68,10 @@ import { useStudentForm } from "./hooks/useStudentForm";
 import { useStudentNotes } from "./hooks/useStudentNotes";
 import { Edit, Trash2 } from "lucide-react";
 import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
+import { handleJoinLessonLink, calculateStudentStats } from "@/utils/lessonHelpers";
 
 function CalendarPage() {
-  const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
-  const { data: studentsData = [] } = useStudents();
+  const { lessonsData, studentsData, displayLessons, lessonsLoading } = useLessonData();
 
   const {
     showDeleteDialog,
@@ -105,22 +105,6 @@ function CalendarPage() {
     handleSubmit: handleLessonSubmit,
   } = useLessonForm();
 
-  // Transform lessons data for calendar display
-  const displayLessons = (lessonsData as any[]).map((lesson: any) => {
-    const student = (studentsData as any[]).find(
-      (s: any) => s.id === lesson.studentId,
-    );
-    return {
-      ...lesson,
-      dateTime: new Date(lesson.dateTime),
-      studentName: student
-        ? `${student.firstName} ${student.lastName || ""}`
-        : "Unknown Student",
-      studentColor: student?.defaultColor || "#3b82f6",
-      pricePerHour: parseFloat(lesson.pricePerHour),
-    };
-  });
-
   const handleLessonClick = (lesson: any) => {
     const originalLesson = (lessonsData as any[]).find(
       (l: any) => l.id === lesson.id,
@@ -135,9 +119,7 @@ function CalendarPage() {
   };
 
   const handleJoinLesson = (lesson: any) => {
-    if (lesson.lessonLink) {
-      window.open(lesson.lessonLink, "_blank");
-    }
+    handleJoinLessonLink(lesson.lessonLink);
   };
 
   if (lessonsLoading) {
@@ -338,36 +320,9 @@ function StudentsPage() {
   }
 
   // Calculate lesson stats for each student
-  const studentsWithStats = (studentsData as any[]).map((student: any) => {
-    const studentLessons = (lessonsData as any[]).filter(
-      (lesson: any) => lesson.studentId === student.id
-    );
-
-    const lessonCount = studentLessons.length;
-
-    let lastLessonDate: Date | undefined;
-    if (studentLessons.length > 0) {
-      const now = new Date();
-      // Filter to only past lessons (up to and including today)
-      const pastLessons = studentLessons.filter(
-        (lesson: any) => new Date(lesson.dateTime) <= now
-      );
-
-      if (pastLessons.length > 0) {
-        const sortedLessons = pastLessons.sort(
-          (a: any, b: any) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
-        );
-        lastLessonDate = new Date(sortedLessons[0].dateTime);
-      }
-    }
-
-    return {
-      ...student,
-      defaultRate: student.defaultRate ? parseFloat(student.defaultRate) : undefined,
-      lessonCount,
-      lastLessonDate,
-    };
-  });
+  const studentsWithStats = (studentsData as any[]).map((student: any) => 
+    calculateStudentStats(student, lessonsData as any[])
+  );
 
   return (
     <>
@@ -599,8 +554,7 @@ function StudentsPage() {
 }
 
 function SchedulePage() {
-  const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
-  const { data: studentsData = [] } = useStudents();
+  const { lessonsData, studentsData, displayLessons, lessonsLoading } = useLessonData();
 
   const {
     showDeleteDialog,
@@ -635,22 +589,6 @@ function SchedulePage() {
     handleCloseForm: handleCloseLessonForm,
     handleSubmit: handleLessonSubmit,
   } = useLessonForm();
-
-  // Transform lessons
-  const displayLessons = (lessonsData as any[]).map((lesson: any) => {
-    const student = (studentsData as any[]).find(
-      (s: any) => s.id === lesson.studentId,
-    );
-    return {
-      ...lesson,
-      dateTime: new Date(lesson.dateTime),
-      studentName: student
-        ? `${student.firstName} ${student.lastName || ""}`
-        : "Unknown Student",
-      studentColor: student?.defaultColor || "#3b82f6",
-      pricePerHour: parseFloat(lesson.pricePerHour),
-    };
-  });
 
   const handleEditLesson = (lessonIdOrLesson: string | Lesson) => {
     const lesson =
@@ -1003,8 +941,7 @@ function Router() {
 function AppContent() {
   const [location, setLocation] = useLocation();
 
-  const { data: studentsData = [] } = useStudents();
-  const { data: lessonsData = [] } = useLessons();
+  const { studentsData, lessonsData } = useLessonData();
 
   const {
     showStudentForm,
