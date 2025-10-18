@@ -36,6 +36,8 @@ export function useLessonForm() {
       const cleanedData = {
         ...lessonData,
         lessonLink: lessonData.lessonLink?.trim() || null,
+        pricePerHour: Number(lessonData.pricePerHour),
+        duration: Number(lessonData.duration),
       };
 
       // Remove fields that aren't part of the lesson schema
