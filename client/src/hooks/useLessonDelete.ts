@@ -18,8 +18,16 @@ export function useLessonDelete(lessonsData: any[]) {
   const confirmDeleteLesson = async () => {
     if (!lessonToDelete) {
       console.error("No lesson to delete");
+      toast({
+        title: "Error",
+        description: "No lesson selected for deletion",
+        variant: "destructive",
+      });
+      closeDeleteDialog();
       return;
     }
+
+    console.log("Deleting lesson:", lessonToDelete.id, "deleteAllFuture:", deleteAllFuture);
 
     try {
       if (deleteAllFuture) {
@@ -37,8 +45,11 @@ export function useLessonDelete(lessonsData: any[]) {
           );
         });
 
+        console.log("Deleting future recurring lessons:", futureRecurringLessons.length);
+
         // Delete lessons sequentially
         for (const lesson of futureRecurringLessons) {
+          console.log("Deleting lesson:", lesson.id);
           await deleteLessonMutation.mutateAsync(lesson.id);
         }
 
@@ -48,14 +59,16 @@ export function useLessonDelete(lessonsData: any[]) {
         });
       } else {
         // Delete single lesson
+        console.log("Deleting single lesson:", lessonToDelete.id);
         await deleteLessonMutation.mutateAsync(lessonToDelete.id);
+        console.log("Lesson deleted successfully");
         toast({ title: "Success", description: "Lesson deleted successfully" });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Delete lesson error:", error);
       toast({
         title: "Error",
-        description: "Failed to delete lesson",
+        description: error?.message || "Failed to delete lesson",
         variant: "destructive",
       });
     } finally {

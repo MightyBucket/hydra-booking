@@ -241,7 +241,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/lessons/:id", requireAuth, async (req, res) => {
     try {
+      console.log('Deleting lesson:', req.params.id);
       await storage.deleteLesson(req.params.id);
+      console.log('Lesson deleted successfully:', req.params.id);
       res.status(204).send();
     } catch (error) {
       console.error('Error deleting lesson:', error);
