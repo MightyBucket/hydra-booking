@@ -1047,6 +1047,17 @@ function SchedulePage() {
     return groups;
   }, {});
 
+  // Ensure today's date is in the grouped lessons (even if empty)
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  if (!groupedLessons[todayKey]) {
+    groupedLessons[todayKey] = [];
+  }
+
+  // Sort the dates to ensure proper chronological order
+  const sortedDates = Object.keys(groupedLessons).sort((a, b) => {
+    return new Date(a).getTime() - new Date(b).getTime();
+  });
+
   const handleEditLesson = (lessonIdOrLesson: string | Lesson) => {
     const lesson =
       typeof lessonIdOrLesson === "string"
@@ -1294,53 +1305,55 @@ function SchedulePage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {Object.entries(groupedLessons).map(
-              ([dateKey, lessons]: [string, any], index: number) => {
-                const date = new Date(dateKey);
-                const isToday = format(new Date(), "yyyy-MM-dd") === dateKey;
-                const isPast =
-                  date < new Date(new Date().setHours(0, 0, 0, 0));
+            {sortedDates.map((dateKey, index) => {
+              const lessons = groupedLessons[dateKey];
+              const date = new Date(dateKey);
+              const isToday = todayKey === dateKey;
+              const isPast =
+                date < new Date(new Date().setHours(0, 0, 0, 0));
 
-                // Check if this is the first lesson of a new month
-                const isFirstLessonOfMonth =
-                  index === 0 ||
-                  format(date, "yyyy-MM") !==
-                    format(
-                      new Date(Object.keys(groupedLessons)[index - 1]),
-                      "yyyy-MM",
-                    );
+              // Check if this is the first lesson of a new month
+              const isFirstLessonOfMonth =
+                index === 0 ||
+                format(date, "yyyy-MM") !==
+                  format(new Date(sortedDates[index - 1]), "yyyy-MM");
 
-                return (
-                  <div
-                    key={dateKey}
-                    className="space-y-3"
-                    data-date-key={dateKey}
-                    data-today-section={isToday ? "true" : undefined}
-                  >
-                    {isFirstLessonOfMonth && (
-                      <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-foreground mb-2">
-                          {format(date, "MMMM yyyy")}
-                        </h2>
-                        <div className="h-px bg-border"></div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-3">
-                      <h3
-                        className={`text-lg font-semibold ${isToday ? "text-primary" : isPast ? "text-muted-foreground" : ""}`}
-                      >
-                        {isToday ? "Today" : format(date, "EEE d")}
-                      </h3>
-                      <div className="flex-1 h-px bg-border"></div>
-                      <span className="text-sm text-muted-foreground">
-                        {lessons.length} lesson
-                        {lessons.length !== 1 ? "s" : ""}
-                      </span>
+              return (
+                <div
+                  key={dateKey}
+                  className="space-y-3"
+                  data-date-key={dateKey}
+                  data-today-section={isToday ? "true" : undefined}
+                >
+                  {isFirstLessonOfMonth && (
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-bold text-foreground mb-2">
+                        {format(date, "MMMM yyyy")}
+                      </h2>
+                      <div className="h-px bg-border"></div>
                     </div>
+                  )}
 
-                    <div className="space-y-3 pl-4">
-                      {lessons.map((lesson) =>
+                  <div className="flex items-center gap-3">
+                    <h3
+                      className={`text-lg font-semibold ${isToday ? "text-primary" : isPast ? "text-muted-foreground" : ""}`}
+                    >
+                      {isToday ? "Today" : format(date, "EEE d")}
+                    </h3>
+                    <div className="flex-1 h-px bg-border"></div>
+                    <span className="text-sm text-muted-foreground">
+                      {lessons.length} lesson
+                      {lessons.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 pl-4">
+                    {lessons.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">
+                        No lessons scheduled
+                      </div>
+                    ) : (
+                      lessons.map((lesson) =>
                         isMobile ? (
                           <LessonWithComments
                             key={lesson.id}
@@ -1379,40 +1392,14 @@ function SchedulePage() {
                             onEditComment={handleStartEditComment}
                           />
                         ),
-                      )}
-                    </div>
+                      )
+                    )}
                   </div>
-                );
-              },
-            )}
-
-            {/* Always show Today section even if no lessons */}
-            {!Object.keys(groupedLessons).includes(format(new Date(), "yyyy-MM-dd")) && (
-              <div className="space-y-3" data-today-section="true">
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-foreground mb-2">
-                    {format(new Date(), "MMMM yyyy")}
-                  </h2>
-                  <div className="h-px bg-border"></div>
                 </div>
+              );
+            })}
 
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-semibold text-primary">
-                    Today
-                  </h3>
-                  <div className="flex-1 h-px bg-border"></div>
-                  <span className="text-sm text-muted-foreground">
-                    0 lessons
-                  </span>
-                </div>
-
-                <div className="pl-4 text-sm text-muted-foreground">
-                  No lessons scheduled
-                </div>
-              </div>
-            )}
-
-            {displayLessons.length === 0 && (
+            {displayLessons.length === 0 && sortedDates.length === 1 && (
               <div className="text-center py-8 text-muted-foreground">
                 <p>No lessons scheduled from last week onwards.</p>
                 <p>Click "Schedule Lesson" in the sidebar to get started.</p>
