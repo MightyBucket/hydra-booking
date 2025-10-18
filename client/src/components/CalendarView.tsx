@@ -103,7 +103,7 @@ interface CalendarViewProps {
 
 // Mock LessonCard component for demonstration purposes
 // In a real scenario, this would be imported from "@/components/LessonCard"
-const LessonCard = ({
+{/*const LessonCard = ({
   lesson,
   onEdit,
   onDelete,
@@ -201,7 +201,6 @@ const LessonCard = ({
               className={lesson.paymentStatus === "unpaid" ? "bg-accent" : ""}
               data-testid={`payment-option-unpaid-${lesson.id}`}
             >
-              {/*<span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>*/}
               Unpaid
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -301,7 +300,7 @@ const LessonCard = ({
       </div>
     </div>
   );
-};
+};*/}
 
 export default function CalendarView({
   lessons,
