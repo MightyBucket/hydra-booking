@@ -67,6 +67,7 @@ import { useLessonForm } from "./hooks/useLessonForm";
 import { useStudentForm } from "./hooks/useStudentForm";
 import { useStudentNotes } from "./hooks/useStudentNotes";
 import { useLessonData } from "./hooks/useLessonData";
+import { useDialogState } from "./hooks/useDialogState";
 import { Edit, Trash2 } from "lucide-react";
 import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
 import { handleJoinLessonLink, calculateStudentStats } from "@/utils/lessonHelpers";
@@ -201,8 +202,6 @@ function CalendarPage() {
 }
 
 function StudentsPage() {
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [studentToDelete, setStudentToDelete] = useState<any>(null);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [selectedStudentForNotes, setSelectedStudentForNotes] = useState<string | null>(null);
   const { toast } = useToast();
@@ -210,6 +209,8 @@ function StudentsPage() {
   const { data: studentsData = [], isLoading: studentsLoading } = useStudents();
   const { data: lessonsData = [] } = useLessons();
   const deleteStudentMutation = useDeleteStudent();
+
+  const { isOpen: showDeleteDialog, data: studentToDelete, open: openDeleteDialog, close: closeDeleteDialog } = useDialogState<any>();
 
   const {
     showStudentForm,
@@ -271,9 +272,8 @@ function StudentsPage() {
     const student = (studentsData as any[]).find(
       (s: any) => s.id === studentId,
     );
-    setStudentToDelete(student);
+    openDeleteDialog(student);
     setDeleteConfirmationText("");
-    setShowDeleteDialog(true);
   };
 
   const confirmDeleteStudent = async () => {
@@ -294,8 +294,7 @@ function StudentsPage() {
         title: "Success",
         description: `Student ${studentToDelete.firstName} ${studentToDelete.lastName || ""} and all associated lessons have been deleted.`,
       });
-      setShowDeleteDialog(false);
-      setStudentToDelete(null);
+      closeDeleteDialog();
       setDeleteConfirmationText("");
     } catch (error) {
       toast({
@@ -307,8 +306,7 @@ function StudentsPage() {
   };
 
   const cancelDeleteStudent = () => {
-    setShowDeleteDialog(false);
-    setStudentToDelete(null);
+    closeDeleteDialog();
     setDeleteConfirmationText("");
   };
 
@@ -413,7 +411,7 @@ function StudentsPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialog open={showDeleteDialog} onOpenChange={closeDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Student</AlertDialogTitle>

@@ -1,23 +1,19 @@
-
-import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { useCreateStudent, useUpdateStudent } from './useStudents';
-import { useToast } from './use-toast';
+import { useDialogState } from './useDialogState';
 
 export function useStudentForm() {
-  const [showStudentForm, setShowStudentForm] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const { isOpen: showStudentForm, data: selectedStudent, open, close } = useDialogState<any>();
   const { toast } = useToast();
   const createStudentMutation = useCreateStudent();
   const updateStudentMutation = useUpdateStudent();
 
   const handleOpenForm = (student?: any) => {
-    setSelectedStudent(student || null);
-    setShowStudentForm(true);
+    open(student || null);
   };
 
   const handleCloseForm = () => {
-    setShowStudentForm(false);
-    setSelectedStudent(null);
+    close();
   };
 
   const handleSubmit = async (studentData: any) => {

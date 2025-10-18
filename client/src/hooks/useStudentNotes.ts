@@ -1,36 +1,33 @@
-
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { useNotesByStudent, useCreateNote, useUpdateNote, useDeleteNote } from './useNotes';
-import { useToast } from './use-toast';
+import { useDialogState } from './useDialogState';
 
 export function useStudentNotes(studentId: string | null) {
-  const [showNotesDialog, setShowNotesDialog] = useState(false);
-  const [showNoteForm, setShowNoteForm] = useState(false);
-  const [editingNote, setEditingNote] = useState<any>(null);
+  const { isOpen: showNotesDialog, open: openNotes, close: closeNotes } = useDialogState();
+  const { isOpen: showNoteForm, data: editingNote, open: openNoteForm, close: closeNoteForm, setIsOpen: setShowNoteForm, setData: setEditingNote } = useDialogState<any>();
   const { toast } = useToast();
+
   const { data: notesData = [] } = useNotesByStudent(studentId || '');
   const createNoteMutation = useCreateNote();
   const updateNoteMutation = useUpdateNote();
   const deleteNoteMutation = useDeleteNote();
 
   const handleOpenNotes = () => {
-    setShowNotesDialog(true);
+    openNotes();
   };
 
   const handleCloseNotes = () => {
-    setShowNotesDialog(false);
-    setShowNoteForm(false);
-    setEditingNote(null);
+    closeNotes();
+    closeNoteForm();
   };
 
   const handleAddNote = () => {
-    setEditingNote(null);
-    setShowNoteForm(true);
+    openNoteForm(null);
   };
 
   const handleEditNote = (note: any) => {
-    setEditingNote(note);
-    setShowNoteForm(true);
+    openNoteForm(note);
   };
 
   const handleNoteSubmit = async (data: { title: string; content: string }) => {

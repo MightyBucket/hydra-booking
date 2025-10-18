@@ -1,17 +1,20 @@
-
-import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { useCreateLesson, useUpdateLesson, useCreateLessonWithRecurring } from './useLessons';
-import { useToast } from './use-toast';
+import { useDialogState } from './useDialogState';
+
+interface LessonFormData {
+  lesson?: any;
+  date?: Date;
+  studentId?: string;
+}
 
 export function useLessonForm() {
-  const [showLessonForm, setShowLessonForm] = useState(false);
-  const [selectedLesson, setSelectedLesson] = useState<any>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [prefilledStudentId, setPrefilledStudentId] = useState<string | null>(null);
+  const { isOpen: showLessonForm, data: formData, open, close } = useDialogState<LessonFormData>();
+
   const { toast } = useToast();
   const createLessonMutation = useCreateLesson();
   const updateLessonMutation = useUpdateLesson();
-  const createLessonWithRecurringMutation = useCreateLessonWithRecurring();
+  const createRecurringMutation = useCreateLessonWithRecurring();
 
   const getDefaultDateTime = () => {
     const now = new Date();
@@ -19,67 +22,45 @@ export function useLessonForm() {
     return now;
   };
 
-  const handleOpenForm = (options?: {
-    lesson?: any;
-    date?: Date;
-    studentId?: string;
-  }) => {
-    setSelectedLesson(options?.lesson || null);
-    setSelectedDate(options?.date || null);
-    setPrefilledStudentId(options?.studentId || null);
-    setShowLessonForm(true);
+  const handleOpenForm = (options?: LessonFormData) => {
+    open(options || {});
   };
 
   const handleCloseForm = () => {
-    setShowLessonForm(false);
-    setSelectedLesson(null);
-    setSelectedDate(null);
-    setPrefilledStudentId(null);
+    close();
   };
 
   const handleSubmit = async (lessonData: any) => {
     try {
-      const formattedData = {
-        ...lessonData,
-        dateTime: new Date(lessonData.dateTime).toISOString(),
-        pricePerHour: lessonData.pricePerHour.toString(),
-      };
-
-      const { isRecurring, frequency, endDate, ...lessonOnlyData } = formattedData;
-
-      if (selectedLesson) {
+      if (formData?.lesson) {
         await updateLessonMutation.mutateAsync({
-          id: selectedLesson.id,
-          ...lessonOnlyData,
+          id: formData.lesson.id,
+          ...lessonData,
         });
-        toast({ title: "Success", description: "Lesson updated successfully" });
+        toast({
+          title: "Success",
+          description: "Lesson updated successfully",
+        });
       } else {
-        if (isRecurring && endDate && endDate.trim() !== "") {
-          await createLessonWithRecurringMutation.mutateAsync({
-            lesson: lessonOnlyData,
-            recurring: {
-              frequency: frequency === "biweekly" ? "biweekly" : "weekly",
-              endDate: endDate,
-            },
-          });
+        if (lessonData.isRecurring) {
+          await createRecurringMutation.mutateAsync(lessonData);
           toast({
             title: "Success",
-            description: "Recurring lesson series created successfully",
+            description: "Recurring lessons created successfully",
           });
         } else {
-          await createLessonMutation.mutateAsync(lessonOnlyData);
+          await createLessonMutation.mutateAsync(lessonData);
           toast({
             title: "Success",
-            description: "Lesson scheduled successfully",
+            description: "Lesson created successfully",
           });
         }
       }
-
       handleCloseForm();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to save lesson",
+        description: formData?.lesson ? "Failed to update lesson" : "Failed to create lesson",
         variant: "destructive",
       });
     }
@@ -87,9 +68,9 @@ export function useLessonForm() {
 
   return {
     showLessonForm,
-    selectedLesson,
-    selectedDate,
-    prefilledStudentId,
+    selectedLesson: formData?.lesson || null,
+    selectedDate: formData?.date || null,
+    prefilledStudentId: formData?.studentId || null,
     getDefaultDateTime,
     handleOpenForm,
     handleCloseForm,

@@ -1,18 +1,21 @@
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useCreateComment,
+  useUpdateComment,
+  useDeleteComment,
+} from "./useComments";
+import { useDialogState } from "./useDialogState";
 
-import { useState } from 'react';
-import { useCreateComment, useUpdateComment, useDeleteComment } from './useComments';
-import { useToast } from './use-toast';
+interface CommentFormData {
+  lessonId: string;
+  editingId?: string;
+  commentData?: any;
+}
 
 export function useCommentHandlers() {
-  const [showCommentForm, setShowCommentForm] = useState(false);
-  const [commentFormLessonId, setCommentFormLessonId] = useState<string | null>(null);
+  const { isOpen: showCommentForm, data: formData, open: openCommentForm, close: closeCommentForm } = useDialogState<CommentFormData>();
   const [viewCommentsLessonId, setViewCommentsLessonId] = useState<string | null>(null);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingCommentData, setEditingCommentData] = useState<{
-    title: string;
-    content: string;
-    visibleToStudent: number;
-  } | null>(null);
 
   const { toast } = useToast();
   const createCommentMutation = useCreateComment();
@@ -20,8 +23,7 @@ export function useCommentHandlers() {
   const deleteCommentMutation = useDeleteComment();
 
   const handleAddComment = (lessonId: string) => {
-    setCommentFormLessonId(lessonId);
-    setShowCommentForm(true);
+    openCommentForm({ lessonId });
   };
 
   const handleCommentSubmit = async (data: {
@@ -29,11 +31,11 @@ export function useCommentHandlers() {
     content: string;
     visibleToStudent: boolean;
   }) => {
-    if (!commentFormLessonId) return;
+    if (!formData?.lessonId) return;
 
     try {
       await createCommentMutation.mutateAsync({
-        lessonId: commentFormLessonId,
+        lessonId: formData.lessonId,
         title: data.title,
         content: data.content,
         visibleToStudent: data.visibleToStudent ? 1 : 0,
@@ -42,8 +44,7 @@ export function useCommentHandlers() {
         title: "Success",
         description: "Comment added successfully",
       });
-      setShowCommentForm(false);
-      setCommentFormLessonId(null);
+      resetCommentForm();
     } catch (error) {
       toast({
         title: "Error",
@@ -57,10 +58,7 @@ export function useCommentHandlers() {
     commentId: string,
     data: { title: string; content: string; visibleToStudent: number },
   ) => {
-    setEditingCommentId(commentId);
-    setEditingCommentData(data);
-    setViewCommentsLessonId(null);
-    setShowCommentForm(true);
+    openCommentForm({ lessonId: '', editingId: commentId, commentData: data });
   };
 
   const handleEditComment = async (
@@ -73,9 +71,7 @@ export function useCommentHandlers() {
         title: "Success",
         description: "Comment updated successfully",
       });
-      setEditingCommentId(null);
-      setEditingCommentData(null);
-      setShowCommentForm(false);
+      resetCommentForm();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -102,20 +98,16 @@ export function useCommentHandlers() {
   };
 
   const resetCommentForm = () => {
-    setShowCommentForm(false);
-    setCommentFormLessonId(null);
-    setEditingCommentId(null);
-    setEditingCommentData(null);
+    closeCommentForm();
   };
 
   return {
     showCommentForm,
-    setShowCommentForm,
-    commentFormLessonId,
+    setShowCommentForm: (open: boolean) => open ? openCommentForm({ lessonId: '' }) : closeCommentForm(),
     viewCommentsLessonId,
     setViewCommentsLessonId,
-    editingCommentId,
-    editingCommentData,
+    editingCommentId: formData?.editingId || null,
+    editingCommentData: formData?.commentData || null,
     handleAddComment,
     handleCommentSubmit,
     handleStartEditComment,

@@ -1,20 +1,18 @@
-
-import { useState } from 'react';
-import { useDeleteLesson } from './useLessons';
-import { useToast } from './use-toast';
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { useDeleteLesson } from "./useLessons";
+import { useDialogState } from "./useDialogState";
 
 export function useLessonDelete(lessonsData: any[]) {
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [lessonToDelete, setLessonToDelete] = useState<any>(null);
+  const { isOpen: showDeleteDialog, data: lessonToDelete, open: openDeleteDialog, close: closeDeleteDialog, setIsOpen: setShowDeleteDialog } = useDialogState<any>();
   const [deleteAllFuture, setDeleteAllFuture] = useState(false);
-
   const { toast } = useToast();
   const deleteLessonMutation = useDeleteLesson();
 
-  const handleDeleteLesson = (lesson: any) => {
-    setLessonToDelete(lesson);
+  const handleDeleteLesson = (lessonId: string) => {
+    const lesson = lessonsData.find((l: any) => l.id === lessonId);
+    openDeleteDialog(lesson);
     setDeleteAllFuture(false);
-    setShowDeleteDialog(true);
   };
 
   const confirmDeleteLesson = async () => {
@@ -56,7 +54,7 @@ export function useLessonDelete(lessonsData: any[]) {
       });
     }
 
-    setShowDeleteDialog(false);
+    closeDeleteDialog();
     setLessonToDelete(null);
     setDeleteAllFuture(false);
   };
