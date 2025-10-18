@@ -61,6 +61,11 @@ import { handleJoinLessonLink, calculateStudentStats } from "@/utils/lessonHelpe
  * Handles lesson creation, editing, deletion, and payment status updates
  */
 function CalendarPage() {
+  // Set page title
+  useState(() => {
+    document.title = "Hydra - Calendar";
+  });
+
   // Fetch lesson and student data from the database
   const { lessonsData, studentsData, displayLessons, lessonsLoading } = useLessonData();
 
@@ -216,6 +221,11 @@ function CalendarPage() {
  * Allows adding, editing, deleting students and viewing their lessons/notes
  */
 function StudentsPage() {
+  // Set page title
+  useState(() => {
+    document.title = "Hydra - Students";
+  });
+
   // Track delete confirmation input to ensure user confirms deletion
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   // Track which student's notes are being viewed
@@ -605,6 +615,11 @@ function StudentsPage() {
 }
 
 function SchedulePage() {
+  // Set page title
+  useState(() => {
+    document.title = "Hydra - Schedule";
+  });
+
   const { lessonsData, studentsData, displayLessons, lessonsLoading } = useLessonData();
 
   const {
@@ -744,6 +759,11 @@ function SchedulePage() {
 }
 
 function AnalyticsPage() {
+  // Set page title
+  useState(() => {
+    document.title = "Hydra - Analytics";
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -759,6 +779,11 @@ function AnalyticsPage() {
 }
 
 function SettingsPage() {
+  // Set page title
+  useState(() => {
+    document.title = "Hydra - Settings";
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -775,6 +800,15 @@ function StudentCalendarPage() {
   const params = useParams<{ studentId: string }>();
 
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(params.studentId);
+
+  // Set page title when student data is loaded
+  useState(() => {
+    if (student) {
+      document.title = `Hydra - ${student.firstName}'s Calendar`;
+    } else {
+      document.title = "Hydra - Student Calendar";
+    }
+  });
   const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
 
   const lessonsData = lessonsResponse?.lessons || [];
@@ -868,6 +902,15 @@ function StudentSchedulePage() {
 
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(params.studentId);
   const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
+
+  // Set page title when student data is loaded
+  useState(() => {
+    if (student) {
+      document.title = `Hydra - ${student.firstName}'s Schedule`;
+    } else {
+      document.title = "Hydra - Student Schedule";
+    }
+  });
 
   // Use common hooks
   const {
