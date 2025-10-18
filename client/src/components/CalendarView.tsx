@@ -195,12 +195,8 @@ export default function CalendarView({
 
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               {!focusedStudentId && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSyncToCalendar}
-                  data-testid="button-sync-calendar"
-                  className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
+                <Button variant="outline" size="sm" onClick={handleSyncToCalendar}
+                  data-testid="button-sync-calendar" className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
                 >
                   <Download className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Sync to Calendar</span>
@@ -208,34 +204,25 @@ export default function CalendarView({
                 </Button>
               )}
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setToToday()}
-                data-testid="button-today"
-                className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
+              <Button variant="outline" size="sm" onClick={() => setToToday()}
+                data-testid="button-today" className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
               >
                 Today
               </Button>
 
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigateMonth("prev")}
-                data-testid="button-prev-month"
-                className="h-8 w-8 sm:h-9 sm:w-9"
+              <Button variant="outline" size="icon" onClick={() => navigateMonth("prev")}
+                data-testid="button-prev-month" className="h-8 w-8 sm:h-9 sm:w-9"
               >
                 <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
+              
               <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigateMonth("next")}
-                data-testid="button-next-month"
-                className="h-8 w-8 sm:h-9 sm:w-9"
+                variant="outline" size="icon" onClick={() => navigateMonth("next")}
+                data-testid="button-next-month" className="h-8 w-8 sm:h-9 sm:w-9"
               >
                 <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
+              
             </div>
           </div>
         </CardHeader>
@@ -243,10 +230,7 @@ export default function CalendarView({
       <CardContent className={isMobile ? "px-2 pb-0" : ""}>
         <div className="grid grid-cols-7 gap-0.5 sm:gap-2 mb-2 sm:mb-4">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-            <div
-              key={day}
-              className="p-1 sm:p-2 text-center text-[10px] sm:text-sm font-medium text-muted-foreground"
-            >
+            <div key={day} className="p-1 sm:p-2 text-center text-[10px] sm:text-sm font-medium text-muted-foreground">
               {day}
             </div>
           ))}
@@ -283,9 +267,7 @@ export default function CalendarView({
                 {isMobile ? (
                   <div className="space-y-[2px]">
                     {dayLessons.slice(0, 2).map((lesson) => {
-                      const isOtherStudent =
-                        focusedStudentId &&
-                        lesson.studentId !== focusedStudentId;
+                      const isOtherStudent = focusedStudentId && lesson.studentId !== focusedStudentId;
 
                       return (
                         <div
