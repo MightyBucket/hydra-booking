@@ -1,14 +1,8 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+//import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   ChevronLeft,
   ChevronRight,
@@ -62,207 +56,6 @@ interface CalendarViewProps {
   focusedStudentId?: string;
 }
 
-// Mock LessonCard component for demonstration purposes
-// In a real scenario, this would be imported from "@/components/LessonCard"
-{/*const LessonCard = ({
-  lesson,
-  onEdit,
-  onDelete,
-  onJoinLesson,
-  onUpdatePaymentStatus,
-}: {
-  lesson: Lesson;
-  onEdit: () => void;
-  onDelete: () => void;
-  onJoinLesson?: () => void;
-  onUpdatePaymentStatus: (
-    lessonId: string,
-    status: Lesson["paymentStatus"],
-  ) => void;
-}) => {
-  const getPaymentStatusColor = (status: string) => {
-    switch (status) {
-      case "paid":
-        return "bg-lesson-confirmed text-white";
-      case "pending":
-        return "bg-lesson-pending text-black";
-      case "unpaid":
-        return "bg-lesson-cancelled text-white";
-      case "free":
-        return "bg-gray-400 text-white";
-      default:
-        return "bg-secondary";
-    }
-  };
-
-  return (
-    <div
-      className="p-1 rounded text-xs hover-elevate group border-l-2"
-      style={{
-        backgroundColor: `${lesson.studentColor}15`,
-        borderLeftColor: lesson.studentColor || "#3b82f6",
-      }}
-      data-testid={`lesson-${lesson.id}`}
-    >
-      <div className="cursor-pointer" onClick={onEdit}>
-        <div className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          <span className="truncate">
-            {format(lesson.dateTime, "HH:mm")}-
-            {format(
-              new Date(lesson.dateTime.getTime() + lesson.duration * 60000),
-              "HH:mm",
-            )}
-          </span>
-        </div>
-        <div className="truncate text-muted-foreground">{lesson.subject}</div>
-        <div className="truncate font-medium">{lesson.studentName}</div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-auto text-xs font-medium mt-1`}
-              onClick={(e) => e.stopPropagation()}
-              data-testid={`dropdown-payment-status-${lesson.id}`}
-            >
-              s:{lesson.paymentStatus}
-              <ChevronDown className="ml-1 h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-24">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "pending");
-              }}
-              className={lesson.paymentStatus === "pending" ? "bg-accent" : ""}
-              data-testid={`payment-option-pending-${lesson.id}`}
-            >
-              <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
-              Pending
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "paid");
-              }}
-              className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
-              data-testid={`payment-option-paid-${lesson.id}`}
-            >
-              <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
-              Paid
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "unpaid");
-              }}
-              className={lesson.paymentStatus === "unpaid" ? "bg-accent" : ""}
-              data-testid={`payment-option-unpaid-${lesson.id}`}
-            >
-              Unpaid
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "free");
-              }}
-              className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
-              data-testid={`payment-option-free-${lesson.id}`}
-            >
-              <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
-              Free
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-24">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "pending");
-              }}
-              className={lesson.paymentStatus === "pending" ? "bg-accent" : ""}
-              data-testid={`payment-option-pending-${lesson.id}`}
-            >
-              <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
-              Pending
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "paid");
-              }}
-              className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
-              data-testid={`payment-option-paid-${lesson.id}`}
-            >
-              <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
-              Paid
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "unpaid");
-              }}
-              className={lesson.paymentStatus === "unpaid" ? "bg-accent" : ""}
-              data-testid={`payment-option-unpaid-${lesson.id}`}
-            >
-              <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
-              Unpaid
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdatePaymentStatus(lesson.id, "free");
-              }}
-              className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
-              data-testid={`payment-option-free-${lesson.id}`}
-            >
-              <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
-              Free
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {onJoinLesson && lesson.lessonLink && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={(e) => {
-              e.stopPropagation();
-              onJoinLesson();
-            }}
-            data-testid={`button-join-lesson-${lesson.id}`}
-          >
-            <ExternalLink className="h-3 w-3 mr-1" />
-          </Button>
-        )}
-        {onDelete && (
-          <Button
-            size="sm"
-            variant="destructive"
-            className="h-6 px-2 text-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            data-testid={`button-delete-lesson-${lesson.id}`}
-          >
-            <Trash2 className="h-3 w-3 mr-1" />
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-};*/}
-
 export default function CalendarView({
   lessons,
   onLessonClick,
@@ -289,7 +82,7 @@ export default function CalendarView({
   const deleteCommentMutation = useDeleteComment();
 
   const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
+  //const monthEnd = endOfMonth(currentDate);
 
   // For month view, calculate the full calendar grid including days from previous/next months
   const calendarStart = startOfWeek(monthStart);
@@ -310,7 +103,7 @@ export default function CalendarView({
       .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
   };
 
-  const getPaymentStatusColor = (status: string) => {
+  {/*const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case "paid":
         return "bg-lesson-confirmed text-white";
@@ -323,7 +116,7 @@ export default function CalendarView({
       default:
         return "bg-secondary";
     }
-  };
+  };*/}
 
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentDate(
@@ -520,9 +313,7 @@ export default function CalendarView({
                 ) : (
                   <div className="space-y-0.5 sm:space-y-1">
                     {dayLessons.slice(0, 3).map((lesson) => {
-                      const isOtherStudent =
-                        focusedStudentId &&
-                        lesson.studentId !== focusedStudentId;
+                      const isOtherStudent = focusedStudentId && lesson.studentId !== focusedStudentId;
 
                       if (isOtherStudent) {
                         return (
