@@ -121,7 +121,7 @@ export const insertLessonSchema = createInsertSchema(lessons).omit({
   dateTime: z.coerce.date(),
   lessonLink: z.preprocess(
     val => val === '' || val === null || val === undefined ? null : val,
-    z.string().url().nullable().optional()
+    z.union([z.string().url(), z.null()]).optional()
   ),
 });
 
