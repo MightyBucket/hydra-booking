@@ -66,6 +66,7 @@ import { usePaymentStatus } from "./hooks/usePaymentStatus";
 import { useLessonForm } from "./hooks/useLessonForm";
 import { useStudentForm } from "./hooks/useStudentForm";
 import { useStudentNotes } from "./hooks/useStudentNotes";
+import { useLessonData } from "./hooks/useLessonData";
 import { Edit, Trash2 } from "lucide-react";
 import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
 import { handleJoinLessonLink, calculateStudentStats } from "@/utils/lessonHelpers";
