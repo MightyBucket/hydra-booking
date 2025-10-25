@@ -7,6 +7,6 @@ dist
 npm-debug.log*
 .env
 .DS_Store
-client/src
+#client/src
 attached_assets
 migrations

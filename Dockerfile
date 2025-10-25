@@ -14,6 +14,13 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Debug: verify the client files exist inside the container
+RUN set -eux; \
+  pwd; ls -la; \
+  ls -la client || true; \
+  ls -la client/src || true; \
+  test -f client/src/main.tsx
+
 # Build the application
 RUN npm run build
 
