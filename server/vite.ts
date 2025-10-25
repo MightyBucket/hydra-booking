@@ -15,6 +15,9 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
+  if (process.env.NODE_ENV !== "development") {
+    throw new Error("setupVite should only be called in development mode");
+  }
   // Import the dev setup only in development
   const { setupVite: setupViteDev } = await import("./vite-dev.js");
   return setupViteDev(app, server);

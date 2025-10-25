@@ -21,8 +21,11 @@ RUN set -eux; \
   ls -la client/src || true; \
   test -f client/src/main.tsx
 
-# Build the application
+# Build the application (this will not include vite-dev.ts in the server bundle)
 RUN npm run build
+
+# Verify the build output
+RUN ls -la dist/
 
 # Production stage
 FROM node:20-slim
@@ -32,10 +35,13 @@ WORKDIR /app
 
 # Install production dependencies only
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
-# Copy built files from builder
+# Copy built files from builder (only the compiled server code and public assets)
 COPY --from=builder /app/dist ./dist
+
+# Verify what we copied
+RUN ls -la dist/ && if [ -f dist/vite-dev.js ]; then rm dist/vite-dev.js; fi
 
 # Expose port
 EXPOSE 5000
