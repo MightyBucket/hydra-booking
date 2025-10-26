@@ -3,10 +3,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-
-// Base path for reverse proxy support (set to '' for root, or '/hydra' for subpath)
-const BASE_PATH = process.env.BASE_PATH || '';
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -41,7 +37,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Register routes directly on the app
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
