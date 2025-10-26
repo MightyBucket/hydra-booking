@@ -5,10 +5,9 @@ import { type Server } from "http";
 import { createServer as createViteServer } from "vite";
 import { log } from "./vite";
 
-export async function setupVite(app: Express, server: Server, basePath?: string) {
+export async function setupVite(app: Express, server: Server) {
   const vite = await createViteServer({
     configFile: path.resolve(process.cwd(), "vite.config.ts"),
-    base: basePath || '/',
     server: {
       middlewareMode: true,
       hmr: { server },
