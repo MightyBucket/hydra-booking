@@ -3,6 +3,10 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Base path for reverse proxy support (set to '' for root, or '/hydra' for subpath)
+const BASE_PATH = process.env.BASE_PATH || '';
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -37,7 +41,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
+  // Create a router for all app routes
+  const router = express.Router();
+  const server = await registerRoutes(router);
+
+  // Mount all routes under the base path
+  if (BASE_PATH) {
+    app.use(BASE_PATH, router);
+  } else {
+    app.use(router);
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -51,9 +64,9 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
-    await setupVite(app, server);
+    await setupVite(app, server, BASE_PATH);
   } else {
-    serveStatic(app);
+    serveStatic(app, BASE_PATH);
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
