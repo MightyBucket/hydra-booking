@@ -2,7 +2,6 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
 import { type Server } from "http";
-import { createServer as createViteServer } from "vite";
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -21,17 +20,7 @@ export async function setupVite(app: Express, server: Server, basePath?: string)
   }
   // Import the dev setup only in development
   const { setupVite: setupViteDev } = await import("./vite-dev.js");
-
-  const vite = await createViteServer({
-    configFile: path.resolve(process.cwd(), "vite.config.ts"),
-    base: basePath || '/',
-    server: {
-      middlewareMode: true,
-      hmr: { server },
-    },
-    appType: "custom",
-  });
-  return setupViteDev(app, server, vite);
+  return setupViteDev(app, server, basePath);
 }
 
 export function serveStatic(app: Express, basePath?: string) {
