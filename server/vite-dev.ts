@@ -41,6 +41,11 @@ export async function setupVite(app: Express, server: Server) {
       return next();
     }
 
+    // Skip Vite internal routes (HMR, module resolution, etc.)
+    if (req.originalUrl.startsWith('/@')) {
+      return next();
+    }
+
     // Skip static assets (they have file extensions)
     const ext = path.extname(req.originalUrl);
     if (ext && ext !== '.html') {
