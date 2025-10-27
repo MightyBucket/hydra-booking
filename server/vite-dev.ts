@@ -29,15 +29,25 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
+  // Handle client-side routing BEFORE Vite middleware
+  app.use(async (req, res, next) => {
+    // Only handle GET requests that accept HTML
+    if (req.method !== 'GET') {
+      return next();
+    }
 
-  // Fallback to index.html for client-side routing (only for non-API routes)
-  app.get('*', async (req, res, next) => {
-    // Skip API routes - they're handled by express routes
+    // Skip API routes
     if (req.originalUrl.startsWith('/api')) {
       return next();
     }
 
+    // Skip static assets (they have file extensions)
+    const ext = path.extname(req.originalUrl);
+    if (ext && ext !== '.html') {
+      return next();
+    }
+
+    // Serve index.html for client-side routes
     try {
       const url = req.originalUrl;
       const clientTemplatePath = path.resolve(
@@ -54,4 +64,6 @@ export async function setupVite(app: Express, server: Server) {
       next(e);
     }
   });
+
+  app.use(vite.middlewares);
 }
