@@ -219,11 +219,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertLessonSchema.parse(preprocessedData);
       const lesson = await storage.createLesson(validatedData);
       res.status(201).json(lesson);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating lesson:', error);
       if (error instanceof z.ZodError) {
         console.error('Validation errors:', error.errors);
         return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      if (error.message === 'This time slot overlaps with an existing lesson') {
+        return res.status(409).json({ error: error.message });
       }
       res.status(500).json({ error: "Failed to create lesson" });
     }
@@ -237,10 +240,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Lesson not found" });
       }
       res.json(lesson);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating lesson:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      if (error.message === 'This time slot overlaps with an existing lesson') {
+        return res.status(409).json({ error: error.message });
+      }
+      if (error.message === 'Lesson not found') {
+        return res.status(404).json({ error: error.message });
       }
       res.status(500).json({ error: "Failed to update lesson" });
     }

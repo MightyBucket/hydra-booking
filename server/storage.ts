@@ -62,6 +62,7 @@ export interface IStorage {
   createLesson(lesson: InsertLesson): Promise<Lesson>;
   updateLesson(id: string, lesson: Partial<InsertLesson>): Promise<Lesson | undefined>;
   deleteLesson(id: string): Promise<void>;
+  checkLessonOverlap(dateTime: Date, duration: number, excludeLessonId?: string): Promise<boolean>;
 
   // Recurring lesson methods
   getRecurringLesson(id: string): Promise<RecurringLesson | undefined>;
@@ -149,18 +150,63 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(lessons.dateTime));
   }
 
-  async createLesson(insertLesson: InsertLesson): Promise<Lesson> {
-    const [lesson] = await db.insert(lessons).values(insertLesson).returning();
-    return lesson;
+  async checkLessonOverlap(dateTime: Date, duration: number, excludeLessonId?: string): Promise<boolean> {
+    const lessonStart = new Date(dateTime);
+    const lessonEnd = new Date(lessonStart.getTime() + duration * 60000);
+
+    const allLessons = await this.getLessons();
+
+    for (const existingLesson of allLessons) {
+      // Skip the lesson being updated
+      if (excludeLessonId && existingLesson.id === excludeLessonId) {
+        continue;
+      }
+
+      const existingStart = new Date(existingLesson.dateTime);
+      const existingEnd = new Date(existingStart.getTime() + existingLesson.duration * 60000);
+
+      // Check if there's any overlap
+      if (lessonStart < existingEnd && lessonEnd > existingStart) {
+        return true; // Overlap found
+      }
+    }
+
+    return false; // No overlap
   }
 
-  async updateLesson(id: string, updateData: Partial<InsertLesson>): Promise<Lesson | undefined> {
-    const [lesson] = await db
-      .update(lessons)
-      .set(updateData)
+  async createLesson(lesson: InsertLesson): Promise<Lesson> {
+    // Check for overlapping lessons
+    const hasOverlap = await this.checkLessonOverlap(lesson.dateTime, lesson.duration);
+    if (hasOverlap) {
+      throw new Error('This time slot overlaps with an existing lesson');
+    }
+
+    const [createdLesson] = await db.insert(lessons).values(lesson).returning();
+    return createdLesson;
+  }
+
+  async updateLesson(id: string, lesson: Partial<InsertLesson>): Promise<Lesson | undefined> {
+    // Check for overlapping lessons if datetime or duration is being updated
+    if (lesson.dateTime !== undefined || lesson.duration !== undefined) {
+      const existing = await this.getLesson(id);
+      if (!existing) {
+        throw new Error('Lesson not found');
+      }
+
+      const dateTime = lesson.dateTime || existing.dateTime;
+      const duration = lesson.duration || existing.duration;
+
+      const hasOverlap = await this.checkLessonOverlap(dateTime, duration, id);
+      if (hasOverlap) {
+        throw new Error('This time slot overlaps with an existing lesson');
+      }
+    }
+
+    const [updatedLesson] = await db.update(lessons)
+      .set(lesson)
       .where(eq(lessons.id, id))
       .returning();
-    return lesson || undefined;
+    return updatedLesson;
   }
 
   async deleteLesson(id: string): Promise<void> {
