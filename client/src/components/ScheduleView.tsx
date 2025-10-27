@@ -14,7 +14,7 @@ interface Lesson {
   studentColor?: string;
   studentId?: string;
   duration: number;
-  paymentStatus: "pending" | "paid" | "unpaid" | "free";
+  paymentStatus: "pending" | "paid" | "unpaid" | "free" | "cancelled";
   pricePerHour: number;
   lessonLink?: string;
 }

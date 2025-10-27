@@ -227,8 +227,18 @@ export default function LessonWithComments({
                 }}
                 className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
               >
-                <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
+                <span className="w-3 h-3 rounded-full bg-blue-400 mr-2"></span>
                 Free
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdatePaymentStatus(lesson.id, "cancelled");
+                }}
+                className={lesson.paymentStatus === "cancelled" ? "bg-accent" : ""}
+              >
+                <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
+                Cancelled
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

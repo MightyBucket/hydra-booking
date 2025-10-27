@@ -27,7 +27,7 @@ interface LessonFormProps {
     duration?: number;
     pricePerHour?: number;
     lessonLink?: string;
-    paymentStatus?: 'pending' | 'paid' | 'unpaid' | 'free';
+    paymentStatus?: 'pending' | 'paid' | 'unpaid' | 'free' | 'cancelled';
   };
   onSubmit: (lessonData: any) => void;
   onCancel: () => void;
@@ -52,7 +52,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
     duration: initialData?.duration || 60,
     pricePerHour: initialData?.pricePerHour || 50,
     lessonLink: initialData?.lessonLink || '',
-    paymentStatus: (initialData?.paymentStatus || 'pending') as 'pending' | 'paid' | 'unpaid' | 'free',
+    paymentStatus: (initialData?.paymentStatus || 'pending') as 'pending' | 'paid' | 'unpaid' | 'free' | 'cancelled',
     isRecurring: false,
     frequency: 'weekly' as 'weekly' | 'biweekly',
     endDate: '',
@@ -233,7 +233,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
               <Label htmlFor="paymentStatus">Payment Status</Label>
               <Select 
                 value={formData.paymentStatus} 
-                onValueChange={(value: 'pending' | 'paid' | 'unpaid' | 'free') => 
+                onValueChange={(value: 'pending' | 'paid' | 'unpaid' | 'free' | 'cancelled') => 
                   setFormData(prev => ({ ...prev, paymentStatus: value }))
                 }
               >
@@ -245,6 +245,7 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
                   <SelectItem value="paid">Paid</SelectItem>
                   <SelectItem value="unpaid">Unpaid</SelectItem>
                   <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
