@@ -31,16 +31,15 @@ export async function setupVite(app: Express, server: Server) {
 
   app.use(vite.middlewares);
 
-  // Fallback to index.html for client-side routing
-  app.use('*', async (req, res, next) => {
-    // Skip API routes
+  // Fallback to index.html for client-side routing (only for non-API routes)
+  app.get('*', async (req, res, next) => {
+    // Skip API routes - they're handled by express routes
     if (req.originalUrl.startsWith('/api')) {
       return next();
     }
 
     try {
       const url = req.originalUrl;
-      // Ensure indexHtml is read once and reused
       const clientTemplatePath = path.resolve(
         import.meta.dirname,
         "..",
