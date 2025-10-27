@@ -52,30 +52,23 @@ export async function setupVite(app: Express, server: Server) {
       return next();
     }
 
-    // Check if the route is a student-specific schedule or calendar route
-    const studentRouteMatch = req.originalUrl.match(/^\/(\d+)\/(schedule|calendar)$/);
-    const isStudentRoute = studentRouteMatch !== null;
+    // Serve index.html for all routes that should be handled by client-side routing
+    // This includes root path, student routes, and any other client-side routes
+    try {
+      const url = req.originalUrl;
+      const clientTemplatePath = path.resolve(
+        import.meta.dirname,
+        "..",
+        "client",
+        "index.html",
+      );
 
-    // Serve index.html for client-side routes (including student-specific routes)
-    if (isStudentRoute || !req.originalUrl.startsWith('/')) {
-      try {
-        const url = req.originalUrl;
-        const clientTemplatePath = path.resolve(
-          import.meta.dirname,
-          "..",
-          "client",
-          "index.html",
-        );
+      let indexHtml = await fs.promises.readFile(clientTemplatePath, "utf-8");
+      indexHtml = await vite.transformIndexHtml(url, indexHtml);
 
-        let indexHtml = await fs.promises.readFile(clientTemplatePath, "utf-8");
-        indexHtml = await vite.transformIndexHtml(url, indexHtml);
-
-        res.status(200).set({ "Content-Type": "text/html" }).end(indexHtml);
-      } catch (e) {
-        next(e);
-      }
-    } else {
-      next();
+      res.status(200).set({ "Content-Type": "text/html" }).end(indexHtml);
+    } catch (e) {
+      next(e);
     }
   });
 
