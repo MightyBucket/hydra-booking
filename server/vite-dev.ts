@@ -52,21 +52,30 @@ export async function setupVite(app: Express, server: Server) {
       return next();
     }
 
-    // Serve index.html for client-side routes
-    try {
-      const url = req.originalUrl;
-      const clientTemplatePath = path.resolve(
-        import.meta.dirname,
-        "..",
-        "client",
-        "index.html",
-      );
-      const indexHtml = await fs.promises.readFile(clientTemplatePath, "utf-8");
-      const template = await vite.transformIndexHtml(url, indexHtml);
-      res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
-    } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
-      next(e);
+    // Check if the route is a student-specific schedule or calendar route
+    const studentRouteMatch = req.originalUrl.match(/^\/(\d+)\/(schedule|calendar)$/);
+    const isStudentRoute = studentRouteMatch !== null;
+
+    // Serve index.html for client-side routes (including student-specific routes)
+    if (isStudentRoute || !req.originalUrl.startsWith('/')) {
+      try {
+        const url = req.originalUrl;
+        const clientTemplatePath = path.resolve(
+          import.meta.dirname,
+          "..",
+          "client",
+          "index.html",
+        );
+
+        let indexHtml = await fs.promises.readFile(clientTemplatePath, "utf-8");
+        indexHtml = await vite.transformIndexHtml(url, indexHtml);
+
+        res.status(200).set({ "Content-Type": "text/html" }).end(indexHtml);
+      } catch (e) {
+        next(e);
+      }
+    } else {
+      next();
     }
   });
 
