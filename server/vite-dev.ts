@@ -1,4 +1,3 @@
-
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
@@ -9,7 +8,7 @@ import viteConfig from "../vite.config";
 
 export async function setupVite(app: Express, server: Server) {
   const viteLogger = createLogger();
-  
+
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
@@ -31,24 +30,26 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
+
+  // Fallback to index.html for client-side routing
+  app.use('*', async (req, res, next) => {
+    // Skip API routes
+    if (req.originalUrl.startsWith('/api')) {
+      return next();
+    }
 
     try {
-      const clientTemplate = path.resolve(
+      const url = req.originalUrl;
+      // Ensure indexHtml is read once and reused
+      const clientTemplatePath = path.resolve(
         import.meta.dirname,
         "..",
         "client",
         "index.html",
       );
-
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
-      );
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      const indexHtml = await fs.promises.readFile(clientTemplatePath, "utf-8");
+      const template = await vite.transformIndexHtml(url, indexHtml);
+      res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
