@@ -55,7 +55,6 @@ export async function setupVite(app: Express, server: Server) {
     // Serve index.html for all routes that should be handled by client-side routing
     // This includes root path, student routes, and any other client-side routes
     try {
-      const url = req.originalUrl;
       const clientTemplatePath = path.resolve(
         import.meta.dirname,
         "..",
@@ -64,7 +63,8 @@ export async function setupVite(app: Express, server: Server) {
       );
 
       let indexHtml = await fs.promises.readFile(clientTemplatePath, "utf-8");
-      indexHtml = await vite.transformIndexHtml(url, indexHtml);
+      // Always use "/" as the URL for transformIndexHtml to avoid path resolution issues
+      indexHtml = await vite.transformIndexHtml("/", indexHtml);
 
       res.status(200).set({ "Content-Type": "text/html" }).end(indexHtml);
     } catch (e) {
