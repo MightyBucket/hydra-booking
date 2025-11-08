@@ -29,9 +29,12 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  // Handle client-side routing BEFORE Vite middleware
+  // Use Vite's middleware first to handle module requests
+  app.use(vite.middlewares);
+
+  // Handle client-side routing AFTER Vite middleware as a fallback
   app.use(async (req, res, next) => {
-    // Only handle GET requests that accept HTML
+    // Only handle GET requests
     if (req.method !== 'GET') {
       return next();
     }
@@ -41,19 +44,18 @@ export async function setupVite(app: Express, server: Server) {
       return next();
     }
 
-    // Skip Vite internal routes (HMR, module resolution, etc.)
+    // Skip Vite internal routes
     if (req.originalUrl.startsWith('/@')) {
       return next();
     }
 
-    // Skip static assets (they have file extensions)
+    // Skip requests with file extensions (except .html)
     const ext = path.extname(req.originalUrl);
     if (ext && ext !== '.html') {
       return next();
     }
 
-    // Serve index.html for all routes that should be handled by client-side routing
-    // This includes root path, student routes, and any other client-side routes
+    // Serve index.html for client-side routes
     try {
       const clientTemplatePath = path.resolve(
         import.meta.dirname,
@@ -63,14 +65,11 @@ export async function setupVite(app: Express, server: Server) {
       );
 
       let indexHtml = await fs.promises.readFile(clientTemplatePath, "utf-8");
-      // Always use "/" as the URL for transformIndexHtml to avoid path resolution issues
-      indexHtml = await vite.transformIndexHtml("/", indexHtml);
+      indexHtml = await vite.transformIndexHtml(req.originalUrl, indexHtml);
 
       res.status(200).set({ "Content-Type": "text/html" }).end(indexHtml);
     } catch (e) {
       next(e);
     }
   });
-
-  app.use(vite.middlewares);
 }
