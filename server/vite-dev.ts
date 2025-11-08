@@ -1,3 +1,4 @@
+
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
@@ -29,11 +30,11 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  // Use Vite's middleware first to handle module requests
+  // Use Vite's middleware first to handle all Vite-specific requests
   app.use(vite.middlewares);
 
-  // Handle client-side routing AFTER Vite middleware as a fallback
-  app.use(async (req, res, next) => {
+  // Handle SPA fallback routing for client-side routes
+  app.use('*', async (req, res, next) => {
     // Only handle GET requests
     if (req.method !== 'GET') {
       return next();
@@ -44,18 +45,8 @@ export async function setupVite(app: Express, server: Server) {
       return next();
     }
 
-    // Skip Vite internal routes
-    if (req.originalUrl.startsWith('/@')) {
-      return next();
-    }
+    const url = req.originalUrl;
 
-    // Skip requests with file extensions (except .html)
-    const ext = path.extname(req.originalUrl);
-    if (ext && ext !== '.html') {
-      return next();
-    }
-
-    // Serve index.html for client-side routes
     try {
       const clientTemplatePath = path.resolve(
         import.meta.dirname,
@@ -65,7 +56,7 @@ export async function setupVite(app: Express, server: Server) {
       );
 
       let indexHtml = await fs.promises.readFile(clientTemplatePath, "utf-8");
-      indexHtml = await vite.transformIndexHtml(req.originalUrl, indexHtml);
+      indexHtml = await vite.transformIndexHtml(url, indexHtml);
 
       res.status(200).set({ "Content-Type": "text/html" }).end(indexHtml);
     } catch (e) {
