@@ -3,9 +3,9 @@ import { Request, Response, NextFunction } from "express";
 // Simple in-memory session store (replace with proper session store in production)
 const sessions = new Map<string, { userId: string; createdAt: number }>();
 
-// Simple hardcoded credentials (replace with proper user management in production)
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "Henry123"; // Change this!
+// Use environment variables in production, fall back to defaults in development
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Henry123";
 
 export function login(username: string, password: string): string | null {
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
