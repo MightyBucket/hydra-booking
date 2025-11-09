@@ -1,13 +1,23 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { insertStudentSchema, insertLessonSchema, insertRecurringLessonSchema } from "@shared/schema";
 import { z } from "zod";
 import { login, logout, requireAuth } from "./auth";
 
+// Rate limiter for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 requests per windowMs
+  message: "Too many login attempts, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", authLimiter, async (req, res) => {
     try {
       const { username, password } = req.body;
       const sessionId = login(username, password);

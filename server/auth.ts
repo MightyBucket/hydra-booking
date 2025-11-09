@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 
-// Simple in-memory session store (replace with proper session store in production)
+// WARNING: In-memory session store - sessions will be lost on server restart
+// For production, use Redis, PostgreSQL, or another persistent session store
 const sessions = new Map<string, { userId: string; createdAt: number }>();
 
 // Use environment variables in production, fall back to defaults in development
