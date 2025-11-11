@@ -27,7 +27,7 @@ export const lessons = pgTable("lessons", {
   lessonLink: text("lesson_link"),
   pricePerHour: decimal("price_per_hour", { precision: 10, scale: 2 }).notNull(),
   duration: integer("duration").notNull(), // duration in minutes
-  paymentStatus: text("payment_status").notNull().default("pending"), // pending, paid, unpaid, free
+  paymentStatus: text("payment_status").notNull().default("pending"), // pending, paid, unpaid, free, cancelled
 });
 
 // Recurring lessons table

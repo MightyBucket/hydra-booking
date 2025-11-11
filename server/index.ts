@@ -1,8 +1,24 @@
 import express, { type Request, Response, NextFunction } from "express";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Add security headers in production
+if (app.get("env") === "production") {
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+      },
+    },
+  }));
+}
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -43,8 +59,21 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    // Log error details for debugging (consider using a proper logging service)
+    console.error('Error occurred:', {
+      status,
+      message: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+      url: _req.url,
+      method: _req.method,
+    });
+
+    // Don't expose internal error details in production
+    const clientMessage = process.env.NODE_ENV === 'production' && status === 500
+      ? "Internal Server Error"
+      : message;
+
+    res.status(status).json({ message: clientMessage });
   });
 
   // importantly only setup vite in development and after

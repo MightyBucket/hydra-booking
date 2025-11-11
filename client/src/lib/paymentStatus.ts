@@ -1,18 +1,20 @@
+export type PaymentStatus = "pending" | "paid" | "overdue" | "unpaid" | "free" | "cancelled";
 
-export type PaymentStatus = "pending" | "paid" | "unpaid" | "free" | "overdue";
-
-export const getPaymentStatusColor = (status: PaymentStatus): string => {
+export function getPaymentStatusColor(status: PaymentStatus): string {
   switch (status) {
-    case "paid":
-      return "bg-lesson-confirmed text-white";
     case "pending":
-      return "bg-lesson-pending text-black";
+      return "bg-lesson-pending text-lesson-pending-foreground border-lesson-pending";
+    case "paid":
+      return "bg-lesson-confirmed text-lesson-confirmed-foreground border-lesson-confirmed";
     case "overdue":
+      return "bg-lesson-cancelled text-lesson-cancelled-foreground border-lesson-cancelled";
     case "unpaid":
-      return "bg-lesson-cancelled text-white";
+      return "bg-lesson-cancelled text-lesson-cancelled-foreground border-lesson-cancelled";
     case "free":
-      return "bg-gray-400 text-white";
+      return "bg-blue-400 text-white border-blue-400";
+    case "cancelled":
+      return "bg-gray-400 text-white border-gray-400";
     default:
-      return "bg-secondary";
+      return "bg-gray-400 text-white border-gray-400";
   }
-};
+}
