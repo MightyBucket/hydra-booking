@@ -92,6 +92,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/students/:id", async (req, res) => {
+
+
+  // Parent routes (protected)
+  app.get("/api/parents", requireAuth, async (req, res) => {
+    try {
+      const parents = await storage.getParents();
+      res.json(parents);
+    } catch (error) {
+      console.error('Error fetching parents:', error);
+      res.status(500).json({ error: "Failed to fetch parents" });
+    }
+  });
+
+  app.get("/api/parents/:id", requireAuth, async (req, res) => {
+    try {
+      const parent = await storage.getParent(req.params.id);
+      if (!parent) {
+        return res.status(404).json({ error: "Parent not found" });
+      }
+      res.json(parent);
+    } catch (error) {
+      console.error('Error fetching parent:', error);
+      res.status(500).json({ error: "Failed to fetch parent" });
+    }
+  });
+
+  app.post("/api/parents", requireAuth, async (req, res) => {
+    try {
+      const { insertParentSchema } = await import('@shared/schema');
+      const validatedData = insertParentSchema.parse(req.body);
+      const parent = await storage.createParent(validatedData);
+      res.status(201).json(parent);
+    } catch (error) {
+      console.error('Error creating parent:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create parent" });
+    }
+  });
+
+  app.put("/api/parents/:id", requireAuth, async (req, res) => {
+    try {
+      const { insertParentSchema } = await import('@shared/schema');
+      const updateData = insertParentSchema.partial().parse(req.body);
+      const parent = await storage.updateParent(req.params.id, updateData);
+      if (!parent) {
+        return res.status(404).json({ error: "Parent not found" });
+      }
+      res.json(parent);
+    } catch (error) {
+      console.error('Error updating parent:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update parent" });
+    }
+  });
+
+  app.delete("/api/parents/:id", requireAuth, async (req, res) => {
+    try {
+      await storage.deleteParent(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting parent:', error);
+      res.status(500).json({ error: "Failed to delete parent" });
+    }
+  });
+
+
     try {
       const student = await storage.getStudent(req.params.id);
       if (!student) {

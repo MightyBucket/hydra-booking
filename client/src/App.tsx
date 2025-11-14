@@ -36,6 +36,7 @@ import ScheduleCommentsDialog from "./components/ScheduleCommentsDialog";
 import ScheduleView from "./components/ScheduleView";
 import { useStudents, useDeleteStudent } from "./hooks/useStudents";
 import { useLessons } from "./hooks/useLessons";
+import { useParents } from "./hooks/useParents";
 import NoteForm from "./components/NoteForm";
 import CommentFormDialog from "./components/CommentFormDialog";
 import DeleteLessonDialog from "./components/DeleteLessonDialog";
@@ -758,6 +759,110 @@ function SchedulePage() {
   );
 }
 
+function ParentsPage() {
+  // Set page title
+  useState(() => {
+    document.title = "Hydra - Parents";
+  });
+
+  const { data: parentsData = [], isLoading: parentsLoading } = useParents();
+  const { data: studentsData = [] } = useStudents();
+
+  if (parentsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading parents...
+      </div>
+    );
+  }
+
+  // Group students by parent
+  const parentsWithStudents = (parentsData as any[]).map((parent: any) => ({
+    ...parent,
+    students: (studentsData as any[]).filter((s: any) => s.parentId === parent.id),
+  }));
+
+  // Get students without parents
+  const studentsWithoutParents = (studentsData as any[]).filter((s: any) => !s.parentId);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Parents ({parentsWithStudents.length})</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {parentsWithStudents.length === 0 && studentsWithoutParents.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No parents or students added yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {parentsWithStudents.map((parent: any) => (
+              <div key={parent.id} className="border rounded-lg p-4">
+                <div className="mb-3">
+                  <h3 className="text-lg font-semibold">{parent.name}</h3>
+                  {parent.email && (
+                    <p className="text-sm text-muted-foreground">{parent.email}</p>
+                  )}
+                  {parent.phoneNumber && (
+                    <p className="text-sm text-muted-foreground">{parent.phoneNumber}</p>
+                  )}
+                </div>
+                
+                {parent.students.length > 0 ? (
+                  <div className="ml-4 space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Students:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {parent.students.map((student: any) => (
+                        <div
+                          key={student.id}
+                          className="flex items-center gap-2 p-2 border rounded"
+                        >
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: student.defaultColor }}
+                          />
+                          <span className="text-sm">
+                            {student.firstName} {student.lastName || ''}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="ml-4 text-sm text-muted-foreground">No students assigned</p>
+                )}
+              </div>
+            ))}
+            
+            {studentsWithoutParents.length > 0 && (
+              <div className="border rounded-lg p-4 bg-muted/50">
+                <h3 className="text-lg font-semibold mb-3">Students Without Parents</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {studentsWithoutParents.map((student: any) => (
+                    <div
+                      key={student.id}
+                      className="flex items-center gap-2 p-2 border rounded bg-background"
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: student.defaultColor }}
+                      />
+                      <span className="text-sm">
+                        {student.firstName} {student.lastName || ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function AnalyticsPage() {
   // Set page title
   useState(() => {
@@ -1023,6 +1128,7 @@ function Router() {
       <Route path="/" component={CalendarPage} />
       <Route path="/schedule" component={SchedulePage} />
       <Route path="/students" component={StudentsPage} />
+      <Route path="/parents" component={ParentsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route path="/:studentId/calendar" component={StudentCalendarPage} />

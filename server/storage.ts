@@ -4,6 +4,7 @@ import {
   recurringLessons,
   comments,
   notes,
+  parents,
   type Student,
   type InsertStudent,
   type Lesson,
@@ -15,7 +16,9 @@ import {
   type User,
   type InsertUser,
   type Note,
-  type InsertNote
+  type InsertNote,
+  type Parent,
+  type InsertParent
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -84,6 +87,13 @@ export interface IStorage {
   createNote(note: InsertNote): Promise<Note>;
   updateNote(id: string, note: Partial<InsertNote>): Promise<Note | undefined>;
   deleteNote(id: string): Promise<void>;
+
+  // Parent methods
+  getParent(id: string): Promise<Parent | undefined>;
+  getParents(): Promise<Parent[]>;
+  createParent(parent: InsertParent): Promise<Parent>;
+  updateParent(id: string, parent: Partial<InsertParent>): Promise<Parent | undefined>;
+  deleteParent(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -307,6 +317,34 @@ export class DatabaseStorage implements IStorage {
 
   async deleteNote(id: string): Promise<void> {
     await db.delete(notes).where(eq(notes.id, id));
+  }
+
+  // Parent methods
+  async getParent(id: string): Promise<Parent | undefined> {
+    const [parent] = await db.select().from(parents).where(eq(parents.id, id));
+    return parent || undefined;
+  }
+
+  async getParents(): Promise<Parent[]> {
+    return await db.select().from(parents).orderBy(parents.name);
+  }
+
+  async createParent(data: InsertParent): Promise<Parent> {
+    const [parent] = await db.insert(parents).values(data).returning();
+    return parent;
+  }
+
+  async updateParent(id: string, updateData: Partial<InsertParent>): Promise<Parent | undefined> {
+    const [parent] = await db
+      .update(parents)
+      .set(updateData)
+      .where(eq(parents.id, id))
+      .returning();
+    return parent || undefined;
+  }
+
+  async deleteParent(id: string): Promise<void> {
+    await db.delete(parents).where(eq(parents.id, id));
   }
 }
 
