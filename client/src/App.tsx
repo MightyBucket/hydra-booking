@@ -55,7 +55,7 @@ import { useStudentForm } from "./hooks/useStudentForm";
 import { useStudentNotes } from "./hooks/useStudentNotes";
 import { useLessonData } from "./hooks/useLessonData";
 import { useDialogState } from "./hooks/useDialogState";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Plus } from "lucide-react";
 import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
 import { handleJoinLessonLink, calculateStudentStats } from "@/utils/lessonHelpers";
 
@@ -778,6 +778,34 @@ function ParentsPage() {
     handleSubmit: handleParentSubmit,
   } = useParentForm();
 
+  const {
+    showStudentForm,
+    selectedStudent,
+    handleOpenForm: handleOpenStudentForm,
+    handleCloseForm: handleCloseStudentForm,
+    handleSubmit: handleStudentSubmit,
+  } = useStudentForm();
+
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+
+  const handleAddStudentToParent = (parentId: string) => {
+    setSelectedParentId(parentId);
+    handleOpenStudentForm();
+  };
+
+  const handleStudentFormSubmit = async (studentData: any) => {
+    await handleStudentSubmit({
+      ...studentData,
+      parentId: selectedParentId,
+    });
+    setSelectedParentId(null);
+  };
+
+  const handleStudentFormClose = () => {
+    handleCloseStudentForm();
+    setSelectedParentId(null);
+  };
+
   if (parentsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -811,14 +839,24 @@ function ParentsPage() {
           <div className="space-y-6">
             {parentsWithStudents.map((parent: any) => (
               <div key={parent.id} className="border rounded-lg p-4">
-                <div className="mb-3">
-                  <h3 className="text-lg font-semibold">{parent.name}</h3>
-                  {parent.email && (
-                    <p className="text-sm text-muted-foreground">{parent.email}</p>
-                  )}
-                  {parent.phoneNumber && (
-                    <p className="text-sm text-muted-foreground">{parent.phoneNumber}</p>
-                  )}
+                <div className="mb-3 flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">{parent.name}</h3>
+                    {parent.email && (
+                      <p className="text-sm text-muted-foreground">{parent.email}</p>
+                    )}
+                    {parent.phoneNumber && (
+                      <p className="text-sm text-muted-foreground">{parent.phoneNumber}</p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleAddStudentToParent(parent.id)}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Student
+                  </Button>
                 </div>
                 
                 {parent.students.length > 0 ? (
@@ -884,6 +922,20 @@ function ParentsPage() {
           initialData={selectedParent || undefined}
           onSubmit={handleParentSubmit}
           onCancel={handleCloseParentForm}
+        />
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={showStudentForm} onOpenChange={handleStudentFormClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            Add Student to {parentsWithStudents.find((p: any) => p.id === selectedParentId)?.name || 'Parent'}
+          </DialogTitle>
+        </DialogHeader>
+        <StudentForm
+          onSubmit={handleStudentFormSubmit}
+          onCancel={handleStudentFormClose}
         />
       </DialogContent>
     </Dialog>
