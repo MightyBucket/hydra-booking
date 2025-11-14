@@ -37,6 +37,8 @@ import ScheduleView from "./components/ScheduleView";
 import { useStudents, useDeleteStudent } from "./hooks/useStudents";
 import { useLessons } from "./hooks/useLessons";
 import { useParents } from "./hooks/useParents";
+import ParentForm from "./components/ParentForm";
+import { useParentForm } from "./hooks/useParentForm";
 import NoteForm from "./components/NoteForm";
 import CommentFormDialog from "./components/CommentFormDialog";
 import DeleteLessonDialog from "./components/DeleteLessonDialog";
@@ -768,6 +770,14 @@ function ParentsPage() {
   const { data: parentsData = [], isLoading: parentsLoading } = useParents();
   const { data: studentsData = [] } = useStudents();
 
+  const {
+    showParentForm,
+    selectedParent,
+    handleOpenForm: handleOpenParentForm,
+    handleCloseForm: handleCloseParentForm,
+    handleSubmit: handleParentSubmit,
+  } = useParentForm();
+
   if (parentsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -786,11 +796,13 @@ function ParentsPage() {
   const studentsWithoutParents = (studentsData as any[]).filter((s: any) => !s.parentId);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Parents ({parentsWithStudents.length})</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Parents ({parentsWithStudents.length})</CardTitle>
+          <Button onClick={() => handleOpenParentForm()}>Add Parent</Button>
+        </CardHeader>
+        <CardContent>
         {parentsWithStudents.length === 0 && studentsWithoutParents.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <p>No parents or students added yet.</p>
@@ -860,6 +872,22 @@ function ParentsPage() {
         )}
       </CardContent>
     </Card>
+
+    <Dialog open={showParentForm} onOpenChange={handleCloseParentForm}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {selectedParent ? "Edit Parent" : "Add New Parent"}
+          </DialogTitle>
+        </DialogHeader>
+        <ParentForm
+          initialData={selectedParent || undefined}
+          onSubmit={handleParentSubmit}
+          onCancel={handleCloseParentForm}
+        />
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
