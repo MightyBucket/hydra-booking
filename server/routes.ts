@@ -92,7 +92,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/students/:id", async (req, res) => {
+    try {
+      const student = await storage.getStudent(req.params.id);
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+      res.json(student);
+    } catch (error) {
+      console.error('Error fetching student:', error);
+      res.status(500).json({ error: "Failed to fetch student" });
+    }
+  });
 
+  app.post("/api/students", requireAuth, async (req, res) => {
+    try {
+      const validatedData = insertStudentSchema.parse(req.body);
+      const student = await storage.createStudent(validatedData);
+      res.status(201).json(student);
+    } catch (error) {
+      console.error('Error creating student:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create student" });
+    }
+  });
+
+  app.put("/api/students/:id", requireAuth, async (req, res) => {
+    try {
+      const updateData = insertStudentSchema.partial().parse(req.body);
+      const student = await storage.updateStudent(req.params.id, updateData);
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+      res.json(student);
+    } catch (error) {
+      console.error('Error updating student:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update student" });
+    }
+  });
+
+  app.delete("/api/students/:id", requireAuth, async (req, res) => {
+    try {
+      await storage.deleteStudent(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      res.status(500).json({ error: "Failed to delete student" });
+    }
+  });
 
   // Parent routes (protected)
   app.get("/api/parents", requireAuth, async (req, res) => {
@@ -158,60 +209,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting parent:', error);
       res.status(500).json({ error: "Failed to delete parent" });
-    }
-  });
-
-
-    try {
-      const student = await storage.getStudent(req.params.id);
-      if (!student) {
-        return res.status(404).json({ error: "Student not found" });
-      }
-      res.json(student);
-    } catch (error) {
-      console.error('Error fetching student:', error);
-      res.status(500).json({ error: "Failed to fetch student" });
-    }
-  });
-
-  app.post("/api/students", requireAuth, async (req, res) => {
-    try {
-      const validatedData = insertStudentSchema.parse(req.body);
-      const student = await storage.createStudent(validatedData);
-      res.status(201).json(student);
-    } catch (error) {
-      console.error('Error creating student:', error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create student" });
-    }
-  });
-
-  app.put("/api/students/:id", requireAuth, async (req, res) => {
-    try {
-      const updateData = insertStudentSchema.partial().parse(req.body);
-      const student = await storage.updateStudent(req.params.id, updateData);
-      if (!student) {
-        return res.status(404).json({ error: "Student not found" });
-      }
-      res.json(student);
-    } catch (error) {
-      console.error('Error updating student:', error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update student" });
-    }
-  });
-
-  app.delete("/api/students/:id", requireAuth, async (req, res) => {
-    try {
-      await storage.deleteStudent(req.params.id);
-      res.status(204).send();
-    } catch (error) {
-      console.error('Error deleting student:', error);
-      res.status(500).json({ error: "Failed to delete student" });
     }
   });
 
