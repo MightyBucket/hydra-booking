@@ -4,6 +4,15 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
+// Parents table
+export const parents = pgTable("parents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").unique(),
+  phoneNumber: text("phone_number"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Students table
 export const students = pgTable("students", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -16,6 +25,7 @@ export const students = pgTable("students", {
   defaultRate: decimal("default_rate", { precision: 10, scale: 2 }).notNull(),
   defaultLink: text("default_link").notNull(),
   defaultColor: text("default_color").notNull().default("#3b82f6"), // Default blue color
+  parentId: varchar("parent_id").references(() => parents.id, { onDelete: 'set null' }),
 });
 
 // Lessons table
@@ -59,7 +69,15 @@ export const notes = pgTable("notes", {
 });
 
 // Relations
-export const studentsRelations = relations(students, ({ many }) => ({
+export const parentsRelations = relations(parents, ({ many }) => ({
+  students: many(students),
+}));
+
+export const studentsRelations = relations(students, ({ one, many }) => ({
+  parent: one(parents, {
+    fields: [students.parentId],
+    references: [parents.id],
+  }),
   lessons: many(lessons),
   notes: many(notes),
 }));
@@ -97,6 +115,19 @@ export const notesRelations = relations(notes, ({ one }) => ({
 // Helper to transform empty strings to null
 const emptyStringToNull = z.string().transform(val => val === '' ? null : val).nullable().optional();
 
+// Insert schemas for parents
+export const insertParentSchema = createInsertSchema(parents).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Name is required"),
+  email: z.preprocess(
+    val => val === '' ? null : val,
+    z.string().email().nullable().optional()
+  ),
+  phoneNumber: emptyStringToNull,
+});
+
 // Insert schemas  
 export const insertStudentSchema = createInsertSchema(students).omit({
   id: true,
@@ -113,6 +144,7 @@ export const insertStudentSchema = createInsertSchema(students).omit({
     z.string().email().nullable().optional()
   ),
   phoneNumber: emptyStringToNull,
+  parentId: z.string().nullable().optional(),
 });
 
 export const insertLessonSchema = createInsertSchema(lessons).omit({
@@ -165,6 +197,9 @@ export const insertNoteSchema = createInsertSchema(notes).omit({
 
 export type InsertNote = z.infer<typeof insertNoteSchema>;
 export type Note = typeof notes.$inferSelect;
+
+export type InsertParent = z.infer<typeof insertParentSchema>;
+export type Parent = typeof parents.$inferSelect;
 
 // Legacy user schema for compatibility
 export const users = pgTable("users", {
