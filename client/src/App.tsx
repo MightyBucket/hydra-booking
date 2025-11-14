@@ -34,7 +34,7 @@ import ThemeToggle from "./components/ThemeToggle";
 import StudentCard from "./components/StudentCard";
 import ScheduleCommentsDialog from "./components/ScheduleCommentsDialog";
 import ScheduleView from "./components/ScheduleView";
-import { useStudents, useDeleteStudent } from "./hooks/useStudents";
+import { useStudents, useDeleteStudent, useUpdateStudent } from "./hooks/useStudents";
 import { useLessons } from "./hooks/useLessons";
 import { useParents } from "./hooks/useParents";
 import ParentForm from "./components/ParentForm";
@@ -769,6 +769,8 @@ function ParentsPage() {
 
   const { data: parentsData = [], isLoading: parentsLoading } = useParents();
   const { data: studentsData = [] } = useStudents();
+  const updateStudentMutation = useUpdateStudent();
+  const { toast } = useToast();
 
   const {
     showParentForm,
@@ -778,32 +780,61 @@ function ParentsPage() {
     handleSubmit: handleParentSubmit,
   } = useParentForm();
 
-  const {
-    showStudentForm,
-    selectedStudent,
-    handleOpenForm: handleOpenStudentForm,
-    handleCloseForm: handleCloseStudentForm,
-    handleSubmit: handleStudentSubmit,
-  } = useStudentForm();
-
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+  const [showStudentSelectDialog, setShowStudentSelectDialog] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
 
   const handleAddStudentToParent = (parentId: string) => {
     setSelectedParentId(parentId);
-    handleOpenStudentForm();
+    setSelectedStudentIds(new Set());
+    setShowStudentSelectDialog(true);
   };
 
-  const handleStudentFormSubmit = async (studentData: any) => {
-    await handleStudentSubmit({
-      ...studentData,
-      parentId: selectedParentId,
+  const handleStudentSelectClose = () => {
+    setShowStudentSelectDialog(false);
+    setSelectedParentId(null);
+    setSelectedStudentIds(new Set());
+  };
+
+  const handleToggleStudent = (studentId: string) => {
+    setSelectedStudentIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(studentId)) {
+        newSet.delete(studentId);
+      } else {
+        newSet.add(studentId);
+      }
+      return newSet;
     });
-    setSelectedParentId(null);
   };
 
-  const handleStudentFormClose = () => {
-    handleCloseStudentForm();
-    setSelectedParentId(null);
+  const handleAssignStudents = async () => {
+    if (!selectedParentId || selectedStudentIds.size === 0) return;
+
+    try {
+      // Update each selected student with the parent ID
+      await Promise.all(
+        Array.from(selectedStudentIds).map(studentId =>
+          updateStudentMutation.mutateAsync({
+            id: studentId,
+            parentId: selectedParentId,
+          })
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: `${selectedStudentIds.size} student(s) assigned successfully`,
+      });
+
+      handleStudentSelectClose();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to assign students",
+        variant: "destructive",
+      });
+    }
   };
 
   if (parentsLoading) {
@@ -926,17 +957,67 @@ function ParentsPage() {
       </DialogContent>
     </Dialog>
 
-    <Dialog open={showStudentForm} onOpenChange={handleStudentFormClose}>
+    <Dialog open={showStudentSelectDialog} onOpenChange={handleStudentSelectClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            Add Student to {parentsWithStudents.find((p: any) => p.id === selectedParentId)?.name || 'Parent'}
+            Assign Students to {parentsWithStudents.find((p: any) => p.id === selectedParentId)?.name || 'Parent'}
           </DialogTitle>
         </DialogHeader>
-        <StudentForm
-          onSubmit={handleStudentFormSubmit}
-          onCancel={handleStudentFormClose}
-        />
+        <div className="space-y-4">
+          {studentsWithoutParents.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No students without parents available.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Select students to assign to this parent:
+              </p>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {studentsWithoutParents.map((student: any) => (
+                  <div
+                    key={student.id}
+                    className="flex items-center gap-3 p-3 border rounded hover:bg-accent cursor-pointer"
+                    onClick={() => handleToggleStudent(student.id)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedStudentIds.has(student.id)}
+                      onChange={() => handleToggleStudent(student.id)}
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: student.defaultColor }}
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium">
+                        {student.firstName} {student.lastName || ''}
+                      </span>
+                      {student.email && (
+                        <span className="text-sm text-muted-foreground ml-2">
+                          ({student.email})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={handleStudentSelectClose}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAssignStudents}
+              disabled={selectedStudentIds.size === 0}
+            >
+              Assign {selectedStudentIds.size > 0 ? `(${selectedStudentIds.size})` : ''}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
     </>
