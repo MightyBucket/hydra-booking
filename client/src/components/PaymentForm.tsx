@@ -17,9 +17,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth } from "date-fns";
+import { CalendarIcon, Calendar as CalendarViewIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PaymentFormProps {
   students: any[];
@@ -53,6 +54,9 @@ export default function PaymentForm({
   const [selectedLessonIds, setSelectedLessonIds] = useState<string[]>([]);
   const [filteredLessons, setFilteredLessons] = useState<any[]>([]);
   const [showPaidLessons, setShowPaidLessons] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   // Filter lessons based on selected payer
   useEffect(() => {
@@ -124,6 +128,20 @@ export default function PaymentForm({
         ? prev.filter(id => id !== lessonId)
         : [...prev, lessonId]
     );
+  };
+
+  const getLessonsForDate = (date: Date) => {
+    return filteredLessons
+      .filter((lesson) => isSameDay(new Date(lesson.dateTime), date))
+      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+  };
+
+  const monthStart = startOfMonth(currentDate);
+  const calendarStart = startOfWeek(monthStart);
+  const monthDays = Array.from({ length: 42 }, (_, index) => addDays(calendarStart, index));
+
+  const handleCalendarDateClick = (date: Date) => {
+    setSelectedCalendarDate(date);
   };
 
   const allPayers = [
@@ -256,39 +274,153 @@ export default function PaymentForm({
               </Label>
             </div>
           </div>
-          <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
-            {filteredLessons.map((lesson) => {
-              const student = students.find(s => s.id === lesson.studentId);
-              const totalPrice = (parseFloat(lesson.pricePerHour) * lesson.duration) / 60;
-              return (
-                <div
-                  key={lesson.id}
-                  className="flex items-center gap-3 p-2 hover:bg-accent rounded cursor-pointer"
-                  onClick={() => toggleLesson(lesson.id)}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedLessonIds.includes(lesson.id)}
-                    onChange={() => toggleLesson(lesson.id)}
-                    className="h-4 w-4 cursor-pointer"
-                  />
-                  <div className="flex-1 text-sm">
-                    <div className="font-medium">
-                      {format(new Date(lesson.dateTime), 'MMM d, yyyy')} - {lesson.subject}
-                    </div>
-                    {student && (
-                      <div className="text-muted-foreground text-xs">
-                        {student.firstName} {student.lastName || ''}
+
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'calendar')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="list">List View</TabsTrigger>
+              <TabsTrigger value="calendar">
+                <CalendarViewIcon className="h-4 w-4 mr-2" />
+                Calendar View
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="list" className="mt-2">
+              <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                {filteredLessons.map((lesson) => {
+                  const student = students.find(s => s.id === lesson.studentId);
+                  const totalPrice = (parseFloat(lesson.pricePerHour) * lesson.duration) / 60;
+                  return (
+                    <div
+                      key={lesson.id}
+                      className="flex items-center gap-3 p-2 hover:bg-accent rounded cursor-pointer"
+                      onClick={() => toggleLesson(lesson.id)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedLessonIds.includes(lesson.id)}
+                        onChange={() => toggleLesson(lesson.id)}
+                        className="h-4 w-4 cursor-pointer"
+                      />
+                      <div className="flex-1 text-sm">
+                        <div className="font-medium">
+                          {format(new Date(lesson.dateTime), 'MMM d, yyyy')} - {lesson.subject}
+                        </div>
+                        {student && (
+                          <div className="text-muted-foreground text-xs">
+                            {student.firstName} {student.lastName || ''}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="text-sm font-semibold">
-                    £{totalPrice.toFixed(2)}
-                  </div>
+                      <div className="text-sm font-semibold">
+                        £{totalPrice.toFixed(2)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="calendar" className="mt-2">
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-center mb-2">
+                  {format(currentDate, "MMMM yyyy")}
                 </div>
-              );
-            })}
-          </div>
+                
+                <div className="grid grid-cols-7 gap-0.5 mb-2">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                    <div key={day} className="p-1 text-center text-[10px] font-medium text-muted-foreground">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-0.5">
+                  {monthDays.map((day) => {
+                    const dayLessons = getLessonsForDate(day);
+                    const isToday = isSameDay(day, new Date());
+                    const isSelected = selectedCalendarDate && isSameDay(day, selectedCalendarDate);
+
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        className={cn(
+                          "min-h-11 p-0.5 border rounded-sm cursor-pointer hover:bg-accent",
+                          isToday && "bg-accent",
+                          isSelected && "ring-2 ring-primary"
+                        )}
+                        onClick={() => handleCalendarDateClick(day)}
+                      >
+                        <div className={cn("text-[9px] font-medium mb-0.5", isToday && "text-primary")}>
+                          {format(day, "d")}
+                        </div>
+                        <div className="space-y-[2px]">
+                          {dayLessons.slice(0, 2).map((lesson) => {
+                            const student = students.find(s => s.id === lesson.studentId);
+                            return (
+                              <div
+                                key={lesson.id}
+                                className="h-1 rounded-full"
+                                style={{
+                                  backgroundColor: student?.defaultColor || "#3b82f6",
+                                }}
+                              />
+                            );
+                          })}
+                          {dayLessons.length > 2 && (
+                            <div className="text-[8px] text-muted-foreground text-center">
+                              +{dayLessons.length - 2}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {selectedCalendarDate && getLessonsForDate(selectedCalendarDate).length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <h3 className="text-sm font-semibold mb-3">
+                      {format(selectedCalendarDate, "EEEE, MMMM d")}
+                    </h3>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {getLessonsForDate(selectedCalendarDate).map((lesson) => {
+                        const student = students.find(s => s.id === lesson.studentId);
+                        const totalPrice = (parseFloat(lesson.pricePerHour) * lesson.duration) / 60;
+                        return (
+                          <div
+                            key={lesson.id}
+                            className="flex items-center gap-3 p-2 hover:bg-accent rounded cursor-pointer border"
+                            onClick={() => toggleLesson(lesson.id)}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedLessonIds.includes(lesson.id)}
+                              onChange={() => toggleLesson(lesson.id)}
+                              className="h-4 w-4 cursor-pointer"
+                            />
+                            <div className="flex-1 text-sm">
+                              <div className="font-medium">
+                                {format(new Date(lesson.dateTime), 'HH:mm')} - {lesson.subject}
+                              </div>
+                              {student && (
+                                <div className="text-muted-foreground text-xs">
+                                  {student.firstName} {student.lastName || ''}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-sm font-semibold">
+                              £{totalPrice.toFixed(2)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+
           <p className="text-xs text-muted-foreground">
             {selectedLessonIds.length} lesson(s) selected
           </p>
