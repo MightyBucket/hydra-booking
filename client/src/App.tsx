@@ -783,6 +783,8 @@ function ParentsPage() {
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   const [showStudentSelectDialog, setShowStudentSelectDialog] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [showRemoveStudentDialog, setShowRemoveStudentDialog] = useState(false);
+  const [studentToRemove, setStudentToRemove] = useState<{ studentId: string; studentName: string; parentName: string } | null>(null);
 
   const handleAddStudentToParent = (parentId: string) => {
     setSelectedParentId(parentId);
@@ -835,6 +837,41 @@ function ParentsPage() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleRemoveStudentClick = (studentId: string, studentName: string, parentName: string) => {
+    setStudentToRemove({ studentId, studentName, parentName });
+    setShowRemoveStudentDialog(true);
+  };
+
+  const handleConfirmRemoveStudent = async () => {
+    if (!studentToRemove) return;
+
+    try {
+      await updateStudentMutation.mutateAsync({
+        id: studentToRemove.studentId,
+        parentId: null,
+      });
+
+      toast({
+        title: "Success",
+        description: `${studentToRemove.studentName} removed from parent`,
+      });
+
+      setShowRemoveStudentDialog(false);
+      setStudentToRemove(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove student from parent",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelRemoveStudent = () => {
+    setShowRemoveStudentDialog(false);
+    setStudentToRemove(null);
   };
 
   if (parentsLoading) {
@@ -900,12 +937,24 @@ function ParentsPage() {
                           className="flex items-center gap-2 p-2 border rounded"
                         >
                           <div
-                            className="w-3 h-3 rounded-full"
+                            className="w-3 h-3 rounded-full flex-shrink-0"
                             style={{ backgroundColor: student.defaultColor }}
                           />
-                          <span className="text-sm">
+                          <span className="text-sm flex-1">
                             {student.firstName} {student.lastName || ''}
                           </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveStudentClick(
+                              student.id,
+                              `${student.firstName} ${student.lastName || ''}`,
+                              parent.name
+                            )}
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -1020,6 +1069,32 @@ function ParentsPage() {
         </div>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={showRemoveStudentDialog} onOpenChange={setShowRemoveStudentDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove Student from Parent</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to remove <strong>{studentToRemove?.studentName}</strong> from{" "}
+            <strong>{studentToRemove?.parentName}</strong>?
+            <br />
+            <br />
+            The student will not be deleted, only unlinked from this parent.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleCancelRemoveStudent}>
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmRemoveStudent}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Remove Student
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
