@@ -35,6 +35,7 @@ interface PaymentFormProps {
     lessonIds: string[];
   }) => void;
   onCancel: () => void;
+  initialData?: any;
 }
 
 export default function PaymentForm({
@@ -43,13 +44,14 @@ export default function PaymentForm({
   lessons,
   onSubmit,
   onCancel,
+  initialData,
 }: PaymentFormProps) {
   const [formData, setFormData] = useState({
-    payerType: '' as 'student' | 'parent' | '',
-    payerId: '',
-    amount: '',
-    paymentDate: new Date(),
-    notes: '',
+    payerType: (initialData?.payerType || '') as 'student' | 'parent' | '',
+    payerId: initialData?.payerId || '',
+    amount: initialData?.amount || '',
+    paymentDate: initialData?.paymentDate ? new Date(initialData.paymentDate) : new Date(),
+    notes: initialData?.notes || '',
   });
   const [selectedLessonIds, setSelectedLessonIds] = useState<string[]>([]);
   const [filteredLessons, setFilteredLessons] = useState<any[]>([]);
@@ -336,6 +338,7 @@ export default function PaymentForm({
               <div className="space-y-2">
                 <div className="flex items-center justify-between mb-2">
                   <Button
+                    type="button"
                     variant="outline"
                     size="icon"
                     onClick={() => navigateMonth('prev')}
@@ -347,6 +350,7 @@ export default function PaymentForm({
                     {format(currentDate, "MMMM yyyy")}
                   </div>
                   <Button
+                    type="button"
                     variant="outline"
                     size="icon"
                     onClick={() => navigateMonth('next')}

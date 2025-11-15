@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InsertPayment, Payment } from "@shared/schema";
 
@@ -8,7 +7,7 @@ async function fetchPayments(): Promise<Payment[]> {
   if (sessionId) {
     headers["Authorization"] = `Bearer ${sessionId}`;
   }
-  
+
   const response = await fetch("/api/payments", {
     headers,
     credentials: "include",
@@ -25,7 +24,7 @@ async function fetchPaymentLessons(paymentId: string): Promise<string[]> {
   if (sessionId) {
     headers["Authorization"] = `Bearer ${sessionId}`;
   }
-  
+
   const response = await fetch(`/api/payments/${paymentId}/lessons`, {
     headers,
     credentials: "include",
@@ -42,7 +41,7 @@ async function createPayment(data: InsertPayment & { lessonIds: string[] }): Pro
   if (sessionId) {
     headers["Authorization"] = `Bearer ${sessionId}`;
   }
-  
+
   const response = await fetch("/api/payments", {
     method: "POST",
     headers,
@@ -55,19 +54,18 @@ async function createPayment(data: InsertPayment & { lessonIds: string[] }): Pro
   return response.json();
 }
 
-async function updatePayment(data: Partial<InsertPayment> & { id: string; lessonIds?: string[] }): Promise<Payment> {
-  const { id, ...updateData } = data;
+async function updatePayment(id: string, data: Partial<InsertPayment> & { lessonIds?: string[] }): Promise<Payment> {
   const sessionId = localStorage.getItem("sessionId");
   const headers: HeadersInit = { "Content-Type": "application/json" };
   if (sessionId) {
     headers["Authorization"] = `Bearer ${sessionId}`;
   }
-  
+
   const response = await fetch(`/api/payments/${id}`, {
     method: "PUT",
     headers,
     credentials: "include",
-    body: JSON.stringify(updateData),
+    body: JSON.stringify(data),
   });
   if (!response.ok) {
     throw new Error("Failed to update payment");
@@ -81,7 +79,7 @@ async function deletePayment(id: string): Promise<void> {
   if (sessionId) {
     headers["Authorization"] = `Bearer ${sessionId}`;
   }
-  
+
   const response = await fetch(`/api/payments/${id}`, {
     method: "DELETE",
     headers,
@@ -112,17 +110,8 @@ export function useCreatePayment() {
   return useMutation({
     mutationFn: createPayment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
-    },
-  });
-}
-
-export function useUpdatePayment() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: updatePayment,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["lessons"] });
     },
   });
 }
@@ -132,7 +121,20 @@ export function useDeletePayment() {
   return useMutation({
     mutationFn: deletePayment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["lessons"] });
+    },
+  });
+}
+
+export function useUpdatePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<InsertPayment> & { lessonIds?: string[] } }) => 
+      updatePayment(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["lessons"] });
     },
   });
 }

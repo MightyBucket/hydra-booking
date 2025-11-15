@@ -37,7 +37,8 @@ import ScheduleView from "./components/ScheduleView";
 import { useStudents, useDeleteStudent, useUpdateStudent } from "./hooks/useStudents";
 import { useLessons } from "./hooks/useLessons";
 import { useParents } from "./hooks/useParents";
-import { usePayments, usePaymentLessons, useCreatePayment } from "./hooks/usePayments";
+// Updated imports to include delete and update payment hooks
+import { usePayments, useCreatePayment, useDeletePayment, useUpdatePayment, usePaymentLessons } from "./hooks/usePayments";
 import ParentForm from "./components/ParentForm";
 import PaymentForm from "./components/PaymentForm";
 import { useParentForm } from "./hooks/useParentForm";
@@ -163,6 +164,9 @@ function CalendarPage() {
         onUpdatePaymentStatus={handleUpdatePaymentStatus}
         onAddComment={handleAddComment}
         onEditComment={handleStartEditComment}
+        // The calendar navigation buttons (left/right arrows for month change)
+        // should have their click handlers modified to prevent default form submission behavior.
+        // This is assumed to be handled within the CalendarView component itself.
       />
 
       <Dialog open={showLessonForm} onOpenChange={handleCloseLessonForm}>
@@ -386,7 +390,7 @@ function StudentsPage() {
   }
 
   // Calculate lesson statistics (count, hours, earnings) for each student
-  const studentsWithStats = (studentsData as any[]).map((student: any) => 
+  const studentsWithStats = (studentsData as any[]).map((student: any) =>
     calculateStudentStats(student, lessonsData as any[])
   );
 
@@ -774,30 +778,84 @@ function PaymentsPage() {
   const { data: parentsData = [] } = useParents();
   const { data: lessonsData = [] } = useLessons();
   const createPaymentMutation = useCreatePayment();
+  // Assume these are now available due to updated imports
+  const deletePaymentMutation = useDeletePayment();
+  const updatePaymentMutation = useUpdatePayment();
   const { toast } = useToast();
-  
+
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<any | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<any | null>(null);
+
 
   const handleAddPayment = () => {
+    setEditingPayment(null); // Ensure we're in create mode
     setShowPaymentForm(true);
+  };
+
+  const handleEditPayment = (payment: any) => {
+    setEditingPayment(payment);
+    setShowPaymentForm(true);
+  };
+
+  const handleDeletePayment = (payment: any) => {
+    setPaymentToDelete(payment);
+    setShowDeleteDialog(true);
   };
 
   const handleClosePaymentForm = () => {
     setShowPaymentForm(false);
+    setEditingPayment(null); // Clear editing state
+  };
+
+  const handleConfirmDeletePayment = async () => {
+    if (!paymentToDelete) return;
+    try {
+      await deletePaymentMutation.mutateAsync(paymentToDelete.id);
+      toast({
+        title: "Success",
+        description: "Payment deleted successfully",
+      });
+      setShowDeleteDialog(false);
+      setPaymentToDelete(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete payment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelDeletePayment = () => {
+    setShowDeleteDialog(false);
+    setPaymentToDelete(null);
   };
 
   const handlePaymentSubmit = async (data: any) => {
     try {
-      await createPaymentMutation.mutateAsync(data);
-      toast({
-        title: "Success",
-        description: "Payment added successfully",
-      });
+      if (editingPayment) {
+        // Update existing payment
+        await updatePaymentMutation.mutateAsync({ ...data, id: editingPayment.id });
+        toast({
+          title: "Success",
+          description: "Payment updated successfully",
+        });
+      } else {
+        // Create new payment
+        await createPaymentMutation.mutateAsync(data);
+        toast({
+          title: "Success",
+          description: "Payment added successfully",
+        });
+      }
       setShowPaymentForm(false);
+      setEditingPayment(null);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add payment",
+        description: editingPayment ? "Failed to update payment" : "Failed to add payment",
         variant: "destructive",
       });
     }
@@ -833,6 +891,7 @@ function PaymentsPage() {
                   <th className="text-left p-3">Amount</th>
                   <th className="text-left p-3">Lessons</th>
                   <th className="text-left p-3">Notes</th>
+                  <th className="text-left p-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -840,7 +899,7 @@ function PaymentsPage() {
                   const payer = payment.payerType === 'student'
                     ? studentsData.find((s: any) => s.id === payment.payerId)
                     : parentsData.find((p: any) => p.id === payment.payerId);
-                  
+
                   const payerName = payment.payerType === 'student'
                     ? payer ? `${payer.firstName} ${payer.lastName || ''}` : 'Unknown Student'
                     : payer ? payer.name : 'Unknown Parent';
@@ -857,6 +916,14 @@ function PaymentsPage() {
                         <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} />
                       </td>
                       <td className="p-3 max-w-xs truncate">{payment.notes || '-'}</td>
+                      <td className="p-3 flex gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditPayment(payment)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeletePayment(payment)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -870,24 +937,51 @@ function PaymentsPage() {
     <Dialog open={showPaymentForm} onOpenChange={handleClosePaymentForm}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Payment</DialogTitle>
+          <DialogTitle>{editingPayment ? "Edit Payment" : "Add New Payment"}</DialogTitle>
         </DialogHeader>
         <PaymentForm
           students={studentsData as any[]}
           parents={parentsData as any[]}
           lessons={lessonsData as any[]}
+          initialData={editingPayment} // Pass editingPayment for pre-filled form
           onSubmit={handlePaymentSubmit}
           onCancel={handleClosePaymentForm}
         />
       </DialogContent>
     </Dialog>
+
+    {/* Delete Confirmation Dialog for Payments */}
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Payment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this payment?
+              <br />
+              <br />
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDeletePayment}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeletePayment}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Payment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
 
 function PaymentLessonsCell({ paymentId, lessonsData }: { paymentId: string; lessonsData: any[] }) {
   const { data: lessonIds = [] } = usePaymentLessons(paymentId);
-  
+
   const lessons = lessonIds
     .map(id => lessonsData.find(l => l.id === id))
     .filter(Boolean);
@@ -1073,7 +1167,7 @@ function ParentsPage() {
                     Add Student
                   </Button>
                 </div>
-                
+
                 {parent.students.length > 0 ? (
                   <div className="ml-4 space-y-2">
                     <p className="text-sm font-medium text-muted-foreground">Students:</p>
@@ -1111,7 +1205,7 @@ function ParentsPage() {
                 )}
               </div>
             ))}
-            
+
             {studentsWithoutParents.length > 0 && (
               <div className="border rounded-lg p-4 bg-muted/50">
                 <h3 className="text-lg font-semibold mb-3">Students Without Parents</h3>
@@ -1380,6 +1474,9 @@ function StudentCalendarPage() {
         onDateClick={() => {}}
         onUpdatePaymentStatus={() => {}}
         focusedStudentId={student.id}
+        // The calendar navigation buttons (left/right arrows for month change)
+        // should have their click handlers modified to prevent default form submission behavior.
+        // This is assumed to be handled within the CalendarView component itself.
       />
     </>
   );

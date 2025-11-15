@@ -21,11 +21,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = req.body;
       const sessionId = login(username, password);
-      
+
       if (!sessionId) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
-      
+
       res.json({ sessionId });
     } catch (error) {
       console.error('Error during login:', error);
@@ -52,10 +52,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!sessionId) {
         return res.status(401).json({ authenticated: false });
       }
-      
+
       const { validateSession } = await import('./auth');
       const isValid = validateSession(sessionId);
-      
+
       res.json({ authenticated: isValid });
     } catch (error) {
       console.error('Error validating session:', error);
@@ -79,11 +79,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const students = await storage.getStudents();
       const student = students.find((s: any) => s.studentId === req.params.studentId);
-      
+
       if (!student) {
         return res.status(404).json({ error: "Student not found" });
       }
-      
+
       res.json(student);
     } catch (error) {
       console.error('Error fetching student:', error);
@@ -229,17 +229,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find student by their 6-digit studentId
       const students = await storage.getStudents();
       const student = students.find((s: any) => s.studentId === req.params.studentId);
-      
+
       if (!student) {
         return res.status(404).json({ error: "Student not found" });
       }
-      
+
       // Get lessons for this student
       const studentLessons = await storage.getLessonsByStudent(student.id);
-      
+
       // Get all lessons to find blocked slots
       const allLessons = await storage.getLessons();
-      
+
       // Create blocked slots for other students' lessons (only time and duration)
       const blockedSlots = allLessons
         .filter((lesson: any) => lesson.studentId !== student.id)
@@ -248,13 +248,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           duration: lesson.duration,
           isBlocked: true
         }));
-      
+
       // Combine student lessons with blocked slots
       const response = {
         lessons: studentLessons,
         blockedSlots: blockedSlots
       };
-      
+
       res.json(response);
     } catch (error) {
       console.error('Error fetching student lessons:', error);
@@ -292,7 +292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pricePerHour: parseFloat(req.body.pricePerHour),
         duration: parseInt(req.body.duration, 10),
       };
-      
+
       const validatedData = insertLessonSchema.parse(preprocessedData);
       const lesson = await storage.createLesson(validatedData);
       res.status(201).json(lesson);
@@ -411,17 +411,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/lessons/:lessonId/comments", async (req, res) => {
     try {
       const allComments = await storage.getCommentsByLesson(req.params.lessonId);
-      
+
       // Check if user is authenticated
       const sessionId = req.headers.authorization?.replace('Bearer ', '');
       const { validateSession } = await import('./auth');
       const isAuthenticated = sessionId ? validateSession(sessionId) : false;
-      
+
       // If not authenticated, only return comments visible to students
-      const comments = isAuthenticated 
-        ? allComments 
+      const comments = isAuthenticated
+        ? allComments
         : allComments.filter(comment => comment.visibleToStudent === 1);
-      
+
       res.json(comments);
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -435,21 +435,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find student by their 6-digit studentId
       const students = await storage.getStudents();
       const student = students.find((s: any) => s.studentId === req.params.studentId);
-      
+
       if (!student) {
         return res.status(404).json({ error: "Student not found" });
       }
-      
+
       // Verify lesson belongs to this student
       const lesson = await storage.getLesson(req.params.lessonId);
       if (!lesson || lesson.studentId !== student.id) {
         return res.status(404).json({ error: "Lesson not found" });
       }
-      
+
       // Get comments visible to student only
       const allComments = await storage.getCommentsByLesson(req.params.lessonId);
       const comments = allComments.filter(comment => comment.visibleToStudent === 1);
-      
+
       res.json(comments);
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -629,12 +629,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/payments/:id", requireAuth, async (req, res) => {
+  // Get lessons for a specific payment
+  app.get("/api/payments/:paymentId/lessons", requireAuth, async (req, res) => {
     try {
-      await storage.deletePayment(req.params.id);
+      const { paymentId } = req.params;
+      const paymentLessons = await storage.getPaymentLessons(paymentId);
+      res.json(paymentLessons.map(pl => pl.lessonId));
+    } catch (error) {
+      console.error(`Error fetching payment lessons: ${error}`);
+      res.status(500).json({ error: "Failed to fetch payment lessons" });
+    }
+  });
+
+  // Update a payment
+  app.patch("/api/payments/:paymentId", requireAuth, async (req, res) => {
+    try {
+      const { paymentId } = req.params;
+      const { lessonIds, ...paymentData } = req.body;
+
+      // Update the payment
+      const updatedPayment = await storage.updatePayment(paymentId, paymentData);
+
+      // If lessonIds are provided, update the payment-lesson relationships
+      if (lessonIds !== undefined) {
+        // Delete existing relationships
+        await storage.deletePaymentLessons(paymentId);
+
+        // Create new relationships
+        for (const lessonId of lessonIds) {
+          await storage.createPaymentLesson(paymentId, lessonId);
+          // Update lesson payment status to 'paid'
+          await storage.updateLesson(lessonId, { paymentStatus: 'paid' });
+        }
+      }
+
+      res.json(updatedPayment);
+    } catch (error) {
+      console.error(`Error updating payment: ${error}`);
+      res.status(500).json({ error: "Failed to update payment" });
+    }
+  });
+
+  // Delete a payment
+  app.delete("/api/payments/:paymentId", requireAuth, async (req, res) => {
+    try {
+      const { paymentId } = req.params;
+
+      // Get lessons associated with this payment before deleting
+      const paymentLessons = await storage.getPaymentLessons(paymentId);
+
+      // Delete the payment (this will cascade delete payment_lessons)
+      await storage.deletePayment(paymentId);
+
+      // Update lesson payment statuses back to 'pending'
+      for (const pl of paymentLessons) {
+        await storage.updateLesson(pl.lessonId, { paymentStatus: 'pending' });
+      }
+
       res.status(204).send();
     } catch (error) {
-      console.error('Error deleting payment:', error);
+      console.error(`Error deleting payment: ${error}`);
       res.status(500).json({ error: "Failed to delete payment" });
     }
   });
@@ -644,12 +698,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const lessons = await storage.getLessons();
       const students = await storage.getStudents();
-      
+
       // Filter lessons for next two months
       const now = new Date();
       const twoMonthsLater = new Date();
       twoMonthsLater.setMonth(twoMonthsLater.getMonth() + 2);
-      
+
       const filteredLessons = lessons.filter((lesson: any) => {
         const lessonDate = new Date(lesson.dateTime);
         return lessonDate >= now && lessonDate <= twoMonthsLater;
@@ -669,10 +723,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       filteredLessons.forEach((lesson: any) => {
         const student = students.find((s: any) => s.id === lesson.studentId);
         const studentName = student ? `${student.firstName} ${student.lastName || ''}`.trim() : 'Unknown Student';
-        
+
         const startDate = new Date(lesson.dateTime);
         const endDate = new Date(startDate.getTime() + lesson.duration * 60000);
-        
+
         // Format dates to iCalendar format (YYYYMMDDTHHMMSSZ)
         const formatDate = (date: Date) => {
           return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -680,7 +734,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const now = new Date();
         const dtstamp = formatDate(now);
-        
+
         icsContent.push('BEGIN:VEVENT');
         icsContent.push(`UID:${lesson.id}@lessonscheduler`);
         icsContent.push(`DTSTAMP:${dtstamp}`);
@@ -688,11 +742,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         icsContent.push(`DTEND:${formatDate(endDate)}`);
         icsContent.push(`SUMMARY:${lesson.subject} - ${studentName}`);
         icsContent.push(`DESCRIPTION:Duration: ${lesson.duration} minutes\\nPrice: £${lesson.pricePerHour}/hr\\nStatus: ${lesson.paymentStatus}`);
-        
+
         if (lesson.lessonLink) {
           icsContent.push(`URL:${lesson.lessonLink}`);
         }
-        
+
         icsContent.push('END:VEVENT');
       });
 

@@ -108,6 +108,7 @@ export interface IStorage {
   updatePayment(id: string, payment: Partial<InsertPayment>, lessonIds?: string[]): Promise<Payment | undefined>;
   deletePayment(id: string): Promise<void>;
   getPaymentLessons(paymentId: string): Promise<string[]>;
+  deletePaymentLessons(paymentId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -373,7 +374,7 @@ export class DatabaseStorage implements IStorage {
 
   async createPayment(payment: InsertPayment, lessonIds: string[]): Promise<Payment> {
     const [createdPayment] = await db.insert(payments).values(payment).returning();
-    
+
     // Create payment-lesson associations
     if (lessonIds.length > 0) {
       await db.insert(paymentLessons).values(
@@ -383,7 +384,7 @@ export class DatabaseStorage implements IStorage {
         }))
       );
     }
-    
+
     return createdPayment;
   }
 
@@ -393,12 +394,12 @@ export class DatabaseStorage implements IStorage {
       .set(payment)
       .where(eq(payments.id, id))
       .returning();
-    
+
     // Update payment-lesson associations if provided
     if (lessonIds !== undefined) {
       // Delete existing associations
       await db.delete(paymentLessons).where(eq(paymentLessons.paymentId, id));
-      
+
       // Create new associations
       if (lessonIds.length > 0) {
         await db.insert(paymentLessons).values(
@@ -409,7 +410,7 @@ export class DatabaseStorage implements IStorage {
         );
       }
     }
-    
+
     return updatedPayment || undefined;
   }
 
@@ -423,6 +424,10 @@ export class DatabaseStorage implements IStorage {
       .from(paymentLessons)
       .where(eq(paymentLessons.paymentId, paymentId));
     return links.map(link => link.lessonId);
+  }
+
+  async deletePaymentLessons(paymentId: string): Promise<void> {
+    await db.delete(paymentLessons).where(eq(paymentLessons.paymentId, paymentId));
   }
 }
 
