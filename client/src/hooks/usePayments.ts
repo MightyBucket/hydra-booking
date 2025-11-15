@@ -3,7 +3,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InsertPayment, Payment } from "@shared/schema";
 
 async function fetchPayments(): Promise<Payment[]> {
+  const sessionId = localStorage.getItem("sessionId");
+  const headers: HeadersInit = {};
+  if (sessionId) {
+    headers["Authorization"] = `Bearer ${sessionId}`;
+  }
+  
   const response = await fetch("/api/payments", {
+    headers,
     credentials: "include",
   });
   if (!response.ok) {
@@ -13,7 +20,14 @@ async function fetchPayments(): Promise<Payment[]> {
 }
 
 async function fetchPaymentLessons(paymentId: string): Promise<string[]> {
+  const sessionId = localStorage.getItem("sessionId");
+  const headers: HeadersInit = {};
+  if (sessionId) {
+    headers["Authorization"] = `Bearer ${sessionId}`;
+  }
+  
   const response = await fetch(`/api/payments/${paymentId}/lessons`, {
+    headers,
     credentials: "include",
   });
   if (!response.ok) {
@@ -23,9 +37,15 @@ async function fetchPaymentLessons(paymentId: string): Promise<string[]> {
 }
 
 async function createPayment(data: InsertPayment & { lessonIds: string[] }): Promise<Payment> {
+  const sessionId = localStorage.getItem("sessionId");
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (sessionId) {
+    headers["Authorization"] = `Bearer ${sessionId}`;
+  }
+  
   const response = await fetch("/api/payments", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     credentials: "include",
     body: JSON.stringify(data),
   });
@@ -37,9 +57,15 @@ async function createPayment(data: InsertPayment & { lessonIds: string[] }): Pro
 
 async function updatePayment(data: Partial<InsertPayment> & { id: string; lessonIds?: string[] }): Promise<Payment> {
   const { id, ...updateData } = data;
+  const sessionId = localStorage.getItem("sessionId");
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (sessionId) {
+    headers["Authorization"] = `Bearer ${sessionId}`;
+  }
+  
   const response = await fetch(`/api/payments/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers,
     credentials: "include",
     body: JSON.stringify(updateData),
   });
@@ -50,8 +76,15 @@ async function updatePayment(data: Partial<InsertPayment> & { id: string; lesson
 }
 
 async function deletePayment(id: string): Promise<void> {
+  const sessionId = localStorage.getItem("sessionId");
+  const headers: HeadersInit = {};
+  if (sessionId) {
+    headers["Authorization"] = `Bearer ${sessionId}`;
+  }
+  
   const response = await fetch(`/api/payments/${id}`, {
     method: "DELETE",
+    headers,
     credentials: "include",
   });
   if (!response.ok) {
