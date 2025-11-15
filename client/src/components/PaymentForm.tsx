@@ -61,6 +61,10 @@ export default function PaymentForm({
       return;
     }
 
+    const today = new Date();
+    const fourWeeksFromNow = new Date();
+    fourWeeksFromNow.setDate(today.getDate() + 28);
+
     let filtered: any[] = [];
     
     if (formData.payerType === 'student') {
@@ -72,6 +76,17 @@ export default function PaymentForm({
       const studentIds = parentStudents.map(s => s.id);
       filtered = lessons.filter(lesson => studentIds.includes(lesson.studentId));
     }
+
+    // Filter for pending lessons only, within 4 weeks from today
+    filtered = filtered.filter(lesson => {
+      const lessonDate = new Date(lesson.dateTime);
+      return lesson.paymentStatus === 'pending' && 
+             lessonDate >= today && 
+             lessonDate <= fourWeeksFromNow;
+    });
+
+    // Sort by date ascending
+    filtered.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
     setFilteredLessons(filtered);
     setSelectedLessonIds([]);
@@ -221,6 +236,7 @@ export default function PaymentForm({
           <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
             {filteredLessons.map((lesson) => {
               const student = students.find(s => s.id === lesson.studentId);
+              const totalPrice = (parseFloat(lesson.pricePerHour) * lesson.duration) / 60;
               return (
                 <div
                   key={lesson.id}
@@ -243,8 +259,8 @@ export default function PaymentForm({
                       </div>
                     )}
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    £{parseFloat(lesson.pricePerHour).toFixed(2)}
+                  <div className="text-sm font-semibold">
+                    £{totalPrice.toFixed(2)}
                   </div>
                 </div>
               );
