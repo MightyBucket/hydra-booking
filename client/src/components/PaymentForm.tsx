@@ -52,6 +52,7 @@ export default function PaymentForm({
   });
   const [selectedLessonIds, setSelectedLessonIds] = useState<string[]>([]);
   const [filteredLessons, setFilteredLessons] = useState<any[]>([]);
+  const [showPaidLessons, setShowPaidLessons] = useState(false);
 
   // Filter lessons based on selected payer
   useEffect(() => {
@@ -79,11 +80,18 @@ export default function PaymentForm({
       filtered = lessons.filter(lesson => studentIds.includes(lesson.studentId));
     }
 
-    // Filter for pending lessons only, within 4 weeks from today
+    // Filter lessons based on payment status and date range
     filtered = filtered.filter(lesson => {
       const lessonDate = new Date(lesson.dateTime);
-      return lesson.paymentStatus === 'pending' && 
-             lessonDate <= fourWeeksFromNow;
+      const withinDateRange = lessonDate <= fourWeeksFromNow;
+      
+      if (showPaidLessons) {
+        // Show all lessons within date range
+        return withinDateRange;
+      } else {
+        // Show only pending lessons within date range
+        return lesson.paymentStatus === 'pending' && withinDateRange;
+      }
     });
 
     // Sort by date ascending
@@ -91,7 +99,7 @@ export default function PaymentForm({
 
     setFilteredLessons(filtered);
     setSelectedLessonIds([]);
-  }, [formData.payerType, formData.payerId, students, parents, lessons]);
+  }, [formData.payerType, formData.payerId, students, parents, lessons, showPaidLessons]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,7 +241,21 @@ export default function PaymentForm({
 
       {filteredLessons.length > 0 && (
         <div className="space-y-2">
-          <Label>Lessons Paid For</Label>
+          <div className="flex items-center justify-between">
+            <Label>Lessons Paid For</Label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="show-paid-lessons"
+                checked={showPaidLessons}
+                onChange={(e) => setShowPaidLessons(e.target.checked)}
+                className="h-4 w-4 cursor-pointer"
+              />
+              <Label htmlFor="show-paid-lessons" className="cursor-pointer text-sm font-normal">
+                Show paid lessons
+              </Label>
+            </div>
+          </div>
           <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
             {filteredLessons.map((lesson) => {
               const student = students.find(s => s.id === lesson.studentId);
