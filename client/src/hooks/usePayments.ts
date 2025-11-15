@@ -1,0 +1,105 @@
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { InsertPayment, Payment } from "@shared/schema";
+
+async function fetchPayments(): Promise<Payment[]> {
+  const response = await fetch("/api/payments", {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch payments");
+  }
+  return response.json();
+}
+
+async function fetchPaymentLessons(paymentId: string): Promise<string[]> {
+  const response = await fetch(`/api/payments/${paymentId}/lessons`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch payment lessons");
+  }
+  return response.json();
+}
+
+async function createPayment(data: InsertPayment & { lessonIds: string[] }): Promise<Payment> {
+  const response = await fetch("/api/payments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to create payment");
+  }
+  return response.json();
+}
+
+async function updatePayment(data: Partial<InsertPayment> & { id: string; lessonIds?: string[] }): Promise<Payment> {
+  const { id, ...updateData } = data;
+  const response = await fetch(`/api/payments/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(updateData),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to update payment");
+  }
+  return response.json();
+}
+
+async function deletePayment(id: string): Promise<void> {
+  const response = await fetch(`/api/payments/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to delete payment");
+  }
+}
+
+export function usePayments() {
+  return useQuery({
+    queryKey: ["/api/payments"],
+    queryFn: fetchPayments,
+  });
+}
+
+export function usePaymentLessons(paymentId: string) {
+  return useQuery({
+    queryKey: ["/api/payments", paymentId, "lessons"],
+    queryFn: () => fetchPaymentLessons(paymentId),
+    enabled: !!paymentId,
+  });
+}
+
+export function useCreatePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createPayment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+    },
+  });
+}
+
+export function useUpdatePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updatePayment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+    },
+  });
+}
+
+export function useDeletePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deletePayment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+    },
+  });
+}

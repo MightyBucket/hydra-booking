@@ -68,6 +68,24 @@ export const notes = pgTable("notes", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// Payments table
+export const payments = pgTable("payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  payerType: text("payer_type").notNull(), // 'student' or 'parent'
+  payerId: varchar("payer_id").notNull(), // references either student or parent id
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  paymentDate: timestamp("payment_date").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+// Payment-Lesson junction table (many-to-many relationship)
+export const paymentLessons = pgTable("payment_lessons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  paymentId: varchar("payment_id").notNull().references(() => payments.id, { onDelete: 'cascade' }),
+  lessonId: varchar("lesson_id").notNull().references(() => lessons.id, { onDelete: 'cascade' }),
+});
+
 // Relations
 export const parentsRelations = relations(parents, ({ many }) => ({
   students: many(students),
@@ -109,6 +127,21 @@ export const notesRelations = relations(notes, ({ one }) => ({
   student: one(students, {
     fields: [notes.studentId],
     references: [students.id],
+  }),
+}));
+
+export const paymentsRelations = relations(payments, ({ many }) => ({
+  paymentLessons: many(paymentLessons),
+}));
+
+export const paymentLessonsRelations = relations(paymentLessons, ({ one }) => ({
+  payment: one(payments, {
+    fields: [paymentLessons.paymentId],
+    references: [payments.id],
+  }),
+  lesson: one(lessons, {
+    fields: [paymentLessons.lessonId],
+    references: [lessons.id],
   }),
 }));
 
@@ -200,6 +233,26 @@ export type Note = typeof notes.$inferSelect;
 
 export type InsertParent = z.infer<typeof insertParentSchema>;
 export type Parent = typeof parents.$inferSelect;
+
+export const insertPaymentSchema = createInsertSchema(payments).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  payerType: z.enum(['student', 'parent']),
+  payerId: z.string().min(1, "Payer is required"),
+  amount: z.string().min(1, "Amount is required"),
+  paymentDate: z.coerce.date(),
+  notes: emptyStringToNull,
+});
+
+export const insertPaymentLessonSchema = createInsertSchema(paymentLessons).omit({
+  id: true,
+});
+
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type Payment = typeof payments.$inferSelect;
+export type InsertPaymentLesson = z.infer<typeof insertPaymentLessonSchema>;
+export type PaymentLesson = typeof paymentLessons.$inferSelect;
 
 // Legacy user schema for compatibility
 export const users = pgTable("users", {

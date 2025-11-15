@@ -5,6 +5,8 @@ import {
   comments,
   notes,
   parents,
+  payments,
+  paymentLessons,
   type Student,
   type InsertStudent,
   type Lesson,
@@ -18,7 +20,11 @@ import {
   type Note,
   type InsertNote,
   type Parent,
-  type InsertParent
+  type InsertParent,
+  type Payment,
+  type InsertPayment,
+  type PaymentLesson,
+  type InsertPaymentLesson
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -94,6 +100,14 @@ export interface IStorage {
   createParent(parent: InsertParent): Promise<Parent>;
   updateParent(id: string, parent: Partial<InsertParent>): Promise<Parent | undefined>;
   deleteParent(id: string): Promise<void>;
+
+  // Payment methods
+  getPayment(id: string): Promise<Payment | undefined>;
+  getPayments(): Promise<Payment[]>;
+  createPayment(payment: InsertPayment, lessonIds: string[]): Promise<Payment>;
+  updatePayment(id: string, payment: Partial<InsertPayment>, lessonIds?: string[]): Promise<Payment | undefined>;
+  deletePayment(id: string): Promise<void>;
+  getPaymentLessons(paymentId: string): Promise<string[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -345,6 +359,70 @@ export class DatabaseStorage implements IStorage {
 
   async deleteParent(id: string): Promise<void> {
     await db.delete(parents).where(eq(parents.id, id));
+  }
+
+  // Payment methods
+  async getPayment(id: string): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.id, id));
+    return payment || undefined;
+  }
+
+  async getPayments(): Promise<Payment[]> {
+    return await db.select().from(payments).orderBy(desc(payments.paymentDate));
+  }
+
+  async createPayment(payment: InsertPayment, lessonIds: string[]): Promise<Payment> {
+    const [createdPayment] = await db.insert(payments).values(payment).returning();
+    
+    // Create payment-lesson associations
+    if (lessonIds.length > 0) {
+      await db.insert(paymentLessons).values(
+        lessonIds.map(lessonId => ({
+          paymentId: createdPayment.id,
+          lessonId,
+        }))
+      );
+    }
+    
+    return createdPayment;
+  }
+
+  async updatePayment(id: string, payment: Partial<InsertPayment>, lessonIds?: string[]): Promise<Payment | undefined> {
+    const [updatedPayment] = await db
+      .update(payments)
+      .set(payment)
+      .where(eq(payments.id, id))
+      .returning();
+    
+    // Update payment-lesson associations if provided
+    if (lessonIds !== undefined) {
+      // Delete existing associations
+      await db.delete(paymentLessons).where(eq(paymentLessons.paymentId, id));
+      
+      // Create new associations
+      if (lessonIds.length > 0) {
+        await db.insert(paymentLessons).values(
+          lessonIds.map(lessonId => ({
+            paymentId: id,
+            lessonId,
+          }))
+        );
+      }
+    }
+    
+    return updatedPayment || undefined;
+  }
+
+  async deletePayment(id: string): Promise<void> {
+    await db.delete(payments).where(eq(payments.id, id));
+  }
+
+  async getPaymentLessons(paymentId: string): Promise<string[]> {
+    const links = await db
+      .select()
+      .from(paymentLessons)
+      .where(eq(paymentLessons.paymentId, paymentId));
+    return links.map(link => link.lessonId);
   }
 }
 

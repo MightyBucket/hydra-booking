@@ -37,6 +37,7 @@ import ScheduleView from "./components/ScheduleView";
 import { useStudents, useDeleteStudent, useUpdateStudent } from "./hooks/useStudents";
 import { useLessons } from "./hooks/useLessons";
 import { useParents } from "./hooks/useParents";
+import { usePayments, usePaymentLessons } from "./hooks/usePayments";
 import ParentForm from "./components/ParentForm";
 import { useParentForm } from "./hooks/useParentForm";
 import NoteForm from "./components/NoteForm";
@@ -761,6 +762,104 @@ function SchedulePage() {
   );
 }
 
+function PaymentsPage() {
+  // Set page title
+  useState(() => {
+    document.title = "Hydra - Payments";
+  });
+
+  const { data: paymentsData = [], isLoading: paymentsLoading } = usePayments();
+  const { data: studentsData = [] } = useStudents();
+  const { data: parentsData = [] } = useParents();
+  const { data: lessonsData = [] } = useLessons();
+
+  if (paymentsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading payments...
+      </div>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Payments ({paymentsData.length})</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {paymentsData.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No payments recorded yet.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-3">Date</th>
+                  <th className="text-left p-3">Payer</th>
+                  <th className="text-left p-3">Amount</th>
+                  <th className="text-left p-3">Lessons</th>
+                  <th className="text-left p-3">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paymentsData.map((payment: any) => {
+                  const payer = payment.payerType === 'student'
+                    ? studentsData.find((s: any) => s.id === payment.payerId)
+                    : parentsData.find((p: any) => p.id === payment.payerId);
+                  
+                  const payerName = payment.payerType === 'student'
+                    ? payer ? `${payer.firstName} ${payer.lastName || ''}` : 'Unknown Student'
+                    : payer ? payer.name : 'Unknown Parent';
+
+                  return (
+                    <tr key={payment.id} className="border-b hover:bg-muted/50">
+                      <td className="p-3">{format(new Date(payment.paymentDate), 'MMM d, yyyy')}</td>
+                      <td className="p-3">
+                        <div>{payerName}</div>
+                        <div className="text-xs text-muted-foreground capitalize">{payment.payerType}</div>
+                      </td>
+                      <td className="p-3">£{parseFloat(payment.amount).toFixed(2)}</td>
+                      <td className="p-3">
+                        <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} />
+                      </td>
+                      <td className="p-3 max-w-xs truncate">{payment.notes || '-'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function PaymentLessonsCell({ paymentId, lessonsData }: { paymentId: string; lessonsData: any[] }) {
+  const { data: lessonIds = [] } = usePaymentLessons(paymentId);
+  
+  const lessons = lessonIds
+    .map(id => lessonsData.find(l => l.id === id))
+    .filter(Boolean);
+
+  if (lessons.length === 0) {
+    return <span className="text-muted-foreground">-</span>;
+  }
+
+  return (
+    <div className="text-sm">
+      {lessons.map((lesson: any, i: number) => (
+        <div key={lesson.id}>
+          {i > 0 && ', '}
+          {format(new Date(lesson.dateTime), 'MMM d')} - {lesson.subject}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ParentsPage() {
   // Set page title
   useState(() => {
@@ -1365,6 +1464,7 @@ function Router() {
       <Route path="/schedule" component={SchedulePage} />
       <Route path="/students" component={StudentsPage} />
       <Route path="/parents" component={ParentsPage} />
+      <Route path="/payments" component={PaymentsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route path="/:studentId/calendar" component={StudentCalendarPage} />

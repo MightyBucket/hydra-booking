@@ -40,6 +40,7 @@ export default function Navigation({
     { path: '/schedule', label: 'Schedule', icon: GraduationCap, badge: lessonCount || undefined },
     { path: '/students', label: 'Students', icon: Users, badge: studentCount || undefined },
     { path: '/parents', label: 'Parents', icon: Users },
+    { path: '/payments', label: 'Payments', icon: BarChart3 },
     { path: '/analytics', label: 'Analytics', icon: BarChart3 },
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
