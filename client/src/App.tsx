@@ -37,8 +37,9 @@ import ScheduleView from "./components/ScheduleView";
 import { useStudents, useDeleteStudent, useUpdateStudent } from "./hooks/useStudents";
 import { useLessons } from "./hooks/useLessons";
 import { useParents } from "./hooks/useParents";
-import { usePayments, usePaymentLessons } from "./hooks/usePayments";
+import { usePayments, usePaymentLessons, useCreatePayment } from "./hooks/usePayments";
 import ParentForm from "./components/ParentForm";
+import PaymentForm from "./components/PaymentForm";
 import { useParentForm } from "./hooks/useParentForm";
 import NoteForm from "./components/NoteForm";
 import CommentFormDialog from "./components/CommentFormDialog";
@@ -772,6 +773,35 @@ function PaymentsPage() {
   const { data: studentsData = [] } = useStudents();
   const { data: parentsData = [] } = useParents();
   const { data: lessonsData = [] } = useLessons();
+  const createPaymentMutation = useCreatePayment();
+  const { toast } = useToast();
+  
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+
+  const handleAddPayment = () => {
+    setShowPaymentForm(true);
+  };
+
+  const handleClosePaymentForm = () => {
+    setShowPaymentForm(false);
+  };
+
+  const handlePaymentSubmit = async (data: any) => {
+    try {
+      await createPaymentMutation.mutateAsync(data);
+      toast({
+        title: "Success",
+        description: "Payment added successfully",
+      });
+      setShowPaymentForm(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add payment",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (paymentsLoading) {
     return (
@@ -782,9 +812,11 @@ function PaymentsPage() {
   }
 
   return (
+    <>
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Payments ({paymentsData.length})</CardTitle>
+        <Button onClick={handleAddPayment}>Add Payment</Button>
       </CardHeader>
       <CardContent>
         {paymentsData.length === 0 ? (
@@ -834,6 +866,22 @@ function PaymentsPage() {
         )}
       </CardContent>
     </Card>
+
+    <Dialog open={showPaymentForm} onOpenChange={handleClosePaymentForm}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add New Payment</DialogTitle>
+        </DialogHeader>
+        <PaymentForm
+          students={studentsData as any[]}
+          parents={parentsData as any[]}
+          lessons={lessonsData as any[]}
+          onSubmit={handlePaymentSubmit}
+          onCancel={handleClosePaymentForm}
+        />
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
