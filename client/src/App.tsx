@@ -794,7 +794,7 @@ function PaymentsPage() {
     setShowPaymentForm(true);
   };
 
-  const handleEditPayment = (payment: any) => {
+  const handleEditPayment = async (payment: any) => {
     setEditingPayment(payment);
     setShowPaymentForm(true);
   };
@@ -837,7 +837,14 @@ function PaymentsPage() {
     try {
       if (editingPayment) {
         // Update existing payment
-        await updatePaymentMutation.mutateAsync({ ...data, id: editingPayment.id });
+        const { id, lessonIds, ...paymentData } = data;
+        await updatePaymentMutation.mutateAsync({ 
+          id: editingPayment.id, 
+          data: {
+            ...paymentData,
+            lessonIds
+          }
+        });
         toast({
           title: "Success",
           description: "Payment updated successfully",

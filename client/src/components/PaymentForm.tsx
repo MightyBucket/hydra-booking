@@ -60,6 +60,21 @@ export default function PaymentForm({
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
 
+  // Load existing lesson IDs if editing
+  useEffect(() => {
+    if (initialData?.id) {
+      // Fetch the lesson IDs for this payment
+      fetch(`/api/payments/${initialData.id}/lessons`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+        },
+      })
+        .then(res => res.json())
+        .then(lessonIds => setSelectedLessonIds(lessonIds))
+        .catch(err => console.error('Error loading payment lessons:', err));
+    }
+  }, [initialData?.id]);
+
   // Filter lessons based on selected payer
   useEffect(() => {
     if (!formData.payerType || !formData.payerId) {
@@ -114,14 +129,21 @@ export default function PaymentForm({
       return;
     }
 
-    onSubmit({
+    const submitData: any = {
       payerType: formData.payerType,
       payerId: formData.payerId,
       amount: formData.amount,
       paymentDate: formData.paymentDate,
       notes: formData.notes,
       lessonIds: selectedLessonIds,
-    });
+    };
+
+    // Include the payment ID if we're editing
+    if (initialData?.id) {
+      submitData.id = initialData.id;
+    }
+
+    onSubmit(submitData);
   };
 
   const toggleLesson = (lessonId: string) => {
