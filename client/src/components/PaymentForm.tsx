@@ -62,8 +62,10 @@ export default function PaymentForm({
     }
 
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
     const fourWeeksFromNow = new Date();
     fourWeeksFromNow.setDate(today.getDate() + 28);
+    fourWeeksFromNow.setHours(23, 59, 59, 999); // End of day
 
     let filtered: any[] = [];
     
@@ -81,7 +83,6 @@ export default function PaymentForm({
     filtered = filtered.filter(lesson => {
       const lessonDate = new Date(lesson.dateTime);
       return lesson.paymentStatus === 'pending' && 
-             lessonDate >= today && 
              lessonDate <= fourWeeksFromNow;
     });
 
