@@ -18,7 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth } from "date-fns";
-import { CalendarIcon, Calendar as CalendarViewIcon } from "lucide-react";
+import { CalendarIcon, Calendar as CalendarViewIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -56,7 +56,7 @@ export default function PaymentForm({
   const [showPaidLessons, setShowPaidLessons] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
 
   // Filter lessons based on selected payer
   useEffect(() => {
@@ -142,6 +142,18 @@ export default function PaymentForm({
 
   const handleCalendarDateClick = (date: Date) => {
     setSelectedCalendarDate(date);
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setMonth(prev.getMonth() + 1);
+      }
+      return newDate;
+    });
   };
 
   const allPayers = [
@@ -322,8 +334,26 @@ export default function PaymentForm({
 
             <TabsContent value="calendar" className="mt-2">
               <div className="space-y-2">
-                <div className="text-sm font-medium text-center mb-2">
-                  {format(currentDate, "MMMM yyyy")}
+                <div className="flex items-center justify-between mb-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigateMonth('prev')}
+                    className="h-8 w-8"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="text-sm font-medium">
+                    {format(currentDate, "MMMM yyyy")}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigateMonth('next')}
+                    className="h-8 w-8"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
                 
                 <div className="grid grid-cols-7 gap-0.5 mb-2">
