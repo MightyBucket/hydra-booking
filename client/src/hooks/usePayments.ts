@@ -110,8 +110,8 @@ export function useCreatePayment() {
   return useMutation({
     mutationFn: createPayment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
-      queryClient.invalidateQueries({ queryKey: ["lessons"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
     },
   });
 }
@@ -121,8 +121,8 @@ export function useDeletePayment() {
   return useMutation({
     mutationFn: deletePayment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
-      queryClient.invalidateQueries({ queryKey: ["lessons"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
     },
   });
 }
@@ -133,8 +133,8 @@ export function useUpdatePayment() {
     mutationFn: ({ id, data }: { id: string; data: Partial<InsertPayment> & { lessonIds?: string[] } }) => 
       updatePayment(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
-      queryClient.invalidateQueries({ queryKey: ["lessons"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
     },
   });
 }
