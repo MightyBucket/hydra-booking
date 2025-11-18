@@ -372,20 +372,31 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(payments).orderBy(desc(payments.paymentDate));
   }
 
-  async createPayment(payment: InsertPayment, lessonIds: string[]): Promise<Payment> {
-    const [createdPayment] = await db.insert(payments).values(payment).returning();
+  async createPayment(data: InsertPayment, lessonIds: string[] = []): Promise<Payment> {
+    const [payment] = await db
+      .insert(payments)
+      .values(data)
+      .returning();
 
-    // Create payment-lesson associations
+    // Create payment-lesson associations and update lesson status to 'paid'
     if (lessonIds.length > 0) {
       await db.insert(paymentLessons).values(
         lessonIds.map(lessonId => ({
-          paymentId: createdPayment.id,
+          paymentId: payment.id,
           lessonId,
         }))
       );
+
+      // Update each lesson's payment status to 'paid'
+      for (const lessonId of lessonIds) {
+        await db
+          .update(lessons)
+          .set({ paymentStatus: 'paid' })
+          .where(eq(lessons.id, lessonId));
+      }
     }
 
-    return createdPayment;
+    return payment;
   }
 
   async updatePayment(id: string, payment: Partial<InsertPayment>, lessonIds?: string[]): Promise<Payment | undefined> {
