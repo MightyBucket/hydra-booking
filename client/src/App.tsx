@@ -838,8 +838,8 @@ function PaymentsPage() {
       if (editingPayment) {
         // Update existing payment
         const { id, lessonIds, ...paymentData } = data;
-        await updatePaymentMutation.mutateAsync({ 
-          id: editingPayment.id, 
+        await updatePaymentMutation.mutateAsync({
+          id: editingPayment.id,
           data: {
             ...paymentData,
             lessonIds
@@ -903,20 +903,52 @@ function PaymentsPage() {
               </thead>
               <tbody>
                 {paymentsData.map((payment: any) => {
-                  const payer = payment.payerType === 'student'
-                    ? studentsData.find((s: any) => s.id === payment.payerId)
-                    : parentsData.find((p: any) => p.id === payment.payerId);
-
                   const payerName = payment.payerType === 'student'
-                    ? payer ? `${payer.firstName} ${payer.lastName || ''}` : 'Unknown Student'
-                    : payer ? payer.name : 'Unknown Parent';
+                    ? (() => {
+                        const student = studentsData.find(s => s.id === payment.payerId);
+                        return student ? `${student.firstName} ${student.lastName || ''}` : 'Unknown';
+                      })()
+                    : (() => {
+                        const parent = parentsData.find(p => p.id === payment.payerId);
+                        return parent ? parent.name : 'Unknown';
+                      })();
+
+                  // Get student colors for the payer
+                  const payerColors = payment.payerType === 'student'
+                    ? (() => {
+                        const student = studentsData.find(s => s.id === payment.payerId);
+                        return student ? [student.defaultColor || '#3b82f6'] : [];
+                      })()
+                    : (() => {
+                        const parent = parentsData.find(p => p.id === payment.payerId);
+                        if (!parent) return [];
+                        const parentStudents = studentsData.filter(s => s.parentId === parent.id);
+                        return parentStudents.map(s => s.defaultColor || '#3b82f6');
+                      })();
 
                   return (
                     <tr key={payment.id} className="border-b hover:bg-muted/50">
                       <td className="p-3">{format(new Date(payment.paymentDate), 'MMM d, yyyy')}</td>
                       <td className="p-3">
-                        <div>{payerName}</div>
-                        <div className="text-xs text-muted-foreground capitalize">{payment.payerType}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center">
+                            {payerColors.map((color, index) => (
+                              <div
+                                key={index}
+                                className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                                style={{
+                                  backgroundColor: color,
+                                  marginLeft: index > 0 ? '-8px' : '0',
+                                  zIndex: payerColors.length - index,
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <div>
+                            <div>{payerName}</div>
+                            <div className="text-xs text-muted-foreground capitalize">{payment.payerType}</div>
+                          </div>
+                        </div>
                       </td>
                       <td className="p-3">£{parseFloat(payment.amount).toFixed(2)}</td>
                       <td className="p-3">
