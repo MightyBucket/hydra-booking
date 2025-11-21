@@ -147,11 +147,26 @@ export default function PaymentForm({
   };
 
   const toggleLesson = (lessonId: string) => {
-    setSelectedLessonIds(prev => 
-      prev.includes(lessonId)
+    setSelectedLessonIds(prev => {
+      const newIds = prev.includes(lessonId)
         ? prev.filter(id => id !== lessonId)
-        : [...prev, lessonId]
-    );
+        : [...prev, lessonId];
+      
+      // Calculate total amount for selected lessons
+      const total = newIds.reduce((sum, id) => {
+        const lesson = filteredLessons.find(l => l.id === id);
+        if (lesson) {
+          const lessonPrice = (parseFloat(lesson.pricePerHour) * lesson.duration) / 60;
+          return sum + lessonPrice;
+        }
+        return sum;
+      }, 0);
+      
+      // Update the amount field
+      setFormData(prev => ({ ...prev, amount: total.toFixed(2) }));
+      
+      return newIds;
+    });
   };
 
   const getLessonsForDate = (date: Date) => {
