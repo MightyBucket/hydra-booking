@@ -59,6 +59,7 @@ export default function PaymentForm({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
+  const [hasChangedPaymentDate, setHasChangedPaymentDate] = useState(!!initialData?.paymentDate);
 
   // Load existing lesson IDs if editing
   useEffect(() => {
@@ -161,6 +162,19 @@ export default function PaymentForm({
         }
         return sum;
       }, 0);
+      
+      // If this is the first lesson being selected and payment date hasn't been changed
+      if (newIds.length === 1 && !hasChangedPaymentDate) {
+        const firstLesson = filteredLessons.find(l => l.id === newIds[0]);
+        if (firstLesson) {
+          setFormData(prev => ({ 
+            ...prev, 
+            amount: total.toFixed(2),
+            paymentDate: new Date(firstLesson.dateTime)
+          }));
+          return newIds;
+        }
+      }
       
       // Update the amount field
       setFormData(prev => ({ ...prev, amount: total.toFixed(2) }));
@@ -296,12 +310,13 @@ export default function PaymentForm({
             <Calendar
               mode="single"
               selected={formData.paymentDate}
-              onSelect={(date) =>
+              onSelect={(date) => {
                 setFormData((prev) => ({
                   ...prev,
                   paymentDate: date || new Date(),
-                }))
-              }
+                }));
+                setHasChangedPaymentDate(true);
+              }}
               initialFocus
             />
           </PopoverContent>
