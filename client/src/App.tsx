@@ -788,6 +788,12 @@ function PaymentsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<any | null>(null);
 
+  // Filter and grouping state
+  const [selectedPayerIds, setSelectedPayerIds] = useState<string[]>([]);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [groupBy, setGroupBy] = useState<'none' | 'month' | 'payer'>('none');
+
 
   const handleAddPayment = () => {
     setEditingPayment(null); // Ensure we're in create mode
@@ -876,33 +882,235 @@ function PaymentsPage() {
     );
   }
 
+  // Filter payments
+  let filteredPayments = paymentsData;
+
+  // Filter by payer
+  if (selectedPayerIds.length > 0) {
+    filteredPayments = filteredPayments.filter(payment => 
+      selectedPayerIds.includes(payment.payerId)
+    );
+  }
+
+  // Filter by date range
+  if (dateFrom) {
+    filteredPayments = filteredPayments.filter(payment => 
+      new Date(payment.paymentDate) >= dateFrom
+    );
+  }
+  if (dateTo) {
+    filteredPayments = filteredPayments.filter(payment => 
+      new Date(payment.paymentDate) <= dateTo
+    );
+  }
+
+  // Group payments
+  const groupedPayments: { [key: string]: any[] } = {};
+  
+  if (groupBy === 'month') {
+    filteredPayments.forEach(payment => {
+      const monthKey = format(new Date(payment.paymentDate), 'MMMM yyyy');
+      if (!groupedPayments[monthKey]) {
+        groupedPayments[monthKey] = [];
+      }
+      groupedPayments[monthKey].push(payment);
+    });
+  } else if (groupBy === 'payer') {
+    filteredPayments.forEach(payment => {
+      const payerName = payment.payerType === 'student'
+        ? (() => {
+            const student = studentsData.find(s => s.id === payment.payerId);
+            return student ? `${student.firstName} ${student.lastName || ''}` : 'Unknown';
+          })()
+        : (() => {
+            const parent = parentsData.find(p => p.id === payment.payerId);
+            return parent ? parent.name : 'Unknown';
+          })();
+      
+      if (!groupedPayments[payerName]) {
+        groupedPayments[payerName] = [];
+      }
+      groupedPayments[payerName].push(payment);
+    });
+  } else {
+    groupedPayments['All Payments'] = filteredPayments;
+  }
+
+  // Sort groups
+  const sortedGroupKeys = Object.keys(groupedPayments).sort((a, b) => {
+    if (groupBy === 'month') {
+      // Sort months chronologically (most recent first)
+      const dateA = new Date(a);
+      const dateB = new Date(b);
+      return dateB.getTime() - dateA.getTime();
+    }
+    return a.localeCompare(b);
+  });
+
+  // All available payers for filter
+  const allPayers = [
+    ...studentsData.map((s: any) => ({
+      id: s.id,
+      type: 'student' as const,
+      name: `${s.firstName} ${s.lastName || ''}`,
+    })),
+    ...parentsData.map((p: any) => ({
+      id: p.id,
+      type: 'parent' as const,
+      name: p.name,
+    })),
+  ];
+
+  const togglePayerFilter = (payerId: string) => {
+    setSelectedPayerIds(prev =>
+      prev.includes(payerId)
+        ? prev.filter(id => id !== payerId)
+        : [...prev, payerId]
+    );
+  };
+
   return (
     <>
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Payments ({paymentsData.length})</CardTitle>
+        <CardTitle>Payments ({filteredPayments.length})</CardTitle>
         <Button onClick={handleAddPayment}>Add Payment</Button>
       </CardHeader>
-      <CardContent>
-        {paymentsData.length === 0 ? (
+      <CardContent className="space-y-4">
+        {/* Filters and Grouping */}
+        <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Filter by Payer */}
+            <div className="space-y-2">
+              <Label>Filter by Payer</Label>
+              <div className="border rounded-md p-2 bg-background max-h-48 overflow-y-auto space-y-1">
+                {allPayers.map(payer => (
+                  <div
+                    key={payer.id}
+                    className="flex items-center gap-2 p-2 hover:bg-accent rounded cursor-pointer"
+                    onClick={() => togglePayerFilter(payer.id)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedPayerIds.includes(payer.id)}
+                      onChange={() => togglePayerFilter(payer.id)}
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                    <span className="text-sm">{payer.name}</span>
+                    <span className="text-xs text-muted-foreground capitalize">({payer.type})</span>
+                  </div>
+                ))}
+              </div>
+              {selectedPayerIds.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedPayerIds([])}
+                  className="w-full"
+                >
+                  Clear ({selectedPayerIds.length})
+                </Button>
+              )}
+            </div>
+
+            {/* Filter by Date Range */}
+            <div className="space-y-2">
+              <Label>Date From</Label>
+              <Input
+                type="date"
+                value={dateFrom ? format(dateFrom, 'yyyy-MM-dd') : ''}
+                onChange={(e) => setDateFrom(e.target.value ? new Date(e.target.value) : undefined)}
+              />
+              <Label>Date To</Label>
+              <Input
+                type="date"
+                value={dateTo ? format(dateTo, 'yyyy-MM-dd') : ''}
+                onChange={(e) => setDateTo(e.target.value ? new Date(e.target.value) : undefined)}
+              />
+              {(dateFrom || dateTo) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setDateFrom(undefined);
+                    setDateTo(undefined);
+                  }}
+                  className="w-full"
+                >
+                  Clear Dates
+                </Button>
+              )}
+            </div>
+
+            {/* Group By */}
+            <div className="space-y-2">
+              <Label>Group By</Label>
+              <div className="space-y-2">
+                <Button
+                  variant={groupBy === 'none' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setGroupBy('none')}
+                  className="w-full"
+                >
+                  No Grouping
+                </Button>
+                <Button
+                  variant={groupBy === 'month' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setGroupBy('month')}
+                  className="w-full"
+                >
+                  By Month
+                </Button>
+                <Button
+                  variant={groupBy === 'payer' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setGroupBy('payer')}
+                  className="w-full"
+                >
+                  By Payer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Payments Table */}
+        {filteredPayments.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <p>No payments recorded yet.</p>
+            <p>No payments found matching the current filters.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3">Date</th>
-                  <th className="text-left p-3">Payer</th>
-                  <th className="text-left p-3">Amount</th>
-                  <th className="text-left p-3">Lessons</th>
-                  <th className="text-left p-3">Notes</th>
-                  <th className="text-left p-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paymentsData.map((payment: any) => {
+          <div className="space-y-6">
+            {sortedGroupKeys.map(groupKey => {
+              const groupPayments = groupedPayments[groupKey];
+              const totalAmount = groupPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+              return (
+                <div key={groupKey} className="space-y-3">
+                  {groupBy !== 'none' && (
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">{groupKey}</h3>
+                      <div className="text-sm text-muted-foreground">
+                        {groupPayments.length} payment{groupPayments.length !== 1 ? 's' : ''} • £{totalAmount.toFixed(2)}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-3">Date</th>
+                          <th className="text-left p-3">Payer</th>
+                          <th className="text-left p-3">Amount</th>
+                          <th className="text-left p-3">Lessons</th>
+                          <th className="text-left p-3">Notes</th>
+                          <th className="text-left p-3">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {groupPayments.map((payment: any) => {
                   const payerName = payment.payerType === 'student'
                     ? (() => {
                         const student = studentsData.find(s => s.id === payment.payerId);
@@ -968,6 +1176,10 @@ function PaymentsPage() {
                 })}
               </tbody>
             </table>
+          </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </CardContent>
