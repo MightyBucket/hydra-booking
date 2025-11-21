@@ -68,6 +68,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 /**
  * CalendarPage: Main calendar view showing lessons in a month/week grid
@@ -800,7 +805,7 @@ function PaymentsPage() {
   const [selectedPayerIds, setSelectedPayerIds] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-  const [groupBy, setGroupBy] = useState<'none' | 'month' | 'payer'>('none');
+  const [groupBy, setGroupBy] = useState<'none' | 'month' | 'payer'>('month');
 
 
   const handleAddPayment = () => {
@@ -1015,7 +1020,7 @@ function PaymentsPage() {
                   
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead>
+                      <thead className="hidden md:table-header-group">
                         <tr className="border-b">
                           <th className="text-left p-3">Date</th>
                           <th className="text-left p-3">Payer</th>
@@ -1050,10 +1055,15 @@ function PaymentsPage() {
                         return parentStudents.map(s => s.defaultColor || '#3b82f6');
                       })();
 
+                  const amount = parseFloat(payment.amount);
+                  const hasDecimals = amount % 1 !== 0;
+                  const formattedAmount = hasDecimals ? `£${amount.toFixed(2)}` : `£${Math.floor(amount)}`;
+
                   return (
                     <tr key={payment.id} className="border-b hover:bg-muted/50">
-                      <td className="p-3">{format(new Date(payment.paymentDate), 'MMM d, yyyy')}</td>
-                      <td className="p-3">
+                      {/* Desktop View */}
+                      <td className="p-3 hidden md:table-cell">{format(new Date(payment.paymentDate), 'MMM d, yyyy')}</td>
+                      <td className="p-3 hidden md:table-cell">
                         <div className="flex items-center gap-2">
                           <div className="flex items-center">
                             {payerColors.map((color, index) => (
@@ -1074,18 +1084,60 @@ function PaymentsPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="p-3">£{parseFloat(payment.amount).toFixed(2)}</td>
-                      <td className="p-3">
-                        <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} />
+                      <td className="p-3 hidden md:table-cell">£{parseFloat(payment.amount).toFixed(2)}</td>
+                      <td className="p-3 hidden md:table-cell">
+                        <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={false} />
                       </td>
-                      <td className="p-3 max-w-xs truncate">{payment.notes || '-'}</td>
-                      <td className="p-3 flex gap-2">
+                      <td className="p-3 max-w-xs truncate hidden md:table-cell">{payment.notes || '-'}</td>
+                      <td className="p-3 flex gap-2 hidden md:table-cell">
                         <Button variant="ghost" size="sm" onClick={() => handleEditPayment(payment)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDeletePayment(payment)} className="text-destructive hover:text-destructive">
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                      </td>
+
+                      {/* Mobile View - Compact */}
+                      <td className="p-2 md:hidden text-sm">{format(new Date(payment.paymentDate), 'dd/MM')}</td>
+                      <td className="p-2 md:hidden">
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <button className="flex items-center">
+                              {payerColors.map((color, index) => (
+                                <div
+                                  key={index}
+                                  className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
+                                  style={{
+                                    backgroundColor: color,
+                                    marginLeft: index > 0 ? '-10px' : '0',
+                                    zIndex: payerColors.length - index,
+                                  }}
+                                />
+                              ))}
+                            </button>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-auto">
+                            <div className="space-y-1">
+                              <p className="font-medium">{payerName}</p>
+                              <p className="text-xs text-muted-foreground capitalize">{payment.payerType}</p>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
+                      </td>
+                      <td className="p-2 md:hidden text-sm font-medium">{formattedAmount}</td>
+                      <td className="p-2 md:hidden text-xs text-muted-foreground">
+                        <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={true} />
+                      </td>
+                      <td className="p-2 md:hidden">
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditPayment(payment)} className="h-7 w-7 p-0">
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeletePayment(payment)} className="h-7 w-7 p-0 text-destructive hover:text-destructive">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1253,7 +1305,7 @@ function PaymentsPage() {
   );
 }
 
-function PaymentLessonsCell({ paymentId, lessonsData }: { paymentId: string; lessonsData: any[] }) {
+function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false }: { paymentId: string; lessonsData: any[]; isMobile?: boolean }) {
   const { data: lessonIds = [] } = usePaymentLessons(paymentId);
 
   const lessons = lessonIds
@@ -1262,6 +1314,19 @@ function PaymentLessonsCell({ paymentId, lessonsData }: { paymentId: string; les
 
   if (lessons.length === 0) {
     return <span className="text-muted-foreground">-</span>;
+  }
+
+  if (isMobile) {
+    return (
+      <div className="text-xs">
+        {lessons.map((lesson: any, i: number) => (
+          <span key={lesson.id}>
+            {i > 0 && ', '}
+            {format(new Date(lesson.dateTime), 'dd/MM')}
+          </span>
+        ))}
+      </div>
+    );
   }
 
   return (
