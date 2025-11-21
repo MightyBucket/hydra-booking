@@ -58,9 +58,16 @@ import { useStudentForm } from "./hooks/useStudentForm";
 import { useStudentNotes } from "./hooks/useStudentNotes";
 import { useLessonData } from "./hooks/useLessonData";
 import { useDialogState } from "./hooks/useDialogState";
-import { Edit, Trash2, Plus } from "lucide-react";
+import { Edit, Trash2, Plus, Filter } from "lucide-react";
 import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
 import { handleJoinLessonLink, calculateStudentStats } from "@/utils/lessonHelpers";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 /**
  * CalendarPage: Main calendar view showing lessons in a month/week grid
@@ -787,6 +794,7 @@ function PaymentsPage() {
   const [editingPayment, setEditingPayment] = useState<any | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<any | null>(null);
+  const [showFilterSidebar, setShowFilterSidebar] = useState(false);
 
   // Filter and grouping state
   const [selectedPayerIds, setSelectedPayerIds] = useState<string[]>([]);
@@ -974,106 +982,14 @@ function PaymentsPage() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Payments ({filteredPayments.length})</CardTitle>
-        <Button onClick={handleAddPayment}>Add Payment</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => setShowFilterSidebar(true)}>
+            <Filter className="h-4 w-4" />
+          </Button>
+          <Button onClick={handleAddPayment}>Add Payment</Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Filters and Grouping */}
-        <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Filter by Payer */}
-            <div className="space-y-2">
-              <Label>Filter by Payer</Label>
-              <div className="border rounded-md p-2 bg-background max-h-48 overflow-y-auto space-y-1">
-                {allPayers.map(payer => (
-                  <div
-                    key={payer.id}
-                    className="flex items-center gap-2 p-2 hover:bg-accent rounded cursor-pointer"
-                    onClick={() => togglePayerFilter(payer.id)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedPayerIds.includes(payer.id)}
-                      onChange={() => togglePayerFilter(payer.id)}
-                      className="h-4 w-4 cursor-pointer"
-                    />
-                    <span className="text-sm">{payer.name}</span>
-                    <span className="text-xs text-muted-foreground capitalize">({payer.type})</span>
-                  </div>
-                ))}
-              </div>
-              {selectedPayerIds.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedPayerIds([])}
-                  className="w-full"
-                >
-                  Clear ({selectedPayerIds.length})
-                </Button>
-              )}
-            </div>
-
-            {/* Filter by Date Range */}
-            <div className="space-y-2">
-              <Label>Date From</Label>
-              <Input
-                type="date"
-                value={dateFrom ? format(dateFrom, 'yyyy-MM-dd') : ''}
-                onChange={(e) => setDateFrom(e.target.value ? new Date(e.target.value) : undefined)}
-              />
-              <Label>Date To</Label>
-              <Input
-                type="date"
-                value={dateTo ? format(dateTo, 'yyyy-MM-dd') : ''}
-                onChange={(e) => setDateTo(e.target.value ? new Date(e.target.value) : undefined)}
-              />
-              {(dateFrom || dateTo) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setDateFrom(undefined);
-                    setDateTo(undefined);
-                  }}
-                  className="w-full"
-                >
-                  Clear Dates
-                </Button>
-              )}
-            </div>
-
-            {/* Group By */}
-            <div className="space-y-2">
-              <Label>Group By</Label>
-              <div className="space-y-2">
-                <Button
-                  variant={groupBy === 'none' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setGroupBy('none')}
-                  className="w-full"
-                >
-                  No Grouping
-                </Button>
-                <Button
-                  variant={groupBy === 'month' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setGroupBy('month')}
-                  className="w-full"
-                >
-                  By Month
-                </Button>
-                <Button
-                  variant={groupBy === 'payer' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setGroupBy('payer')}
-                  className="w-full"
-                >
-                  By Payer
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Payments Table */}
         {filteredPayments.length === 0 ? (
@@ -1226,6 +1142,113 @@ function PaymentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Filter Sidebar */}
+      <Sheet open={showFilterSidebar} onOpenChange={setShowFilterSidebar}>
+        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Filter & Group Payments</SheetTitle>
+            <SheetDescription>
+              Filter payments by payer, date range, or group them by different criteria.
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="space-y-6 mt-6">
+            {/* Filter by Payer */}
+            <div className="space-y-2">
+              <Label>Filter by Payer</Label>
+              <div className="border rounded-md p-2 bg-background max-h-64 overflow-y-auto space-y-1">
+                {allPayers.map(payer => (
+                  <div
+                    key={payer.id}
+                    className="flex items-center gap-2 p-2 hover:bg-accent rounded cursor-pointer"
+                    onClick={() => togglePayerFilter(payer.id)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedPayerIds.includes(payer.id)}
+                      onChange={() => togglePayerFilter(payer.id)}
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                    <span className="text-sm">{payer.name}</span>
+                    <span className="text-xs text-muted-foreground capitalize">({payer.type})</span>
+                  </div>
+                ))}
+              </div>
+              {selectedPayerIds.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedPayerIds([])}
+                  className="w-full"
+                >
+                  Clear ({selectedPayerIds.length})
+                </Button>
+              )}
+            </div>
+
+            {/* Filter by Date Range */}
+            <div className="space-y-2">
+              <Label>Date From</Label>
+              <Input
+                type="date"
+                value={dateFrom ? format(dateFrom, 'yyyy-MM-dd') : ''}
+                onChange={(e) => setDateFrom(e.target.value ? new Date(e.target.value) : undefined)}
+              />
+              <Label className="mt-4 block">Date To</Label>
+              <Input
+                type="date"
+                value={dateTo ? format(dateTo, 'yyyy-MM-dd') : ''}
+                onChange={(e) => setDateTo(e.target.value ? new Date(e.target.value) : undefined)}
+              />
+              {(dateFrom || dateTo) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setDateFrom(undefined);
+                    setDateTo(undefined);
+                  }}
+                  className="w-full mt-2"
+                >
+                  Clear Dates
+                </Button>
+              )}
+            </div>
+
+            {/* Group By */}
+            <div className="space-y-2">
+              <Label>Group By</Label>
+              <div className="space-y-2">
+                <Button
+                  variant={groupBy === 'none' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setGroupBy('none')}
+                  className="w-full"
+                >
+                  No Grouping
+                </Button>
+                <Button
+                  variant={groupBy === 'month' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setGroupBy('month')}
+                  className="w-full"
+                >
+                  By Month
+                </Button>
+                <Button
+                  variant={groupBy === 'payer' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setGroupBy('payer')}
+                  className="w-full"
+                >
+                  By Payer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
