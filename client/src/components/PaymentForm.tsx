@@ -183,9 +183,9 @@ export default function PaymentForm({
     // Filter to only unpaid lessons
     const unpaidLessons = filteredLessons.filter(l => l.paymentStatus === 'pending');
     
-    // Sort by date descending (most recent first)
+    // Sort by date ascending (oldest first)
     const sortedLessons = [...unpaidLessons].sort((a, b) => 
-      new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
+      new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
     );
 
     let runningTotal = 0;
