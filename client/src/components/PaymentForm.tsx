@@ -84,12 +84,6 @@ export default function PaymentForm({
       return;
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Start of today
-    const fourWeeksFromNow = new Date();
-    fourWeeksFromNow.setDate(today.getDate() + 28);
-    fourWeeksFromNow.setHours(23, 59, 59, 999); // End of day
-
     let filtered: any[] = [];
     
     if (formData.payerType === 'student') {
@@ -102,17 +96,14 @@ export default function PaymentForm({
       filtered = lessons.filter(lesson => studentIds.includes(lesson.studentId));
     }
 
-    // Filter lessons based on payment status and date range
+    // Filter lessons based on payment status
     filtered = filtered.filter(lesson => {
-      const lessonDate = new Date(lesson.dateTime);
-      const withinDateRange = lessonDate <= fourWeeksFromNow;
-      
       if (showPaidLessons) {
-        // Show all lessons within date range
-        return withinDateRange;
+        // Show all lessons
+        return true;
       } else {
-        // Show only pending lessons within date range
-        return lesson.paymentStatus === 'pending' && withinDateRange;
+        // Show only pending lessons
+        return lesson.paymentStatus === 'pending';
       }
     });
 
@@ -181,6 +172,41 @@ export default function PaymentForm({
       
       return newIds;
     });
+  };
+
+  const autoSelectLessonsByAmount = () => {
+    const targetAmount = parseFloat(formData.amount);
+    if (isNaN(targetAmount) || targetAmount <= 0) {
+      return;
+    }
+
+    // Filter to only unpaid lessons
+    const unpaidLessons = filteredLessons.filter(l => l.paymentStatus === 'pending');
+    
+    // Sort by date descending (most recent first)
+    const sortedLessons = [...unpaidLessons].sort((a, b) => 
+      new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
+    );
+
+    let runningTotal = 0;
+    const selectedIds: string[] = [];
+
+    // Select lessons until we reach or exceed the target amount
+    for (const lesson of sortedLessons) {
+      const lessonPrice = (parseFloat(lesson.pricePerHour) * lesson.duration) / 60;
+      
+      if (runningTotal + lessonPrice <= targetAmount + 0.01) { // Allow small rounding difference
+        selectedIds.push(lesson.id);
+        runningTotal += lessonPrice;
+      }
+
+      // Stop if we've matched the amount
+      if (Math.abs(runningTotal - targetAmount) < 0.01) {
+        break;
+      }
+    }
+
+    setSelectedLessonIds(selectedIds);
   };
 
   const getLessonsForDate = (date: Date) => {
@@ -327,17 +353,29 @@ export default function PaymentForm({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Lessons Paid For</Label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="show-paid-lessons"
-                checked={showPaidLessons}
-                onChange={(e) => setShowPaidLessons(e.target.checked)}
-                className="h-4 w-4 cursor-pointer"
-              />
-              <Label htmlFor="show-paid-lessons" className="cursor-pointer text-sm font-normal">
-                Show paid lessons
-              </Label>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={autoSelectLessonsByAmount}
+                disabled={!formData.amount || parseFloat(formData.amount) <= 0}
+                className="h-8 text-xs"
+              >
+                Auto-select by amount
+              </Button>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="show-paid-lessons"
+                  checked={showPaidLessons}
+                  onChange={(e) => setShowPaidLessons(e.target.checked)}
+                  className="h-4 w-4 cursor-pointer"
+                />
+                <Label htmlFor="show-paid-lessons" className="cursor-pointer text-sm font-normal">
+                  Show paid lessons
+                </Label>
+              </div>
             </div>
           </div>
 
@@ -442,12 +480,15 @@ export default function PaymentForm({
                         <div className="space-y-[2px]">
                           {dayLessons.slice(0, 2).map((lesson) => {
                             const student = students.find(s => s.id === lesson.studentId);
+                            const isLessonSelected = selectedLessonIds.includes(lesson.id);
                             return (
                               <div
                                 key={lesson.id}
                                 className="h-1 rounded-full"
                                 style={{
-                                  backgroundColor: student?.defaultColor || "#3b82f6",
+                                  backgroundColor: isLessonSelected 
+                                    ? (student?.defaultColor || "#3b82f6")
+                                    : "#9ca3af",
                                 }}
                               />
                             );
