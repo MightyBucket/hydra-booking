@@ -33,8 +33,8 @@ export default function Navigation({
 
   // Define navigation items based on view type (student vs teacher)
   const navItems = isStudentView && studentId ? [
-    { path: `/${studentId}/calendar`, label: 'Calendar', icon: Calendar },
-    { path: `/${studentId}/schedule`, label: 'Schedule', icon: GraduationCap },
+    { path: `/calendar/${studentId}`, label: 'Calendar', icon: Calendar },
+    { path: `/schedule/${studentId}`, label: 'Schedule', icon: GraduationCap },
   ] : [
     { path: '/', label: 'Calendar', icon: Calendar, badge: lessonCount || undefined },
     { path: '/schedule', label: 'Schedule', icon: GraduationCap, badge: lessonCount || undefined },
