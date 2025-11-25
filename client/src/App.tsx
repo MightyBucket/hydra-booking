@@ -2106,7 +2106,9 @@ function StudentPaymentsView() {
   const { data: studentsData = [] } = useStudents();
   const { data: parentsData = [] } = useParents();
   const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(studentId);
-  const lessonsData = lessonsResponse?.lessons || [];
+  
+  // Extract lessons array from response
+  const lessonsData = Array.isArray(lessonsResponse?.lessons) ? lessonsResponse.lessons : [];
 
   // State for grouping
   const [groupBy, setGroupBy] = useState<'none' | 'month'>('month');
@@ -2253,7 +2255,7 @@ function StudentPaymentsView() {
                                     <div className="font-medium">{formattedDate}</div>
                                     <div className="text-sm font-semibold">{formattedAmount}</div>
                                     <div className="text-xs text-muted-foreground">
-                                      <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={true} studentId={studentId} />
+                                      <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData as any[]} isMobile={true} studentId={studentId} />
                                     </div>
                                     {payment.notes && (
                                       <div className="text-xs text-muted-foreground">{payment.notes}</div>
@@ -2265,7 +2267,7 @@ function StudentPaymentsView() {
                                 <td className="hidden md:table-cell p-3">{formattedDate}</td>
                                 <td className="hidden md:table-cell p-3 font-semibold">{formattedAmount}</td>
                                 <td className="hidden md:table-cell p-3">
-                                  <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={false} studentId={studentId} />
+                                  <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData as any[]} isMobile={false} studentId={studentId} />
                                 </td>
                                 <td className="hidden md:table-cell p-3 text-sm text-muted-foreground max-w-xs truncate">
                                   {payment.notes || '-'}
