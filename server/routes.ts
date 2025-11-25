@@ -655,6 +655,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get payments for a specific student by their 6-digit studentId (public for student view)
+  app.get("/api/student/:studentId/payments", async (req, res) => {
+    try {
+      // Find student by their 6-digit studentId
+      const students = await storage.getStudents();
+      const student = students.find((s: any) => s.studentId === req.params.studentId);
+
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+
+      // Get all payments
+      const allPayments = await storage.getPayments();
+
+      // Filter payments where the payer is this student or their parent
+      const studentPayments = allPayments.filter(payment => {
+        if (payment.payerType === 'student' && payment.payerId === student.id) {
+          return true;
+        }
+        if (payment.payerType === 'parent' && student.parentId && payment.payerId === student.parentId) {
+          return true;
+        }
+        return false;
+      });
+
+      res.json(studentPayments);
+    } catch (error) {
+      console.error('Error fetching student payments:', error);
+      res.status(500).json({ error: "Failed to fetch student payments" });
+    }
+  });
+
   app.get("/api/payments/:id", requireAuth, async (req, res) => {
     try {
       const payment = await storage.getPayment(req.params.id);

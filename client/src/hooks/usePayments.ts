@@ -18,6 +18,16 @@ async function fetchPayments(): Promise<Payment[]> {
   return response.json();
 }
 
+async function fetchStudentPayments(studentId: string): Promise<Payment[]> {
+  const response = await fetch(`/api/student/${studentId}/payments`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch student payments");
+  }
+  return response.json();
+}
+
 async function fetchPaymentLessons(paymentId: string): Promise<string[]> {
   const sessionId = localStorage.getItem("sessionId");
   const headers: HeadersInit = {};
@@ -94,6 +104,14 @@ export function usePayments() {
   return useQuery({
     queryKey: ["/api/payments"],
     queryFn: fetchPayments,
+  });
+}
+
+export function useStudentPayments(studentId: string) {
+  return useQuery({
+    queryKey: ["/api/student", studentId, "payments"],
+    queryFn: () => fetchStudentPayments(studentId),
+    enabled: !!studentId,
   });
 }
 

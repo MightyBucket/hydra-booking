@@ -39,7 +39,7 @@ import { useStudents, useDeleteStudent, useUpdateStudent } from "./hooks/useStud
 import { useLessons } from "./hooks/useLessons";
 import { useParents } from "./hooks/useParents";
 // Updated imports to include delete and update payment hooks
-import { usePayments, useCreatePayment, useDeletePayment, useUpdatePayment, usePaymentLessons } from "./hooks/usePayments";
+import { usePayments, useCreatePayment, useDeletePayment, useUpdatePayment, usePaymentLessons, useStudentPayments } from "./hooks/usePayments";
 import ParentForm from "./components/ParentForm";
 import PaymentForm from "./components/PaymentForm";
 import { useParentForm } from "./hooks/useParentForm";
@@ -2099,7 +2099,7 @@ function StudentPaymentsView() {
   const studentId = params.studentId as string;
 
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(studentId);
-  const { data: paymentsData = [], isLoading: paymentsLoading } = usePayments();
+  const { data: paymentsData = [], isLoading: paymentsLoading } = useStudentPayments(studentId);
   const { data: studentsData = [] } = useStudents();
   const { data: parentsData = [] } = useParents();
   const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(studentId);
