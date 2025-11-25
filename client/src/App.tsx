@@ -2098,11 +2098,6 @@ function StudentPaymentsView() {
   const params = useParams<{ studentId: string }>();
   const studentId = params.studentId as string;
 
-  // Set page title
-  useState(() => {
-    document.title = "Hydra - My Payments";
-  });
-
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(studentId);
   const { data: paymentsData = [], isLoading: paymentsLoading } = usePayments();
   const { data: studentsData = [] } = useStudents();
@@ -2113,42 +2108,35 @@ function StudentPaymentsView() {
   // State for grouping
   const [groupBy, setGroupBy] = useState<'none' | 'month'>('month');
 
-  if (studentLoading) {
+  // Set page title when student data is loaded
+  useState(() => {
+    if (student) {
+      document.title = `Hydra - ${student.firstName}'s Payments`;
+    } else {
+      document.title = "Hydra - Student Payments";
+    }
+  });
+
+  if (studentLoading || paymentsLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="text-xl font-semibold mb-2">Loading...</div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        Loading payments...
       </div>
     );
   }
 
   if (!student) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="text-xl font-semibold mb-2">Student not found</div>
-          <p className="text-muted-foreground">The student ID you're looking for doesn't exist.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (paymentsLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navigation 
-          onAddLesson={() => {}}
-          onAddStudent={() => {}}
-          isStudentView={true}
-          studentId={studentId}
-        />
-        <div className="container mx-auto p-6 md:ml-64">
-          <div className="flex items-center justify-center h-64">
-            Loading payments...
+      <Card>
+        <CardContent className="p-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">Student Not Found</h2>
+            <p className="text-muted-foreground">
+              No student found with ID: {studentId}
+            </p>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -2157,7 +2145,7 @@ function StudentPaymentsView() {
     if (payment.payerType === 'student' && payment.payerId === student.id) {
       return true;
     }
-    if (payment.payerType === 'parent' && payment.payerId === student.parentId) {
+    if (payment.payerType === 'parent' && student.parentId && payment.payerId === student.parentId) {
       return true;
     }
     return false;
@@ -2195,111 +2183,104 @@ function StudentPaymentsView() {
   });
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation 
-        onAddLesson={() => {}}
-        onAddStudent={() => {}}
-        isStudentView={true}
-        studentId={studentId}
-      />
-      <div className="container mx-auto p-6 md:ml-64">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>My Payments ({filteredPayments.length})</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                {student.firstName} {student.lastName}
-              </p>
-            </div>
-            <div className="flex gap-2 items-center">
-              <Select value={groupBy} onValueChange={(value: 'none' | 'month') => setGroupBy(value)}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No grouping</SelectItem>
-                  <SelectItem value="month">By month</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {filteredPayments.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No payments found.</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {sortedGroupKeys.map(groupKey => {
-                  const groupPayments = groupedPayments[groupKey];
-                  const totalAmount = groupPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-
-                  return (
-                    <div key={groupKey} className="space-y-3">
-                      {groupBy !== 'none' && (
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-semibold">{groupKey}</h3>
-                          <div className="text-sm text-muted-foreground">
-                            {groupPayments.length} payment{groupPayments.length !== 1 ? 's' : ''} • £{totalAmount.toFixed(2)}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead className="hidden md:table-header-group">
-                            <tr className="border-b">
-                              <th className="text-left p-3">Date</th>
-                              <th className="text-left p-3">Amount</th>
-                              <th className="text-left p-3">Lessons</th>
-                              <th className="text-left p-3">Notes</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {groupPayments.map((payment: any) => {
-                              const formattedDate = format(new Date(payment.paymentDate), 'MMM d, yyyy');
-                              const formattedAmount = `£${parseFloat(payment.amount).toFixed(2)}`;
-
-                              return (
-                                <tr key={payment.id} className="border-b hover:bg-accent/50">
-                                  {/* Mobile view */}
-                                  <td className="p-2 md:hidden">
-                                    <div className="space-y-1">
-                                      <div className="font-medium">{formattedDate}</div>
-                                      <div className="text-sm font-semibold">{formattedAmount}</div>
-                                      <div className="text-xs text-muted-foreground">
-                                        <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={true} />
-                                      </div>
-                                      {payment.notes && (
-                                        <div className="text-xs text-muted-foreground">{payment.notes}</div>
-                                      )}
-                                    </div>
-                                  </td>
-
-                                  {/* Desktop view */}
-                                  <td className="hidden md:table-cell p-3">{formattedDate}</td>
-                                  <td className="hidden md:table-cell p-3 font-semibold">{formattedAmount}</td>
-                                  <td className="hidden md:table-cell p-3">
-                                    <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={false} />
-                                  </td>
-                                  <td className="hidden md:table-cell p-3 text-sm text-muted-foreground max-w-xs truncate">
-                                    {payment.notes || '-'}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+    <>
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold">
+          Payments for {student.firstName} {student.lastName || ""} (ID: {student.studentId})
+        </h1>
       </div>
-    </div>
+      
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>My Payments ({filteredPayments.length})</CardTitle>
+          <div className="flex gap-2 items-center">
+            <Select value={groupBy} onValueChange={(value: 'none' | 'month') => setGroupBy(value)}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No grouping</SelectItem>
+                <SelectItem value="month">By month</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {filteredPayments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No payments found.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {sortedGroupKeys.map(groupKey => {
+                const groupPayments = groupedPayments[groupKey];
+                const totalAmount = groupPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+                return (
+                  <div key={groupKey} className="space-y-3">
+                    {groupBy !== 'none' && (
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">{groupKey}</h3>
+                        <div className="text-sm text-muted-foreground">
+                          {groupPayments.length} payment{groupPayments.length !== 1 ? 's' : ''} • £{totalAmount.toFixed(2)}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="hidden md:table-header-group">
+                          <tr className="border-b">
+                            <th className="text-left p-3">Date</th>
+                            <th className="text-left p-3">Amount</th>
+                            <th className="text-left p-3">Lessons</th>
+                            <th className="text-left p-3">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {groupPayments.map((payment: any) => {
+                            const formattedDate = format(new Date(payment.paymentDate), 'MMM d, yyyy');
+                            const formattedAmount = `£${parseFloat(payment.amount).toFixed(2)}`;
+
+                            return (
+                              <tr key={payment.id} className="border-b hover:bg-accent/50">
+                                {/* Mobile view */}
+                                <td className="p-2 md:hidden">
+                                  <div className="space-y-1">
+                                    <div className="font-medium">{formattedDate}</div>
+                                    <div className="text-sm font-semibold">{formattedAmount}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={true} />
+                                    </div>
+                                    {payment.notes && (
+                                      <div className="text-xs text-muted-foreground">{payment.notes}</div>
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* Desktop view */}
+                                <td className="hidden md:table-cell p-3">{formattedDate}</td>
+                                <td className="hidden md:table-cell p-3 font-semibold">{formattedAmount}</td>
+                                <td className="hidden md:table-cell p-3">
+                                  <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={false} />
+                                </td>
+                                <td className="hidden md:table-cell p-3 text-sm text-muted-foreground max-w-xs truncate">
+                                  {payment.notes || '-'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
   );
 }
 
