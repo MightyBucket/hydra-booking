@@ -847,6 +847,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // For student-specific routes in development, we need to ensure they're handled by the SPA
+  // This should be registered before Vite's middleware in development
+  app.get(['/calendar/:studentId', '/schedule/:studentId'], (req, res, next) => {
+    // Let Vite handle this in development, or serve index.html in production
+    next();
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

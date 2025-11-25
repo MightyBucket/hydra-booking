@@ -1,4 +1,3 @@
-
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
@@ -33,33 +32,27 @@ export async function setupVite(app: Express, server: Server) {
   // Use Vite's middleware first to handle all Vite-specific requests
   app.use(vite.middlewares);
 
-  // Handle SPA fallback routing for client-side routes
-  app.use('*', async (req, res, next) => {
-    // Only handle GET requests
-    if (req.method !== 'GET') {
+  // Handle SPA routes - serve index.html for all non-API routes
+  app.get('*', async (req, res, next) => {
+    if (req.path.startsWith('/api')) {
       return next();
     }
-
-    // Skip API routes
-    if (req.originalUrl.startsWith('/api')) {
-      return next();
-    }
-
-    const url = req.originalUrl;
 
     try {
+      const url = req.originalUrl;
+      // The original code snippet had 'indexHtml' which was not defined in this scope.
+      // It should be read from the file system like in the original code.
       const clientTemplatePath = path.resolve(
         import.meta.dirname,
         "..",
         "client",
         "index.html",
       );
-
       let indexHtml = await fs.promises.readFile(clientTemplatePath, "utf-8");
-      indexHtml = await vite.transformIndexHtml(url, indexHtml);
-
-      res.status(200).set({ "Content-Type": "text/html" }).end(indexHtml);
+      const template = await vite.transformIndexHtml(url, indexHtml);
+      res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
     } catch (e) {
+      vite.ssrFixStacktrace(e as Error);
       next(e);
     }
   });
