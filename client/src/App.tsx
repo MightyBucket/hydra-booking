@@ -2107,7 +2107,7 @@ function StudentPaymentsView() {
   const { data: paymentsData = [], isLoading: paymentsLoading } = usePayments();
   const { data: studentsData = [] } = useStudents();
   const { data: parentsData = [] } = useParents();
-  const { data: lessonsResponse } = useStudentLessonsByStudentId(studentId);
+  const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(studentId);
   const lessonsData = lessonsResponse?.lessons || [];
 
   // State for grouping
