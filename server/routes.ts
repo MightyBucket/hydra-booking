@@ -460,11 +460,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/lessons/:lessonId/comments", requireAuth, async (req, res) => {
     try {
       const { insertCommentSchema } = await import('@shared/schema');
+      const { tagIds, ...commentData } = req.body;
       const validatedData = insertCommentSchema.parse({
-        ...req.body,
+        ...commentData,
         lessonId: req.params.lessonId,
       });
       const comment = await storage.createComment(validatedData);
+      
+      // Add tags if provided
+      if (tagIds && Array.isArray(tagIds)) {
+        for (const tagId of tagIds) {
+          await storage.addCommentTag(comment.id, tagId);
+        }
+      }
+      
       res.status(201).json(comment);
     } catch (error) {
       console.error('Error creating comment:', error);
@@ -478,11 +487,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/comments/:id", requireAuth, async (req, res) => {
     try {
       const { insertCommentSchema } = await import('@shared/schema');
-      const updateData = insertCommentSchema.partial().parse(req.body);
+      const { tagIds, ...commentData } = req.body;
+      const updateData = insertCommentSchema.partial().parse(commentData);
       const comment = await storage.updateComment(req.params.id, updateData);
       if (!comment) {
         return res.status(404).json({ error: "Comment not found" });
       }
+      
+      // Update tags if provided
+      if (tagIds !== undefined && Array.isArray(tagIds)) {
+        await storage.removeCommentTags(req.params.id);
+        for (const tagId of tagIds) {
+          await storage.addCommentTag(req.params.id, tagId);
+        }
+      }
+      
       res.json(comment);
     } catch (error) {
       console.error('Error updating comment:', error);
@@ -500,6 +519,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting comment:', error);
       res.status(500).json({ error: "Failed to delete comment" });
+    }
+  });
+
+  // Tag routes (protected)
+  app.get("/api/tags", requireAuth, async (req, res) => {
+    try {
+      const tags = await storage.getTags();
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+      res.status(500).json({ error: "Failed to fetch tags" });
+    }
+  });
+
+  app.post("/api/tags", requireAuth, async (req, res) => {
+    try {
+      const { insertTagSchema } = await import('@shared/schema');
+      const validatedData = insertTagSchema.parse(req.body);
+      const tag = await storage.createTag(validatedData);
+      res.status(201).json(tag);
+    } catch (error) {
+      console.error('Error creating tag:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create tag" });
+    }
+  });
+
+  app.put("/api/tags/:id", requireAuth, async (req, res) => {
+    try {
+      const { insertTagSchema } = await import('@shared/schema');
+      const updateData = insertTagSchema.partial().parse(req.body);
+      const tag = await storage.updateTag(req.params.id, updateData);
+      if (!tag) {
+        return res.status(404).json({ error: "Tag not found" });
+      }
+      res.json(tag);
+    } catch (error) {
+      console.error('Error updating tag:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update tag" });
+    }
+  });
+
+  app.delete("/api/tags/:id", requireAuth, async (req, res) => {
+    try {
+      await storage.deleteTag(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+      res.status(500).json({ error: "Failed to delete tag" });
+    }
+  });
+
+  // Comment-Tag routes (protected)
+  app.get("/api/comments/:commentId/tags", async (req, res) => {
+    try {
+      const tags = await storage.getCommentTags(req.params.commentId);
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching comment tags:', error);
+      res.status(500).json({ error: "Failed to fetch comment tags" });
     }
   });
 

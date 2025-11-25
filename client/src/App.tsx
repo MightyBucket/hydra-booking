@@ -44,6 +44,7 @@ import PaymentForm from "./components/PaymentForm";
 import { useParentForm } from "./hooks/useParentForm";
 import NoteForm from "./components/NoteForm";
 import CommentFormDialog from "./components/CommentFormDialog";
+import { useTags, useCreateTag, useUpdateTag, useDeleteTag } from "./hooks/useTags";
 import DeleteLessonDialog from "./components/DeleteLessonDialog";
 import { format } from "date-fns";
 import NotFound from "@/pages/not-found";
@@ -1705,15 +1706,166 @@ function SettingsPage() {
     document.title = "Hydra - Settings";
   });
 
+  const { data: tags = [] } = useTags();
+  const createTagMutation = useCreateTag();
+  const updateTagMutation = useUpdateTag();
+  const deleteTagMutation = useDeleteTag();
+  const { toast } = useToast();
+
+  const [showTagForm, setShowTagForm] = useState(false);
+  const [editingTag, setEditingTag] = useState<any | null>(null);
+  const [tagFormData, setTagFormData] = useState({ name: '', color: '#3b82f6' });
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [tagToDelete, setTagToDelete] = useState<any | null>(null);
+
+  const handleAddTag = () => {
+    setEditingTag(null);
+    setTagFormData({ name: '', color: '#3b82f6' });
+    setShowTagForm(true);
+  };
+
+  const handleEditTag = (tag: any) => {
+    setEditingTag(tag);
+    setTagFormData({ name: tag.name, color: tag.color });
+    setShowTagForm(true);
+  };
+
+  const handleSubmitTag = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingTag) {
+        await updateTagMutation.mutateAsync({ id: editingTag.id, ...tagFormData });
+        toast({ title: "Success", description: "Tag updated successfully" });
+      } else {
+        await createTagMutation.mutateAsync(tagFormData);
+        toast({ title: "Success", description: "Tag created successfully" });
+      }
+      setShowTagForm(false);
+      setTagFormData({ name: '', color: '#3b82f6' });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to save tag", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteTag = (tag: any) => {
+    setTagToDelete(tag);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteTag = async () => {
+    if (!tagToDelete) return;
+    try {
+      await deleteTagMutation.mutateAsync(tagToDelete.id);
+      toast({ title: "Success", description: "Tag deleted successfully" });
+      setShowDeleteDialog(false);
+      setTagToDelete(null);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete tag", variant: "destructive" });
+    }
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Settings</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">Settings panel coming soon...</p>
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Comment Tags</h3>
+              <Button onClick={handleAddTag}>Add Tag</Button>
+            </div>
+            {tags.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No tags created yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {tags.map((tag: any) => (
+                  <div key={tag.id} className="flex items-center justify-between p-3 border rounded">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" style={{ borderColor: tag.color, color: tag.color }}>
+                        {tag.name}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{tag.color}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleEditTag(tag)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteTag(tag)} className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showTagForm} onOpenChange={setShowTagForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingTag ? 'Edit Tag' : 'Create Tag'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmitTag} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tag-name">Tag Name</Label>
+              <Input
+                id="tag-name"
+                value={tagFormData.name}
+                onChange={(e) => setTagFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Important, Follow-up"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tag-color">Color</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="tag-color"
+                  type="color"
+                  value={tagFormData.color}
+                  onChange={(e) => setTagFormData(prev => ({ ...prev, color: e.target.value }))}
+                  className="w-20"
+                />
+                <Input
+                  type="text"
+                  value={tagFormData.color}
+                  onChange={(e) => setTagFormData(prev => ({ ...prev, color: e.target.value }))}
+                  placeholder="#3b82f6"
+                  pattern="^#[0-9A-Fa-f]{6}$"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setShowTagForm(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">{editingTag ? 'Update' : 'Create'} Tag</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Tag</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the tag "{tagToDelete?.name}"? This will remove it from all comments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteTag} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 

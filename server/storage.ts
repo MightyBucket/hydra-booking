@@ -7,6 +7,8 @@ import {
   parents,
   payments,
   paymentLessons,
+  tags, // Assuming tags table is defined in schema
+  commentTags, // Assuming commentTags table is defined in schema
   type Student,
   type InsertStudent,
   type Lesson,
@@ -24,7 +26,9 @@ import {
   type Payment,
   type InsertPayment,
   type PaymentLesson,
-  type InsertPaymentLesson
+  type InsertPaymentLesson,
+  type Tag, // Assuming Tag type is defined in schema
+  type InsertTag // Assuming InsertTag type is defined in schema
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -109,6 +113,18 @@ export interface IStorage {
   deletePayment(id: string): Promise<void>;
   getPaymentLessons(paymentId: string): Promise<string[]>;
   deletePaymentLessons(paymentId: string): Promise<void>;
+
+  // Tag methods
+  getTags(): Promise<Tag[]>;
+  getTag(id: string): Promise<Tag | undefined>;
+  createTag(data: InsertTag): Promise<Tag>;
+  updateTag(id: string, data: Partial<InsertTag>): Promise<Tag | undefined>;
+  deleteTag(id: string): Promise<void>;
+
+  // Comment-Tag methods
+  getCommentTags(commentId: string): Promise<Tag[]>;
+  addCommentTag(commentId: string, tagId: string): Promise<void>;
+  removeCommentTags(commentId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -439,6 +455,50 @@ export class DatabaseStorage implements IStorage {
 
   async deletePaymentLessons(paymentId: string): Promise<void> {
     await db.delete(paymentLessons).where(eq(paymentLessons.paymentId, paymentId));
+  }
+
+  // Tag methods
+  async getTags(): Promise<Tag[]> {
+    return await db.select().from(tags).orderBy(tags.name);
+  }
+
+  async getTag(id: string): Promise<Tag | undefined> {
+    const results = await db.select().from(tags).where(eq(tags.id, id));
+    return results[0];
+  }
+
+  async createTag(data: InsertTag): Promise<Tag> {
+    const results = await db.insert(tags).values(data).returning();
+    return results[0];
+  }
+
+  async updateTag(id: string, data: Partial<InsertTag>): Promise<Tag | undefined> {
+    const results = await db.update(tags).set(data).where(eq(tags.id, id)).returning();
+    return results[0];
+  }
+
+  async deleteTag(id: string): Promise<void> {
+    await db.delete(tags).where(eq(tags.id, id));
+  }
+
+  // Comment-Tag methods
+  async getCommentTags(commentId: string): Promise<Tag[]> {
+    const results = await db
+      .select({
+        tag: tags,
+      })
+      .from(commentTags)
+      .innerJoin(tags, eq(commentTags.tagId, tags.id))
+      .where(eq(commentTags.commentId, commentId));
+    return results.map(r => r.tag);
+  }
+
+  async addCommentTag(commentId: string, tagId: string): Promise<void> {
+    await db.insert(commentTags).values({ commentId, tagId });
+  }
+
+  async removeCommentTags(commentId: string): Promise<void> {
+    await db.delete(commentTags).where(eq(commentTags.commentId, commentId));
   }
 }
 

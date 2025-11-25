@@ -48,6 +48,14 @@ export const recurringLessons = pgTable("recurring_lessons", {
   endDate: timestamp("end_date"),
 });
 
+// Tags table
+export const tags = pgTable("tags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  color: text("color").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Comments table
 export const comments = pgTable("comments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -57,6 +65,13 @@ export const comments = pgTable("comments", {
   visibleToStudent: integer("visible_to_student").notNull().default(0), // 0 = false, 1 = true
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   lastEdited: timestamp("last_edited"),
+});
+
+// Comment-Tags junction table
+export const commentTags = pgTable("comment_tags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  commentId: varchar("comment_id").notNull().references(() => comments.id, { onDelete: 'cascade' }),
+  tagId: varchar("tag_id").notNull().references(() => tags.id, { onDelete: 'cascade' }),
 });
 
 // Notes table
@@ -116,10 +131,26 @@ export const recurringLessonsRelations = relations(recurringLessons, ({ one }) =
   }),
 }));
 
-export const commentsRelations = relations(comments, ({ one }) => ({
+export const commentsRelations = relations(comments, ({ one, many }) => ({
   lesson: one(lessons, {
     fields: [comments.lessonId],
     references: [lessons.id],
+  }),
+  commentTags: many(commentTags),
+}));
+
+export const tagsRelations = relations(tags, ({ many }) => ({
+  commentTags: many(commentTags),
+}));
+
+export const commentTagsRelations = relations(commentTags, ({ one }) => ({
+  comment: one(comments, {
+    fields: [commentTags.commentId],
+    references: [comments.id],
+  }),
+  tag: one(tags, {
+    fields: [commentTags.tagId],
+    references: [tags.id],
   }),
 }));
 
@@ -207,6 +238,18 @@ export const insertCommentSchema = createInsertSchema(comments).omit({
   visibleToStudent: z.number().int().min(0).max(1),
 });
 
+export const insertTagSchema = createInsertSchema(tags).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Tag name is required"),
+  color: z.string().regex(/^#[0-9A-F]{6}$/i, "Color must be a valid hex color"),
+});
+
+export const insertCommentTagSchema = createInsertSchema(commentTags).omit({
+  id: true,
+});
+
 // Types
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;
@@ -219,6 +262,11 @@ export type RecurringLesson = typeof recurringLessons.$inferSelect;
 
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Comment = typeof comments.$inferSelect;
+
+export type InsertTag = z.infer<typeof insertTagSchema>;
+export type Tag = typeof tags.$inferSelect;
+export type InsertCommentTag = z.infer<typeof insertCommentTagSchema>;
+export type CommentTag = typeof commentTags.$inferSelect;
 
 export const insertNoteSchema = createInsertSchema(notes).omit({
   id: true,

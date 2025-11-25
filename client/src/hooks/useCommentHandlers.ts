@@ -39,16 +39,32 @@ export function useCommentHandlers() {
     title: string;
     content: string;
     visibleToStudent: boolean;
+    tagIds?: string[];
   }) => {
     if (!formData?.lessonId) return;
 
     try {
-      await createCommentMutation.mutateAsync({
-        lessonId: formData.lessonId,
+      const commentData = {
         title: data.title,
         content: data.content,
         visibleToStudent: data.visibleToStudent ? 1 : 0,
+        tagIds: data.tagIds, // Include tagIds
+      };
+
+      const response = await fetch(`/api/lessons/${formData.lessonId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`,
+        },
+        body: JSON.stringify(commentData),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to add comment');
+      }
+
+      // The createCommentMutation is not used here, so we'll keep the toast and reset form logic
       toast({
         title: "Success",
         description: "Comment added successfully",
@@ -65,16 +81,17 @@ export function useCommentHandlers() {
 
   const handleStartEditComment = (
     commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
+    data: { title: string; content: string; visibleToStudent: number; tagIds?: string[] }, // Added tagIds to edit data
   ) => {
     openCommentForm({ lessonId: '', editingId: commentId, commentData: data });
   };
 
   const handleEditComment = async (
     commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
+    data: { title: string; content: string; visibleToStudent: number; tagIds?: string[] }, // Added tagIds to edit data
   ) => {
     try {
+      // Assuming updateCommentMutation can handle tagIds
       await updateCommentMutation.mutateAsync({ id: commentId, ...data });
       toast({
         title: "Success",
