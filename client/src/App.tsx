@@ -901,6 +901,15 @@ function PaymentsPage() {
     );
   }
 
+  // Ensure lessons data is loaded before rendering
+  if (!lessonsData || lessonsData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading lessons data...
+      </div>
+    );
+  }
+
   // Filter payments
   let filteredPayments = paymentsData;
 
@@ -1325,17 +1334,12 @@ function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false, studentI
     return <span className="text-muted-foreground">-</span>;
   }
 
-  // Wait for lessonsData to be available
-  if (!lessonsData || lessonsData.length === 0) {
-    return <span className="text-muted-foreground text-xs">Loading lessons...</span>;
-  }
-
   // Debug: Log what we're working with
   console.log('PaymentLessonsCell debug:', {
     paymentId,
     lessonIds,
-    lessonsDataCount: lessonsData.length,
-    firstFewLessonIds: lessonsData.slice(0, 3).map(l => l.id)
+    lessonsDataCount: lessonsData?.length || 0,
+    lessonsDataSample: lessonsData?.slice(0, 3).map(l => l.id) || []
   });
 
   // Find lessons that match the IDs
