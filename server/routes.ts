@@ -774,7 +774,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const paymentLessons = await storage.getPaymentLessons(paymentId);
-      res.json(paymentLessons.map(pl => pl.lessonId));
+      const lessonIds = paymentLessons.map(pl => pl.lessonId);
+      
+      console.log(`Payment ${paymentId} lessons:`, lessonIds);
+      res.json(lessonIds);
     } catch (error) {
       console.error(`Error fetching student payment lessons: ${error}`);
       res.status(500).json({ error: "Failed to fetch payment lessons" });

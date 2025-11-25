@@ -1313,10 +1313,15 @@ function PaymentsPage() {
 
 function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false, studentId }: { paymentId: string; lessonsData: any[]; isMobile?: boolean; studentId?: string }) {
   // Use student-specific hook if studentId is provided (for student view)
-  const { data: lessonIds = [] } = studentId 
+  const { data: lessonIds = [], isLoading } = studentId 
     ? useStudentPaymentLessons(studentId, paymentId)
     : usePaymentLessons(paymentId);
 
+  if (isLoading) {
+    return <span className="text-muted-foreground text-xs">Loading...</span>;
+  }
+
+  // Find lessons that match the IDs
   const lessons = lessonIds
     .map(id => lessonsData.find(l => l.id === id))
     .filter(Boolean);
@@ -1339,10 +1344,9 @@ function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false, studentI
   }
 
   return (
-    <div className="text-sm">
-      {lessons.map((lesson: any, i: number) => (
+    <div className="text-sm space-y-1">
+      {lessons.map((lesson: any) => (
         <div key={lesson.id}>
-          {i > 0 && ', '}
           {format(new Date(lesson.dateTime), 'MMM d')} - {lesson.subject}
         </div>
       ))}
