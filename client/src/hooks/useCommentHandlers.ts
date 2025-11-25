@@ -91,7 +91,6 @@ export function useCommentHandlers() {
     data: { title: string; content: string; visibleToStudent: number; tagIds?: string[] }, // Added tagIds to edit data
   ) => {
     try {
-      // Assuming updateCommentMutation can handle tagIds
       await updateCommentMutation.mutateAsync({ id: commentId, ...data });
       toast({
         title: "Success",

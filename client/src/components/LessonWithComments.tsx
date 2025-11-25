@@ -22,6 +22,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useCommentsByLesson } from "@/hooks/useComments";
+import { useCommentTags } from "@/hooks/useTags";
 import { format as formatDate } from "date-fns";
 import { getPaymentStatusColor, PaymentStatus } from "@/lib/paymentStatus";
 import { linkifyText } from "@/lib/linkify";
@@ -72,6 +73,90 @@ export default function LessonWithComments({
 }: LessonWithCommentsProps) {
   const { data: comments = [] } = useCommentsByLesson(lesson.id);
   const hasComments = comments.length > 0;
+
+  // Component to display a single comment with its tags
+  function CommentWithTags({ comment }: { comment: any }) {
+    const { data: tags = [] } = useCommentTags(comment.id);
+
+    return (
+      <div className="border-l-2 border-primary/20 pl-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-xs font-medium">{comment.title}</p>
+              {tags.map((tag: any) => (
+                <Badge
+                  key={tag.id}
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0"
+                  style={{ borderColor: tag.color, color: tag.color }}
+                >
+                  {tag.name}
+                </Badge>
+              ))}
+              {comment.visibleToStudent === 1 ? (
+                <Eye
+                  className="h-3 w-3 text-muted-foreground"
+                  title="Visible to student"
+                />
+              ) : (
+                <EyeOff
+                  className="h-3 w-3 text-muted-foreground"
+                  title="Not visible to student"
+                />
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {linkifyText(comment.content)}
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
+              {comment.lastEdited && (
+                <span className="ml-2 italic">
+                  (edited{" "}
+                  {formatDate(
+                    new Date(comment.lastEdited),
+                    "MMM d, h:mm a",
+                  )}
+                  )
+                </span>
+              )}
+            </p>
+          </div>
+          {!isStudentView && onEditComment && onDeleteComment && (
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditComment(comment.id, {
+                    title: comment.title,
+                    content: comment.content,
+                    visibleToStudent: comment.visibleToStudent,
+                  });
+                }}
+                className="h-6 w-6 p-0"
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteComment(comment.id);
+                }}
+                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const lessonContent = (
     <div
@@ -269,75 +354,7 @@ export default function LessonWithComments({
           </h4>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {comments.map((comment) => (
-              <div
-                key={comment.id}
-                className="border-l-2 border-primary/20 pl-2"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-medium">{comment.title}</p>
-                      {comment.visibleToStudent === 1 ? (
-                        <Eye
-                          className="h-3 w-3 text-muted-foreground"
-                          title="Visible to student"
-                        />
-                      ) : (
-                        <EyeOff
-                          className="h-3 w-3 text-muted-foreground"
-                          title="Not visible to student"
-                        />
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {linkifyText(comment.content)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
-                      {comment.lastEdited && (
-                        <span className="ml-2 italic">
-                          (edited{" "}
-                          {formatDate(
-                            new Date(comment.lastEdited),
-                            "MMM d, h:mm a",
-                          )}
-                          )
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  {!isStudentView && onEditComment && onDeleteComment && (
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditComment(comment.id, {
-                            title: comment.title,
-                            content: comment.content,
-                            visibleToStudent: comment.visibleToStudent,
-                          });
-                        }}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteComment(comment.id);
-                        }}
-                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <CommentWithTags key={comment.id} comment={comment} />
             ))}
           </div>
         </div>
