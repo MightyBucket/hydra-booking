@@ -1321,13 +1321,21 @@ function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false, studentI
     return <span className="text-muted-foreground text-xs">Loading...</span>;
   }
 
+  if (!lessonIds || lessonIds.length === 0) {
+    return <span className="text-muted-foreground">-</span>;
+  }
+
   // Find lessons that match the IDs
   const lessons = lessonIds
-    .map(id => lessonsData.find(l => l.id === id))
+    .map(id => {
+      const lesson = lessonsData?.find(l => l.id === id);
+      return lesson;
+    })
     .filter(Boolean);
 
   if (lessons.length === 0) {
-    return <span className="text-muted-foreground">-</span>;
+    // Show count if we have IDs but can't find the lessons
+    return <span className="text-muted-foreground text-xs">{lessonIds.length} lesson{lessonIds.length !== 1 ? 's' : ''}</span>;
   }
 
   if (isMobile) {
