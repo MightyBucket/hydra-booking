@@ -2107,7 +2107,8 @@ function StudentPaymentsView() {
   const { data: paymentsData = [], isLoading: paymentsLoading } = usePayments();
   const { data: studentsData = [] } = useStudents();
   const { data: parentsData = [] } = useParents();
-  const { data: lessonsData = [] } = useLessons();
+  const { data: lessonsResponse } = useStudentLessonsByStudentId(studentId);
+  const lessonsData = lessonsResponse?.lessons || [];
 
   // State for grouping
   const [groupBy, setGroupBy] = useState<'none' | 'month'>('month');
