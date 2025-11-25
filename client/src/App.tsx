@@ -794,7 +794,7 @@ function PaymentsPage() {
   const { data: paymentsData = [], isLoading: paymentsLoading } = usePayments();
   const { data: studentsData = [] } = useStudents();
   const { data: parentsData = [] } = useParents();
-  const { data: lessonsData = [] } = useLessons();
+  const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
   const createPaymentMutation = useCreatePayment();
   // Assume these are now available due to updated imports
   const deletePaymentMutation = useDeletePayment();
@@ -893,10 +893,10 @@ function PaymentsPage() {
     }
   };
 
-  if (paymentsLoading) {
+  if (paymentsLoading || lessonsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        Loading payments...
+        Loading...
       </div>
     );
   }
@@ -1325,16 +1325,22 @@ function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false, studentI
     return <span className="text-muted-foreground">-</span>;
   }
 
+  // Ensure lessonsData is available
+  if (!lessonsData || lessonsData.length === 0) {
+    return <span className="text-muted-foreground text-xs">{lessonIds.length} lesson{lessonIds.length !== 1 ? 's' : ''}</span>;
+  }
+
   // Find lessons that match the IDs
   const lessons = lessonIds
     .map(id => {
-      const lesson = lessonsData?.find(l => l.id === id);
+      const lesson = lessonsData.find(l => l.id === id);
       return lesson;
     })
     .filter(Boolean);
 
   if (lessons.length === 0) {
     // Show count if we have IDs but can't find the lessons
+    console.log('Payment lessons not found:', { paymentId, lessonIds, availableLessons: lessonsData.map(l => l.id) });
     return <span className="text-muted-foreground text-xs">{lessonIds.length} lesson{lessonIds.length !== 1 ? 's' : ''}</span>;
   }
 
