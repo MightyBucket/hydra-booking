@@ -326,7 +326,7 @@ function StudentsPage() {
   const handleViewLessons = (studentId: string) => {
     const student = (studentsData as any[]).find((s: any) => s.id === studentId);
     if (student?.studentId) {
-      window.location.href = `/${student.studentId}/calendar`;
+      window.location.href = `/calendar/${student.studentId}`;
     }
   };
 
@@ -2102,8 +2102,8 @@ function Router() {
       <Route path="/payments" component={PaymentsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/settings" component={SettingsPage} />
-      <Route path="/:studentId/calendar" component={StudentCalendarPage} />
-      <Route path="/:studentId/schedule" component={StudentSchedulePage} />
+      <Route path="/calendar/:studentId" component={StudentCalendarPage} />
+      <Route path="/schedule/:studentId" component={StudentSchedulePage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -2128,9 +2128,9 @@ function AppContent() {
     handleSubmit: handleLessonSubmit,
   } = useLessonForm();
 
-  const studentViewMatch = location.match(/^\/(\d{6})\/(calendar|schedule)$/);
+  const studentViewMatch = location.match(/^\/(calendar|schedule)\/(\d{6})$/);
   const isStudentView = !!studentViewMatch;
-  const studentId = studentViewMatch?.[1];
+  const studentId = studentViewMatch?.[2];
   const shouldShowNavigation = true;
 
   const handleAddLesson = () => {
@@ -2200,8 +2200,8 @@ function AuthenticatedApp() {
   const { data: authData, isLoading } = useAuth();
 
   // Allow access to student calendar and schedule views without authentication
-  const isStudentCalendarView = location.match(/^\/\d{6}\/calendar$/);
-  const isStudentScheduleView = location.match(/^\/\d{6}\/schedule$/);
+  const isStudentCalendarView = location.match(/^\/calendar\/\d{6}$/);
+  const isStudentScheduleView = location.match(/^\/schedule\/\d{6}$/);
 
   if (isLoading) {
     return (
