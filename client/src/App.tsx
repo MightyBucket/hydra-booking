@@ -1092,7 +1092,7 @@ function PaymentsPage() {
                       </td>
                       <td className="p-3 hidden md:table-cell">£{parseFloat(payment.amount).toFixed(2)}</td>
                       <td className="p-3 hidden md:table-cell">
-                        <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={false} />
+                        <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData as any[]} isMobile={false} />
                       </td>
                       <td className="p-3 max-w-xs truncate hidden md:table-cell">{payment.notes || '-'}</td>
                       <td className="p-3 flex gap-2 hidden md:table-cell">
@@ -1133,7 +1133,7 @@ function PaymentsPage() {
                       </td>
                       <td className="p-2 md:hidden text-sm font-medium">{formattedAmount}</td>
                       <td className="p-2 md:hidden text-xs text-muted-foreground">
-                        <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={true} />
+                        <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData as any[]} isMobile={true} />
                       </td>
                       <td className="p-2 md:hidden">
                         <div className="flex gap-1">
@@ -2108,7 +2108,7 @@ function StudentPaymentsView() {
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(studentId);
   const { data: paymentsData = [], isLoading: paymentsLoading } = useStudentPayments(studentId);
   const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(studentId);
-  
+
   // Extract lessons array from response
   const lessonsData = Array.isArray(lessonsResponse?.lessons) ? lessonsResponse.lessons : [];
 
@@ -2196,7 +2196,7 @@ function StudentPaymentsView() {
           Payments for {student.firstName} {student.lastName || ""} (ID: {student.studentId})
         </h1>
       </div>
-      
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>My Payments ({filteredPayments.length})</CardTitle>
@@ -2311,11 +2311,11 @@ function Router() {
 
 function AppContent() {
   const [location, setLocation] = useLocation();
-  
+
   const studentViewMatch = location.match(/^\/(calendar|schedule|payments)\/([^/]+)$/);
   const isStudentView = !!studentViewMatch;
   const studentId = studentViewMatch?.[2];
-  
+
   // Only fetch admin data when not in student view
   const { studentsData, lessonsData } = isStudentView 
     ? { studentsData: [], lessonsData: [] }
