@@ -1325,22 +1325,34 @@ function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false, studentI
     return <span className="text-muted-foreground">-</span>;
   }
 
-  // Ensure lessonsData is available
+  // Wait for lessonsData to be available
   if (!lessonsData || lessonsData.length === 0) {
-    return <span className="text-muted-foreground text-xs">{lessonIds.length} lesson{lessonIds.length !== 1 ? 's' : ''}</span>;
+    return <span className="text-muted-foreground text-xs">Loading lessons...</span>;
   }
+
+  // Debug: Log what we're working with
+  console.log('PaymentLessonsCell debug:', {
+    paymentId,
+    lessonIds,
+    lessonsDataCount: lessonsData.length,
+    firstFewLessonIds: lessonsData.slice(0, 3).map(l => l.id)
+  });
 
   // Find lessons that match the IDs
   const lessons = lessonIds
     .map(id => {
       const lesson = lessonsData.find(l => l.id === id);
+      if (!lesson) {
+        console.log('Lesson ID not found in lessonsData:', id);
+      }
       return lesson;
     })
     .filter(Boolean);
 
+  console.log('Matched lessons:', lessons.length, 'out of', lessonIds.length);
+
   if (lessons.length === 0) {
     // Show count if we have IDs but can't find the lessons
-    console.log('Payment lessons not found:', { paymentId, lessonIds, availableLessons: lessonsData.map(l => l.id) });
     return <span className="text-muted-foreground text-xs">{lessonIds.length} lesson{lessonIds.length !== 1 ? 's' : ''}</span>;
   }
 
