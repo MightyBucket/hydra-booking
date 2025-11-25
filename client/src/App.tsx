@@ -1977,7 +1977,7 @@ function StudentScheduleView() {
   const params = useParams<{ studentId: string }>();
 
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(params.studentId);
-  const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessons(params.studentId);
+  const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
 
   // Set page title when student data is loaded
   useState(() => {
