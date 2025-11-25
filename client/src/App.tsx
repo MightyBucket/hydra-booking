@@ -1340,12 +1340,11 @@ function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false, studentI
 
   if (isMobile) {
     return (
-      <div className="text-xs">
-        {lessons.map((lesson: any, i: number) => (
-          <span key={lesson.id}>
-            {i > 0 && ', '}
-            {format(new Date(lesson.dateTime), 'dd/MM')}
-          </span>
+      <div className="text-xs space-y-0.5">
+        {lessons.map((lesson: any) => (
+          <div key={lesson.id}>
+            {format(new Date(lesson.dateTime), 'MMM d, yyyy')} - {lesson.subject}
+          </div>
         ))}
       </div>
     );
@@ -1355,7 +1354,7 @@ function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false, studentI
     <div className="text-sm space-y-1">
       {lessons.map((lesson: any) => (
         <div key={lesson.id}>
-          {format(new Date(lesson.dateTime), 'MMM d')} - {lesson.subject}
+          {format(new Date(lesson.dateTime), 'MMM d, yyyy')} - {lesson.subject}
         </div>
       ))}
     </div>
