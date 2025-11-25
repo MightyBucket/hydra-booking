@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import LoginForm from "@/components/LoginForm";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
