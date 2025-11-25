@@ -1782,23 +1782,18 @@ function SettingsPage() {
             {tags.length === 0 ? (
               <p className="text-sm text-muted-foreground">No tags created yet.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
                 {tags.map((tag: any) => (
-                  <div key={tag.id} className="flex items-center justify-between p-3 border rounded">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" style={{ borderColor: tag.color, color: tag.color }}>
-                        {tag.name}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">{tag.color}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleEditTag(tag)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteTag(tag)} className="text-destructive hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div key={tag.id} className="inline-flex items-center gap-1 p-2 border rounded">
+                    <Badge variant="outline" style={{ borderColor: tag.color, color: tag.color }}>
+                      {tag.name}
+                    </Badge>
+                    <Button variant="ghost" size="sm" onClick={() => handleEditTag(tag)} className="h-6 w-6 p-0">
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteTag(tag)} className="h-6 w-6 p-0 text-destructive hover:text-destructive">
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
                 ))}
               </div>
