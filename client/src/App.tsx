@@ -2128,7 +2128,7 @@ function AppContent() {
     handleSubmit: handleLessonSubmit,
   } = useLessonForm();
 
-  const studentViewMatch = location.match(/^\/(calendar|schedule)\/(\d{6})$/);
+  const studentViewMatch = location.match(/^\/(calendar|schedule)\/([^/]+)$/);
   const isStudentView = !!studentViewMatch;
   const studentId = studentViewMatch?.[2];
   const shouldShowNavigation = true;
@@ -2200,8 +2200,8 @@ function AuthenticatedApp() {
   const { data: authData, isLoading } = useAuth();
 
   // Allow access to student calendar and schedule views without authentication
-  const isStudentCalendarView = location.match(/^\/calendar\/\d{6}$/);
-  const isStudentScheduleView = location.match(/^\/schedule\/\d{6}$/);
+  const isStudentCalendarView = location.match(/^\/calendar\/[^/]+$/);
+  const isStudentScheduleView = location.match(/^\/schedule\/[^/]+$/);
 
   if (isLoading) {
     return (
