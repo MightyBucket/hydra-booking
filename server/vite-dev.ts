@@ -29,19 +29,21 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  // Use Vite's middleware first to handle all Vite-specific requests
-  app.use(vite.middlewares);
-
-  // Handle SPA routes - serve index.html for all non-API routes
+  // Handle SPA routes BEFORE Vite middleware to prevent Vite from treating routes as file paths
   app.get('*', async (req, res, next) => {
+    const url = req.originalUrl;
+    
+    // Skip API routes
     if (req.path.startsWith('/api')) {
+      return next();
+    }
+    
+    // Skip actual file requests (assets, scripts, etc.)
+    if (req.path.includes('.') && !req.path.endsWith('.html')) {
       return next();
     }
 
     try {
-      const url = req.originalUrl;
-      // The original code snippet had 'indexHtml' which was not defined in this scope.
-      // It should be read from the file system like in the original code.
       const clientTemplatePath = path.resolve(
         import.meta.dirname,
         "..",
@@ -56,4 +58,7 @@ export async function setupVite(app: Express, server: Server) {
       next(e);
     }
   });
+
+  // Use Vite's middleware after SPA routing for asset handling
+  app.use(vite.middlewares);
 }
