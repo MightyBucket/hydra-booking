@@ -111,7 +111,7 @@ export interface IStorage {
   createPayment(payment: InsertPayment, lessonIds: string[]): Promise<Payment>;
   updatePayment(id: string, payment: Partial<InsertPayment>, lessonIds?: string[]): Promise<Payment | undefined>;
   deletePayment(id: string): Promise<void>;
-  getPaymentLessons(paymentId: string): Promise<string[]>;
+  getPaymentLessons(paymentId: string): Promise<PaymentLesson[]>;
   deletePaymentLessons(paymentId: string): Promise<void>;
 
   // Tag methods
@@ -445,12 +445,12 @@ export class DatabaseStorage implements IStorage {
     await db.delete(payments).where(eq(payments.id, id));
   }
 
-  async getPaymentLessons(paymentId: string): Promise<string[]> {
+  async getPaymentLessons(paymentId: string): Promise<PaymentLesson[]> {
     const links = await db
       .select()
       .from(paymentLessons)
       .where(eq(paymentLessons.paymentId, paymentId));
-    return links.map(link => link.lessonId);
+    return links;
   }
 
   async deletePaymentLessons(paymentId: string): Promise<void> {
