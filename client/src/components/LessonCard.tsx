@@ -63,7 +63,7 @@ interface LessonCardProps {
   onDeleteComment?: (commentId: string) => void;
   onEditComment?: (
     commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
+    data: { title: string; content: string; visibleToStudent: number; tagIds?: string[] },
   ) => void;
   showCommentActions?: boolean;
   isStudentView?: boolean;
@@ -142,6 +142,7 @@ export default function LessonCard({
                       title: comment.title,
                       content: comment.content,
                       visibleToStudent: comment.visibleToStudent,
+                      tagIds: tags.map((tag: any) => tag.id),
                     });
                   }}
                   className="h-5 w-5 p-0"
@@ -376,6 +377,7 @@ export default function LessonCard({
                       title: comment.title,
                       content: comment.content,
                       visibleToStudent: comment.visibleToStudent === 1,
+                      tagIds: tags.map((tag: any) => tag.id),
                     }}
                     isEditing={true}
                     onSubmit={async (data) => {
@@ -384,6 +386,7 @@ export default function LessonCard({
                           title: data.title,
                           content: data.content,
                           visibleToStudent: data.visibleToStudent ? 1 : 0,
+                          tagIds: data.tagIds,
                         });
                         setEditingCommentId(null);
                       }
@@ -435,14 +438,18 @@ export default function LessonCard({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
+                            onClick={async () => {
+                              // Fetch tags for this comment
+                              const response = await fetch(`/api/comments/${comment.id}/tags`);
+                              const commentTags = response.ok ? await response.json() : [];
+                              
                               onEditComment(comment.id, {
                                 title: comment.title,
                                 content: comment.content,
                                 visibleToStudent: comment.visibleToStudent,
+                                tagIds: commentTags.map((tag: any) => tag.id),
                               });
                               setViewComments(false);
-                              console.log("Clicked the edit comment button");
                             }}
                             className="h-6 w-6 p-0"
                             data-testid={`button-edit-comment-${comment.id}`}

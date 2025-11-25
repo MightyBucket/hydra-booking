@@ -228,6 +228,7 @@ function CalendarPage() {
               title: data.title,
               content: data.content,
               visibleToStudent: data.visibleToStudent ? 1 : 0,
+              tagIds: data.tagIds,
             });
           } else {
             await handleCommentSubmit(data);
@@ -762,6 +763,7 @@ function SchedulePage() {
               title: data.title,
               content: data.content,
               visibleToStudent: data.visibleToStudent ? 1 : 0,
+              tagIds: data.tagIds,
             });
           } else {
             await handleCommentSubmit(data);
@@ -921,7 +923,7 @@ function PaymentsPage() {
 
   // Group payments
   const groupedPayments: { [key: string]: any[] } = {};
-  
+
   if (groupBy === 'month') {
     filteredPayments.forEach(payment => {
       const monthKey = format(new Date(payment.paymentDate), 'MMMM yyyy');
@@ -941,7 +943,7 @@ function PaymentsPage() {
             const parent = parentsData.find(p => p.id === payment.payerId);
             return parent ? parent.name : 'Unknown';
           })();
-      
+
       if (!groupedPayments[payerName]) {
         groupedPayments[payerName] = [];
       }
@@ -1019,7 +1021,7 @@ function PaymentsPage() {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="hidden md:table-header-group">
@@ -1206,7 +1208,7 @@ function PaymentsPage() {
               Filter payments by payer, date range, or group them by different criteria.
             </SheetDescription>
           </SheetHeader>
-          
+
           <div className="space-y-6 mt-6">
             {/* Filter by Payer */}
             <div className="space-y-2">
@@ -2085,6 +2087,7 @@ function StudentSchedulePage() {
               title: data.title,
               content: data.content,
               visibleToStudent: data.visibleToStudent ? 1 : 0,
+              tagIds: data.tagIds,
             });
           }
         }}

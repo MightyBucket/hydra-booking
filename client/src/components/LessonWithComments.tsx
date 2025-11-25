@@ -54,7 +54,7 @@ interface LessonWithCommentsProps {
   onViewComments?: (lessonId: string) => void;
   onEditComment?: (
     commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
+    data: { title: string; content: string; visibleToStudent: number; tagIds?: string[] },
   ) => void;
   onDeleteComment?: (commentId: string) => void;
 }
@@ -134,6 +134,7 @@ export default function LessonWithComments({
                     title: comment.title,
                     content: comment.content,
                     visibleToStudent: comment.visibleToStudent,
+                    tagIds: tags.map((tag: any) => tag.id),
                   });
                 }}
                 className="h-6 w-6 p-0"

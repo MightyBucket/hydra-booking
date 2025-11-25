@@ -14,9 +14,10 @@ interface CommentFormDialogProps {
     title: string;
     content: string;
     visibleToStudent: number;
+    tagIds?: string[];
   } | null;
   isEditing: boolean;
-  onSubmit: (data: { title: string; content: string; visibleToStudent: boolean }) => void;
+  onSubmit: (data: { title: string; content: string; visibleToStudent: boolean; tagIds: string[] }) => void;
   onCancel: () => void;
 }
 
@@ -43,6 +44,7 @@ export default function CommentFormDialog({
                   title: editingCommentData.title,
                   content: editingCommentData.content,
                   visibleToStudent: editingCommentData.visibleToStudent === 1,
+                  tagIds: editingCommentData.tagIds || [],
                 }
               : undefined
           }

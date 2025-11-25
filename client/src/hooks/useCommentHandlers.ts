@@ -81,9 +81,18 @@ export function useCommentHandlers() {
 
   const handleStartEditComment = (
     commentId: string,
-    data: { title: string; content: string; visibleToStudent: number; tagIds?: string[] }, // Added tagIds to edit data
+    data: { title: string; content: string; visibleToStudent: number; tagIds?: string[] },
   ) => {
-    openCommentForm({ lessonId: '', editingId: commentId, commentData: data });
+    openCommentForm({ 
+      lessonId: '', 
+      editingId: commentId, 
+      commentData: { 
+        title: data.title, 
+        content: data.content, 
+        visibleToStudent: data.visibleToStudent,
+        tagIds: data.tagIds || []
+      } 
+    });
   };
 
   const handleEditComment = async (
