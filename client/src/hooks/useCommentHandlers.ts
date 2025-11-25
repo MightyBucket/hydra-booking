@@ -79,20 +79,41 @@ export function useCommentHandlers() {
     }
   };
 
-  const handleStartEditComment = (
-    commentId: string,
-    data: { title: string; content: string; visibleToStudent: number; tagIds?: string[] },
-  ) => {
-    openCommentForm({ 
-      lessonId: '', 
-      editingId: commentId, 
-      commentData: { 
-        title: data.title, 
-        content: data.content, 
-        visibleToStudent: data.visibleToStudent,
-        tagIds: data.tagIds || []
-      } 
-    });
+  const handleStartEditComment = async (commentId: string, comment: any) => {
+    try {
+      // Fetch the comment's tags
+      const response = await fetch(`/api/comments/${commentId}/tags`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+        },
+      });
+      const tags = response.ok ? await response.json() : [];
+      const tagIds = tags.map((tag: any) => tag.id);
+
+      openCommentForm({
+        lessonId: comment.lessonId,
+        editingId: commentId,
+        commentData: {
+          title: comment.title,
+          content: comment.content,
+          visibleToStudent: comment.visibleToStudent,
+          tagIds: tagIds,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching comment tags:", error);
+      // Still allow editing even if tags fail to load
+      openCommentForm({
+        lessonId: comment.lessonId,
+        editingId: commentId,
+        commentData: {
+          title: comment.title,
+          content: comment.content,
+          visibleToStudent: comment.visibleToStudent,
+          tagIds: [],
+        },
+      });
+    }
   };
 
   const handleEditComment = async (
