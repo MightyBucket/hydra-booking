@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Users, Plus, GraduationCap, BarChart3, Settings, Menu, X } from 'lucide-react';
+import { Calendar, Users, Plus, GraduationCap, BarChart3, Settings, Menu, X, ReceiptPoundSterling, NotebookTabs, PersonStanding} from 'lucide-react';
 import { GiBrainTentacle } from "react-icons/gi";
 
 interface NavigationProps {
@@ -34,13 +34,13 @@ export default function Navigation({
   // Define navigation items based on view type (student vs teacher)
   const navItems = isStudentView && studentId ? [
     { path: `/calendar/${studentId}`, label: 'Calendar', icon: Calendar },
-    { path: `/schedule/${studentId}`, label: 'Schedule', icon: GraduationCap },
+    { path: `/schedule/${studentId}`, label: 'Schedule', icon: NotebookTabs },
   ] : [
     { path: '/', label: 'Calendar', icon: Calendar, badge: lessonCount || undefined },
-    { path: '/schedule', label: 'Schedule', icon: GraduationCap, badge: lessonCount || undefined },
-    { path: '/students', label: 'Students', icon: Users, badge: studentCount || undefined },
+    { path: '/schedule', label: 'Schedule', icon: NotebookTabs, badge: lessonCount || undefined },
+    { path: '/students', label: 'Students', icon: PersonStanding, badge: studentCount || undefined },
     { path: '/parents', label: 'Parents', icon: Users },
-    { path: '/payments', label: 'Payments', icon: BarChart3 },
+    { path: '/payments', label: 'Payments', icon: ReceiptPoundSterling },
     { path: '/analytics', label: 'Analytics', icon: BarChart3 },
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
@@ -108,8 +108,7 @@ export default function Navigation({
         {/* Footer */}
         <div className="p-4 border-t">
           <div className="text-sm text-muted-foreground text-center">
-            <p>© 2024, Rahul Jhuree</p>
-            <p>Lesson Management Made Easy</p>
+            <p>© 2025, Rahul Jhuree</p>
           </div>
         </div>
       </Card>
