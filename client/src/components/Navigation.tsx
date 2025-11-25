@@ -34,7 +34,8 @@ export default function Navigation({
   // Define navigation items based on view type (student vs teacher)
   const navItems = isStudentView && studentId ? [
     { path: `/calendar/${studentId}`, label: 'Calendar', icon: Calendar },
-    { path: `/schedule/${studentId}`, label: 'Schedule', icon: NotebookTabs },
+    { path: `/schedule/${studentId}`, label: 'Schedule', icon: GraduationCap },
+    { path: `/payments/${studentId}`, label: 'Payments', icon: ReceiptPoundSterling },
   ] : [
     { path: '/', label: 'Calendar', icon: Calendar, badge: lessonCount || undefined },
     { path: '/schedule', label: 'Schedule', icon: NotebookTabs, badge: lessonCount || undefined },
@@ -89,7 +90,7 @@ export default function Navigation({
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = isActiveRoute(item.path);
-              
+
               return (
                 <li key={item.path}>
                   <Link href={item.path}>

@@ -47,7 +47,7 @@ import NoteForm from "./components/NoteForm";
 import CommentFormDialog from "./components/CommentFormDialog";
 import { useTags, useCreateTag, useUpdateTag, useDeleteTag } from "./hooks/useTags";
 import DeleteLessonDialog from "./components/DeleteLessonDialog";
-import { format } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO, isBefore, isAfter, addDays } from 'date-fns';
 import NotFound from "@/pages/not-found";
 import { Lesson } from "./types/Lesson";
 import { Button } from "@/components/ui/button";
@@ -61,7 +61,7 @@ import { useStudentNotes } from "./hooks/useStudentNotes";
 import { useLessonData } from "./hooks/useLessonData";
 import { useDialogState } from "./hooks/useDialogState";
 import { Edit, Trash2, Plus, Filter } from "lucide-react";
-import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
+import { useStudentByStudentId, useStudentLessonsByStudentId, useStudentLessons } from "@/hooks/useStudentData";
 import { handleJoinLessonLink, calculateStudentStats } from "@/utils/lessonHelpers";
 import {
   Sheet,
@@ -75,6 +75,8 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 /**
  * CalendarPage: Main calendar view showing lessons in a month/week grid
@@ -1971,11 +1973,11 @@ function StudentCalendarPage() {
   );
 }
 
-function StudentSchedulePage() {
+function StudentScheduleView() {
   const params = useParams<{ studentId: string }>();
 
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(params.studentId);
-  const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(params.studentId);
+  const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessons(params.studentId);
 
   // Set page title when student data is loaded
   useState(() => {
@@ -2092,6 +2094,214 @@ function StudentSchedulePage() {
   );
 }
 
+function StudentPaymentsView() {
+  const params = useParams<{ studentId: string }>();
+  const studentId = params.studentId as string;
+
+  // Set page title
+  useState(() => {
+    document.title = "Hydra - My Payments";
+  });
+
+  const { data: student, isLoading: studentLoading } = useStudentByStudentId(studentId);
+  const { data: paymentsData = [], isLoading: paymentsLoading } = usePayments();
+  const { data: studentsData = [] } = useStudents();
+  const { data: parentsData = [] } = useParents();
+  const { data: lessonsData = [] } = useLessons();
+
+  // State for grouping
+  const [groupBy, setGroupBy] = useState<'none' | 'month'>('month');
+
+  if (studentLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="text-xl font-semibold mb-2">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!student) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="text-xl font-semibold mb-2">Student not found</div>
+          <p className="text-muted-foreground">The student ID you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentsLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation 
+          onAddLesson={() => {}}
+          onAddStudent={() => {}}
+          isStudentView={true}
+          studentId={studentId}
+        />
+        <div className="container mx-auto p-6 md:ml-64">
+          <div className="flex items-center justify-center h-64">
+            Loading payments...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Filter payments for this student or their parent
+  let filteredPayments = paymentsData.filter(payment => {
+    if (payment.payerType === 'student' && payment.payerId === student.id) {
+      return true;
+    }
+    if (payment.payerType === 'parent' && payment.payerId === student.parentId) {
+      return true;
+    }
+    return false;
+  });
+
+  // Sort payments by date (most recent first)
+  filteredPayments = filteredPayments.sort((a, b) => 
+    new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+  );
+
+  // Group payments
+  const groupedPayments: Record<string, any[]> = {};
+
+  if (groupBy === 'none') {
+    groupedPayments['All Payments'] = filteredPayments;
+  } else if (groupBy === 'month') {
+    filteredPayments.forEach(payment => {
+      const date = new Date(payment.paymentDate);
+      const monthKey = format(date, 'MMMM yyyy');
+      if (!groupedPayments[monthKey]) {
+        groupedPayments[monthKey] = [];
+      }
+      groupedPayments[monthKey].push(payment);
+    });
+  }
+
+  // Sort groups
+  const sortedGroupKeys = Object.keys(groupedPayments).sort((a, b) => {
+    if (groupBy === 'month') {
+      const dateA = new Date(a);
+      const dateB = new Date(b);
+      return dateB.getTime() - dateA.getTime();
+    }
+    return a.localeCompare(b);
+  });
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation 
+        onAddLesson={() => {}}
+        onAddStudent={() => {}}
+        isStudentView={true}
+        studentId={studentId}
+      />
+      <div className="container mx-auto p-6 md:ml-64">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>My Payments ({filteredPayments.length})</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {student.firstName} {student.lastName}
+              </p>
+            </div>
+            <div className="flex gap-2 items-center">
+              <Select value={groupBy} onValueChange={(value: 'none' | 'month') => setGroupBy(value)}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No grouping</SelectItem>
+                  <SelectItem value="month">By month</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {filteredPayments.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No payments found.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {sortedGroupKeys.map(groupKey => {
+                  const groupPayments = groupedPayments[groupKey];
+                  const totalAmount = groupPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+                  return (
+                    <div key={groupKey} className="space-y-3">
+                      {groupBy !== 'none' && (
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold">{groupKey}</h3>
+                          <div className="text-sm text-muted-foreground">
+                            {groupPayments.length} payment{groupPayments.length !== 1 ? 's' : ''} • £{totalAmount.toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="hidden md:table-header-group">
+                            <tr className="border-b">
+                              <th className="text-left p-3">Date</th>
+                              <th className="text-left p-3">Amount</th>
+                              <th className="text-left p-3">Lessons</th>
+                              <th className="text-left p-3">Notes</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {groupPayments.map((payment: any) => {
+                              const formattedDate = format(new Date(payment.paymentDate), 'MMM d, yyyy');
+                              const formattedAmount = `£${parseFloat(payment.amount).toFixed(2)}`;
+
+                              return (
+                                <tr key={payment.id} className="border-b hover:bg-accent/50">
+                                  {/* Mobile view */}
+                                  <td className="p-2 md:hidden">
+                                    <div className="space-y-1">
+                                      <div className="font-medium">{formattedDate}</div>
+                                      <div className="text-sm font-semibold">{formattedAmount}</div>
+                                      <div className="text-xs text-muted-foreground">
+                                        <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={true} />
+                                      </div>
+                                      {payment.notes && (
+                                        <div className="text-xs text-muted-foreground">{payment.notes}</div>
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  {/* Desktop view */}
+                                  <td className="hidden md:table-cell p-3">{formattedDate}</td>
+                                  <td className="hidden md:table-cell p-3 font-semibold">{formattedAmount}</td>
+                                  <td className="hidden md:table-cell p-3">
+                                    <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={false} />
+                                  </td>
+                                  <td className="hidden md:table-cell p-3 text-sm text-muted-foreground max-w-xs truncate">
+                                    {payment.notes || '-'}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 function Router() {
   return (
     <Switch>
@@ -2103,7 +2313,8 @@ function Router() {
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route path="/calendar/:studentId" component={StudentCalendarPage} />
-      <Route path="/schedule/:studentId" component={StudentSchedulePage} />
+      <Route path="/schedule/:studentId" component={StudentScheduleView} />
+      <Route path="/payments/:studentId" component={StudentPaymentsView} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -2111,7 +2322,6 @@ function Router() {
 
 function AppContent() {
   const [location, setLocation] = useLocation();
-
   const { studentsData, lessonsData } = useLessonData();
 
   const {
@@ -2128,7 +2338,7 @@ function AppContent() {
     handleSubmit: handleLessonSubmit,
   } = useLessonForm();
 
-  const studentViewMatch = location.match(/^\/(calendar|schedule)\/([^/]+)$/);
+  const studentViewMatch = location.match(/^\/(calendar|schedule|payments)\/([^/]+)$/);
   const isStudentView = !!studentViewMatch;
   const studentId = studentViewMatch?.[2];
   const shouldShowNavigation = true;
@@ -2199,9 +2409,11 @@ function AuthenticatedApp() {
   const [location] = useLocation();
   const { data: authData, isLoading } = useAuth();
 
-  // Allow access to student calendar and schedule views without authentication
+  // Allow access to student calendar, schedule, and payments views without authentication
   const isStudentCalendarView = location.match(/^\/calendar\/[^/]+$/);
   const isStudentScheduleView = location.match(/^\/schedule\/[^/]+$/);
+  const isStudentPaymentsView = location.match(/^\/payments\/[^/]+$/);
+
 
   if (isLoading) {
     return (
@@ -2215,6 +2427,7 @@ function AuthenticatedApp() {
   if (
     !isStudentCalendarView &&
     !isStudentScheduleView &&
+    !isStudentPaymentsView &&
     !authData?.authenticated
   ) {
     return <LoginForm />;
