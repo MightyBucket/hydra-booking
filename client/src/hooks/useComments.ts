@@ -9,10 +9,12 @@ interface Comment {
   createdAt: string;
 }
 
-export function useCommentsByLesson(lessonId: string) {
+export function useCommentsByLesson(lessonId: string | null) {
   return useQuery<Comment[]>({
     queryKey: ["comments", lessonId],
     queryFn: async () => {
+      if (!lessonId) return [];
+      
       const response = await fetch(`/api/lessons/${lessonId}/comments`, {
         credentials: "include",
         headers: {
@@ -26,6 +28,7 @@ export function useCommentsByLesson(lessonId: string) {
 
       return response.json();
     },
+    enabled: !!lessonId,
   });
 }
 

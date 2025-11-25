@@ -30,12 +30,12 @@ export default function ScheduleCommentsDialog({
   studentId,
 }: ScheduleCommentsDialogProps) {
   const { data: regularComments = [] } = useCommentsByLesson(
-    !isStudentView && lessonId ? lessonId : ""
+    !isStudentView && lessonId ? lessonId : null
   );
 
   const { data: studentComments = [] } = useStudentLessonComments(
-    studentId || "",
-    lessonId || ""
+    studentId,
+    lessonId
   );
 
   const comments = isStudentView ? studentComments : regularComments;
