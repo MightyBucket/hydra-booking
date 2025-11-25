@@ -61,7 +61,7 @@ import { useStudentNotes } from "./hooks/useStudentNotes";
 import { useLessonData } from "./hooks/useLessonData";
 import { useDialogState } from "./hooks/useDialogState";
 import { Edit, Trash2, Plus, Filter } from "lucide-react";
-import { useStudentByStudentId, useStudentLessonsByStudentId, useStudentLessons } from "@/hooks/useStudentData";
+import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
 import { handleJoinLessonLink, calculateStudentStats } from "@/utils/lessonHelpers";
 import {
   Sheet,
