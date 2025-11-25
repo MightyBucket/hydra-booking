@@ -745,6 +745,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get lessons for a specific payment (public endpoint for student view)
+  app.get("/api/student/:studentId/payments/:paymentId/lessons", async (req, res) => {
+    try {
+      const { studentId, paymentId } = req.params;
+      
+      // Find student by their 6-digit studentId
+      const students = await storage.getStudents();
+      const student = students.find((s: any) => s.studentId === studentId);
+
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+
+      // Get the payment
+      const payment = await storage.getPayment(paymentId);
+      if (!payment) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+
+      // Verify this payment belongs to this student or their parent
+      const hasAccess = 
+        (payment.payerType === 'student' && payment.payerId === student.id) ||
+        (payment.payerType === 'parent' && student.parentId && payment.payerId === student.parentId);
+
+      if (!hasAccess) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const paymentLessons = await storage.getPaymentLessons(paymentId);
+      res.json(paymentLessons.map(pl => pl.lessonId));
+    } catch (error) {
+      console.error(`Error fetching student payment lessons: ${error}`);
+      res.status(500).json({ error: "Failed to fetch payment lessons" });
+    }
+  });
+
   // Get lessons for a specific payment
   app.get("/api/payments/:paymentId/lessons", requireAuth, async (req, res) => {
     try {

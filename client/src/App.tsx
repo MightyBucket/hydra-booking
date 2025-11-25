@@ -39,7 +39,7 @@ import { useStudents, useDeleteStudent, useUpdateStudent } from "./hooks/useStud
 import { useLessons } from "./hooks/useLessons";
 import { useParents } from "./hooks/useParents";
 // Updated imports to include delete and update payment hooks
-import { usePayments, useCreatePayment, useDeletePayment, useUpdatePayment, usePaymentLessons, useStudentPayments } from "./hooks/usePayments";
+import { usePayments, useCreatePayment, useDeletePayment, useUpdatePayment, usePaymentLessons, useStudentPayments, useStudentPaymentLessons } from "./hooks/usePayments";
 import ParentForm from "./components/ParentForm";
 import PaymentForm from "./components/PaymentForm";
 import { useParentForm } from "./hooks/useParentForm";
@@ -1311,8 +1311,11 @@ function PaymentsPage() {
   );
 }
 
-function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false }: { paymentId: string; lessonsData: any[]; isMobile?: boolean }) {
-  const { data: lessonIds = [] } = usePaymentLessons(paymentId);
+function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false, studentId }: { paymentId: string; lessonsData: any[]; isMobile?: boolean; studentId?: string }) {
+  // Use student-specific hook if studentId is provided (for student view)
+  const { data: lessonIds = [] } = studentId 
+    ? useStudentPaymentLessons(studentId, paymentId)
+    : usePaymentLessons(paymentId);
 
   const lessons = lessonIds
     .map(id => lessonsData.find(l => l.id === id))
@@ -2250,7 +2253,7 @@ function StudentPaymentsView() {
                                     <div className="font-medium">{formattedDate}</div>
                                     <div className="text-sm font-semibold">{formattedAmount}</div>
                                     <div className="text-xs text-muted-foreground">
-                                      <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={true} />
+                                      <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={true} studentId={studentId} />
                                     </div>
                                     {payment.notes && (
                                       <div className="text-xs text-muted-foreground">{payment.notes}</div>
@@ -2262,7 +2265,7 @@ function StudentPaymentsView() {
                                 <td className="hidden md:table-cell p-3">{formattedDate}</td>
                                 <td className="hidden md:table-cell p-3 font-semibold">{formattedAmount}</td>
                                 <td className="hidden md:table-cell p-3">
-                                  <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={false} />
+                                  <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={false} studentId={studentId} />
                                 </td>
                                 <td className="hidden md:table-cell p-3 text-sm text-muted-foreground max-w-xs truncate">
                                   {payment.notes || '-'}

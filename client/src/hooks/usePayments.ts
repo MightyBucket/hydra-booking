@@ -123,6 +123,24 @@ export function usePaymentLessons(paymentId: string) {
   });
 }
 
+async function fetchStudentPaymentLessons(studentId: string, paymentId: string): Promise<string[]> {
+  const response = await fetch(`/api/student/${studentId}/payments/${paymentId}/lessons`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch student payment lessons");
+  }
+  return response.json();
+}
+
+export function useStudentPaymentLessons(studentId: string, paymentId: string) {
+  return useQuery({
+    queryKey: ["/api/student", studentId, "payments", paymentId, "lessons"],
+    queryFn: () => fetchStudentPaymentLessons(studentId, paymentId),
+    enabled: !!studentId && !!paymentId,
+  });
+}
+
 export function useCreatePayment() {
   const queryClient = useQueryClient();
   return useMutation({
