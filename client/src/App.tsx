@@ -2107,8 +2107,6 @@ function StudentPaymentsView() {
 
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(studentId);
   const { data: paymentsData = [], isLoading: paymentsLoading } = useStudentPayments(studentId);
-  const { data: studentsData = [] } = useStudents();
-  const { data: parentsData = [] } = useParents();
   const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(studentId);
   
   // Extract lessons array from response
@@ -2313,7 +2311,15 @@ function Router() {
 
 function AppContent() {
   const [location, setLocation] = useLocation();
-  const { studentsData, lessonsData } = useLessonData();
+  
+  const studentViewMatch = location.match(/^\/(calendar|schedule|payments)\/([^/]+)$/);
+  const isStudentView = !!studentViewMatch;
+  const studentId = studentViewMatch?.[2];
+  
+  // Only fetch admin data when not in student view
+  const { studentsData, lessonsData } = isStudentView 
+    ? { studentsData: [], lessonsData: [] }
+    : useLessonData();
 
   const {
     showStudentForm,
@@ -2329,9 +2335,6 @@ function AppContent() {
     handleSubmit: handleLessonSubmit,
   } = useLessonForm();
 
-  const studentViewMatch = location.match(/^\/(calendar|schedule|payments)\/([^/]+)$/);
-  const isStudentView = !!studentViewMatch;
-  const studentId = studentViewMatch?.[2];
   const shouldShowNavigation = true;
 
   const handleAddLesson = () => {
