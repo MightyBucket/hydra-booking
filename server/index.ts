@@ -7,19 +7,28 @@ const app = express();
 
 // CORS configuration
 app.use((req, res, next) => {
-  // Allow requests from any origin in development, or from specific origins in production
-  const allowedOrigins = process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(',')
-    : ['*'];
+  const isDevelopment = process.env.NODE_ENV !== 'production';
   
-  const origin = req.headers.origin;
-  
-  if (allowedOrigins.includes('*') || (origin && allowedOrigins.includes(origin))) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  if (isDevelopment) {
+    // In development, allow all origins
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  } else {
+    // In production, use specific allowed origins or allow all if not set
+    const allowedOrigins = process.env.ALLOWED_ORIGINS 
+      ? process.env.ALLOWED_ORIGINS.split(',')
+      : ['*'];
+    
+    const origin = req.headers.origin;
+    
+    if (allowedOrigins.includes('*')) {
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    } else if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
   }
   
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   // Handle preflight requests
@@ -31,7 +40,7 @@ app.use((req, res, next) => {
 });
 
 // Add security headers in production
-if (app.get("env") === "production") {
+if (process.env.NODE_ENV === "production") {
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
@@ -115,7 +124,7 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
