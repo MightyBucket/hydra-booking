@@ -21,11 +21,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = req.body;
       const sessionId = login(username, password);
-      
+
       if (!sessionId) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
-      
+
       res.json({ sessionId });
     } catch (error) {
       console.error('Error during login:', error);
@@ -52,10 +52,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!sessionId) {
         return res.status(401).json({ authenticated: false });
       }
-      
+
       const { validateSession } = await import('./auth');
       const isValid = validateSession(sessionId);
-      
+
       res.json({ authenticated: isValid });
     } catch (error) {
       console.error('Error validating session:', error);
@@ -79,11 +79,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const students = await storage.getStudents();
       const student = students.find((s: any) => s.studentId === req.params.studentId);
-      
+
       if (!student) {
         return res.status(404).json({ error: "Student not found" });
       }
-      
+
       res.json(student);
     } catch (error) {
       console.error('Error fetching student:', error);
@@ -145,6 +145,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Parent routes (protected)
+  app.get("/api/parents", requireAuth, async (req, res) => {
+    try {
+      const parents = await storage.getParents();
+      res.json(parents);
+    } catch (error) {
+      console.error('Error fetching parents:', error);
+      res.status(500).json({ error: "Failed to fetch parents" });
+    }
+  });
+
+  app.get("/api/parents/:id", requireAuth, async (req, res) => {
+    try {
+      const parent = await storage.getParent(req.params.id);
+      if (!parent) {
+        return res.status(404).json({ error: "Parent not found" });
+      }
+      res.json(parent);
+    } catch (error) {
+      console.error('Error fetching parent:', error);
+      res.status(500).json({ error: "Failed to fetch parent" });
+    }
+  });
+
+  app.post("/api/parents", requireAuth, async (req, res) => {
+    try {
+      const { insertParentSchema } = await import('@shared/schema');
+      const validatedData = insertParentSchema.parse(req.body);
+      const parent = await storage.createParent(validatedData);
+      res.status(201).json(parent);
+    } catch (error) {
+      console.error('Error creating parent:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create parent" });
+    }
+  });
+
+  app.put("/api/parents/:id", requireAuth, async (req, res) => {
+    try {
+      const { insertParentSchema } = await import('@shared/schema');
+      const updateData = insertParentSchema.partial().parse(req.body);
+      const parent = await storage.updateParent(req.params.id, updateData);
+      if (!parent) {
+        return res.status(404).json({ error: "Parent not found" });
+      }
+      res.json(parent);
+    } catch (error) {
+      console.error('Error updating parent:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update parent" });
+    }
+  });
+
+  app.delete("/api/parents/:id", requireAuth, async (req, res) => {
+    try {
+      await storage.deleteParent(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting parent:', error);
+      res.status(500).json({ error: "Failed to delete parent" });
+    }
+  });
+
   // Lesson routes (global endpoint requires auth, student-specific endpoint is public)
   app.get("/api/lessons", requireAuth, async (req, res) => {
     try {
@@ -162,17 +229,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find student by their 6-digit studentId
       const students = await storage.getStudents();
       const student = students.find((s: any) => s.studentId === req.params.studentId);
-      
+
       if (!student) {
         return res.status(404).json({ error: "Student not found" });
       }
-      
+
       // Get lessons for this student
       const studentLessons = await storage.getLessonsByStudent(student.id);
-      
+
       // Get all lessons to find blocked slots
       const allLessons = await storage.getLessons();
-      
+
       // Create blocked slots for other students' lessons (only time and duration)
       const blockedSlots = allLessons
         .filter((lesson: any) => lesson.studentId !== student.id)
@@ -181,13 +248,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           duration: lesson.duration,
           isBlocked: true
         }));
-      
+
       // Combine student lessons with blocked slots
       const response = {
         lessons: studentLessons,
         blockedSlots: blockedSlots
       };
-      
+
       res.json(response);
     } catch (error) {
       console.error('Error fetching student lessons:', error);
@@ -225,7 +292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pricePerHour: parseFloat(req.body.pricePerHour),
         duration: parseInt(req.body.duration, 10),
       };
-      
+
       const validatedData = insertLessonSchema.parse(preprocessedData);
       const lesson = await storage.createLesson(validatedData);
       res.status(201).json(lesson);
@@ -344,17 +411,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/lessons/:lessonId/comments", async (req, res) => {
     try {
       const allComments = await storage.getCommentsByLesson(req.params.lessonId);
-      
+
       // Check if user is authenticated
       const sessionId = req.headers.authorization?.replace('Bearer ', '');
       const { validateSession } = await import('./auth');
       const isAuthenticated = sessionId ? validateSession(sessionId) : false;
-      
+
       // If not authenticated, only return comments visible to students
-      const comments = isAuthenticated 
-        ? allComments 
+      const comments = isAuthenticated
+        ? allComments
         : allComments.filter(comment => comment.visibleToStudent === 1);
-      
+
       res.json(comments);
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -368,21 +435,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find student by their 6-digit studentId
       const students = await storage.getStudents();
       const student = students.find((s: any) => s.studentId === req.params.studentId);
-      
+
       if (!student) {
         return res.status(404).json({ error: "Student not found" });
       }
-      
+
       // Verify lesson belongs to this student
       const lesson = await storage.getLesson(req.params.lessonId);
       if (!lesson || lesson.studentId !== student.id) {
         return res.status(404).json({ error: "Lesson not found" });
       }
-      
+
       // Get comments visible to student only
       const allComments = await storage.getCommentsByLesson(req.params.lessonId);
       const comments = allComments.filter(comment => comment.visibleToStudent === 1);
-      
+
       res.json(comments);
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -393,11 +460,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/lessons/:lessonId/comments", requireAuth, async (req, res) => {
     try {
       const { insertCommentSchema } = await import('@shared/schema');
+      const { tagIds, ...commentData } = req.body;
       const validatedData = insertCommentSchema.parse({
-        ...req.body,
+        ...commentData,
         lessonId: req.params.lessonId,
       });
       const comment = await storage.createComment(validatedData);
+      
+      // Add tags if provided
+      if (tagIds && Array.isArray(tagIds)) {
+        for (const tagId of tagIds) {
+          await storage.addCommentTag(comment.id, tagId);
+        }
+      }
+      
       res.status(201).json(comment);
     } catch (error) {
       console.error('Error creating comment:', error);
@@ -411,11 +487,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/comments/:id", requireAuth, async (req, res) => {
     try {
       const { insertCommentSchema } = await import('@shared/schema');
-      const updateData = insertCommentSchema.partial().parse(req.body);
+      const { tagIds, ...commentData } = req.body;
+      const updateData = insertCommentSchema.partial().parse(commentData);
       const comment = await storage.updateComment(req.params.id, updateData);
       if (!comment) {
         return res.status(404).json({ error: "Comment not found" });
       }
+      
+      // Update tags if provided
+      if (tagIds !== undefined && Array.isArray(tagIds)) {
+        await storage.removeCommentTags(req.params.id);
+        for (const tagId of tagIds) {
+          await storage.addCommentTag(req.params.id, tagId);
+        }
+      }
+      
       res.json(comment);
     } catch (error) {
       console.error('Error updating comment:', error);
@@ -433,6 +519,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting comment:', error);
       res.status(500).json({ error: "Failed to delete comment" });
+    }
+  });
+
+  // Tag routes (protected)
+  app.get("/api/tags", requireAuth, async (req, res) => {
+    try {
+      const tags = await storage.getTags();
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+      res.status(500).json({ error: "Failed to fetch tags" });
+    }
+  });
+
+  app.post("/api/tags", requireAuth, async (req, res) => {
+    try {
+      const { insertTagSchema } = await import('@shared/schema');
+      const validatedData = insertTagSchema.parse(req.body);
+      const tag = await storage.createTag(validatedData);
+      res.status(201).json(tag);
+    } catch (error) {
+      console.error('Error creating tag:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create tag" });
+    }
+  });
+
+  app.put("/api/tags/:id", requireAuth, async (req, res) => {
+    try {
+      const { insertTagSchema } = await import('@shared/schema');
+      const updateData = insertTagSchema.partial().parse(req.body);
+      const tag = await storage.updateTag(req.params.id, updateData);
+      if (!tag) {
+        return res.status(404).json({ error: "Tag not found" });
+      }
+      res.json(tag);
+    } catch (error) {
+      console.error('Error updating tag:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update tag" });
+    }
+  });
+
+  app.delete("/api/tags/:id", requireAuth, async (req, res) => {
+    try {
+      await storage.deleteTag(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+      res.status(500).json({ error: "Failed to delete tag" });
+    }
+  });
+
+  // Comment-Tag routes (protected)
+  app.get("/api/comments/:commentId/tags", async (req, res) => {
+    try {
+      const tags = await storage.getCommentTags(req.params.commentId);
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching comment tags:', error);
+      res.status(500).json({ error: "Failed to fetch comment tags" });
     }
   });
 
@@ -493,17 +644,221 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment routes (protected)
+  app.get("/api/payments", requireAuth, async (req, res) => {
+    try {
+      const payments = await storage.getPayments();
+      res.json(payments);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      res.status(500).json({ error: "Failed to fetch payments" });
+    }
+  });
+
+  // Get payments for a specific student by their 6-digit studentId (public for student view)
+  app.get("/api/student/:studentId/payments", async (req, res) => {
+    try {
+      // Find student by their 6-digit studentId
+      const students = await storage.getStudents();
+      const student = students.find((s: any) => s.studentId === req.params.studentId);
+
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+
+      // Get all payments
+      const allPayments = await storage.getPayments();
+
+      // Filter payments where the payer is this student or their parent
+      const studentPayments = allPayments.filter(payment => {
+        if (payment.payerType === 'student' && payment.payerId === student.id) {
+          return true;
+        }
+        if (payment.payerType === 'parent' && student.parentId && payment.payerId === student.parentId) {
+          return true;
+        }
+        return false;
+      });
+
+      res.json(studentPayments);
+    } catch (error) {
+      console.error('Error fetching student payments:', error);
+      res.status(500).json({ error: "Failed to fetch student payments" });
+    }
+  });
+
+  app.get("/api/payments/:id", requireAuth, async (req, res) => {
+    try {
+      const payment = await storage.getPayment(req.params.id);
+      if (!payment) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+      res.json(payment);
+    } catch (error) {
+      console.error('Error fetching payment:', error);
+      res.status(500).json({ error: "Failed to fetch payment" });
+    }
+  });
+
+  app.get("/api/payments/:id/lessons", requireAuth, async (req, res) => {
+    try {
+      const lessonIds = await storage.getPaymentLessons(req.params.id);
+      res.json(lessonIds);
+    } catch (error) {
+      console.error('Error fetching payment lessons:', error);
+      res.status(500).json({ error: "Failed to fetch payment lessons" });
+    }
+  });
+
+  app.post("/api/payments", requireAuth, async (req, res) => {
+    try {
+      const { insertPaymentSchema } = await import('@shared/schema');
+      const { lessonIds, ...paymentData } = req.body;
+      const validatedData = insertPaymentSchema.parse(paymentData);
+      const payment = await storage.createPayment(validatedData, lessonIds || []);
+      res.status(201).json(payment);
+    } catch (error) {
+      console.error('Error creating payment:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create payment" });
+    }
+  });
+
+  app.put("/api/payments/:id", requireAuth, async (req, res) => {
+    try {
+      const { insertPaymentSchema } = await import('@shared/schema');
+      const { lessonIds, ...paymentData } = req.body;
+      const updateData = insertPaymentSchema.partial().parse(paymentData);
+      const payment = await storage.updatePayment(req.params.id, updateData, lessonIds);
+      if (!payment) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+      res.json(payment);
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update payment" });
+    }
+  });
+
+  // Get lessons for a specific payment (public endpoint for student view)
+  app.get("/api/student/:studentId/payments/:paymentId/lessons", async (req, res) => {
+    try {
+      const { studentId, paymentId } = req.params;
+      
+      // Find student by their 6-digit studentId
+      const students = await storage.getStudents();
+      const student = students.find((s: any) => s.studentId === studentId);
+
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+
+      // Get the payment
+      const payment = await storage.getPayment(paymentId);
+      if (!payment) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+
+      // Verify this payment belongs to this student or their parent
+      const hasAccess = 
+        (payment.payerType === 'student' && payment.payerId === student.id) ||
+        (payment.payerType === 'parent' && student.parentId && payment.payerId === student.parentId);
+
+      if (!hasAccess) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const paymentLessons = await storage.getPaymentLessons(paymentId);
+      const lessonIds = paymentLessons.map(pl => pl.lessonId);
+      
+      console.log(`Payment ${paymentId} lessons:`, lessonIds);
+      res.json(lessonIds);
+    } catch (error) {
+      console.error(`Error fetching student payment lessons: ${error}`);
+      res.status(500).json({ error: "Failed to fetch payment lessons" });
+    }
+  });
+
+  // Get lessons for a specific payment
+  app.get("/api/payments/:paymentId/lessons", requireAuth, async (req, res) => {
+    try {
+      const { paymentId } = req.params;
+      const paymentLessons = await storage.getPaymentLessons(paymentId);
+      res.json(paymentLessons.map(pl => pl.lessonId));
+    } catch (error) {
+      console.error(`Error fetching payment lessons: ${error}`);
+      res.status(500).json({ error: "Failed to fetch payment lessons" });
+    }
+  });
+
+  // Update a payment
+  app.patch("/api/payments/:paymentId", requireAuth, async (req, res) => {
+    try {
+      const { paymentId } = req.params;
+      const { lessonIds, ...paymentData } = req.body;
+
+      // Update the payment
+      const updatedPayment = await storage.updatePayment(paymentId, paymentData);
+
+      // If lessonIds are provided, update the payment-lesson relationships
+      if (lessonIds !== undefined) {
+        // Delete existing relationships
+        await storage.deletePaymentLessons(paymentId);
+
+        // Create new relationships
+        for (const lessonId of lessonIds) {
+          await storage.createPaymentLesson(paymentId, lessonId);
+          // Update lesson payment status to 'paid'
+          await storage.updateLesson(lessonId, { paymentStatus: 'paid' });
+        }
+      }
+
+      res.json(updatedPayment);
+    } catch (error) {
+      console.error(`Error updating payment: ${error}`);
+      res.status(500).json({ error: "Failed to update payment" });
+    }
+  });
+
+  // Delete a payment
+  app.delete("/api/payments/:paymentId", requireAuth, async (req, res) => {
+    try {
+      const { paymentId } = req.params;
+
+      // Get lessons associated with this payment before deleting
+      const paymentLessons = await storage.getPaymentLessons(paymentId);
+
+      // Delete the payment (this will cascade delete payment_lessons)
+      await storage.deletePayment(paymentId);
+
+      // Update lesson payment statuses back to 'pending'
+      for (const pl of paymentLessons) {
+        await storage.updateLesson(pl.lessonId, { paymentStatus: 'pending' });
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      console.error(`Error deleting payment: ${error}`);
+      res.status(500).json({ error: "Failed to delete payment" });
+    }
+  });
+
   // iCalendar endpoint for calendar sync
   app.get("/api/calendar/ics", requireAuth, async (req, res) => {
     try {
       const lessons = await storage.getLessons();
       const students = await storage.getStudents();
-      
+
       // Filter lessons for next two months
       const now = new Date();
       const twoMonthsLater = new Date();
       twoMonthsLater.setMonth(twoMonthsLater.getMonth() + 2);
-      
+
       const filteredLessons = lessons.filter((lesson: any) => {
         const lessonDate = new Date(lesson.dateTime);
         return lessonDate >= now && lessonDate <= twoMonthsLater;
@@ -523,10 +878,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       filteredLessons.forEach((lesson: any) => {
         const student = students.find((s: any) => s.id === lesson.studentId);
         const studentName = student ? `${student.firstName} ${student.lastName || ''}`.trim() : 'Unknown Student';
-        
+
         const startDate = new Date(lesson.dateTime);
         const endDate = new Date(startDate.getTime() + lesson.duration * 60000);
-        
+
         // Format dates to iCalendar format (YYYYMMDDTHHMMSSZ)
         const formatDate = (date: Date) => {
           return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -534,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const now = new Date();
         const dtstamp = formatDate(now);
-        
+
         icsContent.push('BEGIN:VEVENT');
         icsContent.push(`UID:${lesson.id}@lessonscheduler`);
         icsContent.push(`DTSTAMP:${dtstamp}`);
@@ -542,11 +897,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         icsContent.push(`DTEND:${formatDate(endDate)}`);
         icsContent.push(`SUMMARY:${lesson.subject} - ${studentName}`);
         icsContent.push(`DESCRIPTION:Duration: ${lesson.duration} minutes\\nPrice: £${lesson.pricePerHour}/hr\\nStatus: ${lesson.paymentStatus}`);
-        
+
         if (lesson.lessonLink) {
           icsContent.push(`URL:${lesson.lessonLink}`);
         }
-        
+
         icsContent.push('END:VEVENT');
       });
 
@@ -561,6 +916,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error generating calendar:', error);
       res.status(500).json({ error: "Failed to generate calendar" });
     }
+  });
+
+  // For student-specific routes in development, we need to ensure they're handled by the SPA
+  // This should be registered before Vite's middleware in development
+  app.get(['/calendar/:studentId', '/schedule/:studentId'], (req, res, next) => {
+    // Let Vite handle this in development, or serve index.html in production
+    next();
   });
 
   const httpServer = createServer(app);

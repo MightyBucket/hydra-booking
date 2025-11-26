@@ -25,9 +25,11 @@ import {
   MessageSquare,
   Eye,
   EyeOff,
+  X,
 } from "lucide-react";
 import { format } from "date-fns";
 import { getPaymentStatusColor, PaymentStatus } from "@/lib/paymentStatus";
+import { useCommentTags } from "@/hooks/useTags";
 
 interface Comment {
   id: string;
@@ -61,7 +63,7 @@ interface LessonCardProps {
   onDeleteComment?: (commentId: string) => void;
   onEditComment?: (
     commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
+    data: { title: string; content: string; visibleToStudent: number; tagIds?: string[] },
   ) => void;
   showCommentActions?: boolean;
   isStudentView?: boolean;
@@ -84,6 +86,88 @@ export default function LessonCard({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
 
   const totalPrice = (lesson.pricePerHour * lesson.duration) / 60;
+
+  // Component to display a single comment with its tags
+  function CommentWithTags({ comment }: { comment: Comment }) {
+    const { data: tags = [] } = useCommentTags(comment.id);
+
+    return (
+      <div className="text-xs bg-muted/50 p-2 rounded space-y-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1">
+            <div className="font-medium flex items-center gap-1 flex-wrap">
+              {comment.title}
+              {tags.map((tag: any) => (
+                <Badge
+                  key={tag.id}
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0"
+                  style={{ borderColor: tag.color, color: tag.color }}
+                >
+                  {tag.name}
+                </Badge>
+              ))}
+              {comment.visibleToStudent === 1 ? (
+                <Eye
+                  className="h-3 w-3 text-muted-foreground"
+                  title="Visible to student"
+                />
+              ) : (
+                <EyeOff
+                  className="h-3 w-3 text-muted-foreground"
+                  title="Not visible to student"
+                />
+              )}
+            </div>
+            <div className="text-muted-foreground">{comment.content}</div>
+            <div className="text-[10px] text-muted-foreground">
+              {format(new Date(comment.createdAt), "MMM d, yyyy h:mm a")}
+              {comment.lastEdited && (
+                <span className="ml-2 italic">
+                  (edited{" "}
+                  {format(new Date(comment.lastEdited), "MMM d, h:mm a")})
+                </span>
+              )}
+            </div>
+          </div>
+          {showCommentActions && (
+            <div className="flex gap-1">
+              {onEditComment && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingCommentId(comment.id);
+                    onEditComment(comment.id, {
+                      title: comment.title,
+                      content: comment.content,
+                      visibleToStudent: comment.visibleToStudent,
+                      tagIds: tags.map((tag: any) => tag.id),
+                    });
+                  }}
+                  className="h-5 w-5 p-0"
+                  data-testid={`button-edit-comment-${comment.id}`}
+                >
+                  <Edit className="h-3 w-3" />
+                </Button>
+              )}
+              {onDeleteComment && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDeleteComment(comment.id)}
+                  className="h-5 w-5 p-0 text-destructive hover:text-destructive"
+                  data-testid={`button-delete-comment-${comment.id}`}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Card
@@ -270,70 +354,7 @@ export default function LessonCard({
               Comments ({comments.length})
             </div>
             {comments.map((comment) => (
-              <div
-                key={comment.id}
-                className="text-xs bg-muted/50 p-2 rounded space-y-1"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="font-medium flex items-center gap-1">
-                    {comment.title}
-                    {comment.visibleToStudent === 1 ? (
-                      <Eye
-                        className="h-3 w-3 text-muted-foreground"
-                        title="Visible to student"
-                      />
-                    ) : (
-                      <EyeOff
-                        className="h-3 w-3 text-muted-foreground"
-                        title="Not visible to student"
-                      />
-                    )}
-                  </div>
-                  {showCommentActions && (
-                    <div className="flex gap-1">
-                      {onEditComment && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingCommentId(comment.id);
-                            onEditComment(comment.id, {
-                              title: comment.title,
-                              content: comment.content,
-                              visibleToStudent: comment.visibleToStudent,
-                            });
-                          }}
-                          className="h-5 w-5 p-0"
-                          data-testid={`button-edit-comment-${comment.id}`}
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                      )}
-                      {onDeleteComment && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onDeleteComment(comment.id)}
-                          className="h-5 w-5 p-0 text-destructive hover:text-destructive"
-                          data-testid={`button-delete-comment-${comment.id}`}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="text-muted-foreground">{comment.content}</div>
-                <div className="text-[10px] text-muted-foreground">
-                  {format(new Date(comment.createdAt), "MMM d, yyyy h:mm a")}
-                  {comment.lastEdited && (
-                    <span className="ml-2 italic">
-                      (edited{" "}
-                      {format(new Date(comment.lastEdited), "MMM d, h:mm a")})
-                    </span>
-                  )}
-                </div>
-              </div>
+              <CommentWithTags key={comment.id} comment={comment} />
             ))}
           </div>
         )}
@@ -356,6 +377,7 @@ export default function LessonCard({
                       title: comment.title,
                       content: comment.content,
                       visibleToStudent: comment.visibleToStudent === 1,
+                      tagIds: tags.map((tag: any) => tag.id),
                     }}
                     isEditing={true}
                     onSubmit={async (data) => {
@@ -364,6 +386,7 @@ export default function LessonCard({
                           title: data.title,
                           content: data.content,
                           visibleToStudent: data.visibleToStudent ? 1 : 0,
+                          tagIds: data.tagIds,
                         });
                         setEditingCommentId(null);
                       }
@@ -415,14 +438,18 @@ export default function LessonCard({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
+                            onClick={async () => {
+                              // Fetch tags for this comment
+                              const response = await fetch(`/api/comments/${comment.id}/tags`);
+                              const commentTags = response.ok ? await response.json() : [];
+                              
                               onEditComment(comment.id, {
                                 title: comment.title,
                                 content: comment.content,
                                 visibleToStudent: comment.visibleToStudent,
+                                tagIds: commentTags.map((tag: any) => tag.id),
                               });
                               setViewComments(false);
-                              console.log("Clicked the edit comment button");
                             }}
                             className="h-6 w-6 p-0"
                             data-testid={`button-edit-comment-${comment.id}`}

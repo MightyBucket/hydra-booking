@@ -39,16 +39,32 @@ export function useCommentHandlers() {
     title: string;
     content: string;
     visibleToStudent: boolean;
+    tagIds?: string[];
   }) => {
     if (!formData?.lessonId) return;
 
     try {
-      await createCommentMutation.mutateAsync({
-        lessonId: formData.lessonId,
+      const commentData = {
         title: data.title,
         content: data.content,
         visibleToStudent: data.visibleToStudent ? 1 : 0,
+        tagIds: data.tagIds, // Include tagIds
+      };
+
+      const response = await fetch(`/api/lessons/${formData.lessonId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`,
+        },
+        body: JSON.stringify(commentData),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to add comment');
+      }
+
+      // The createCommentMutation is not used here, so we'll keep the toast and reset form logic
       toast({
         title: "Success",
         description: "Comment added successfully",
@@ -63,16 +79,46 @@ export function useCommentHandlers() {
     }
   };
 
-  const handleStartEditComment = (
-    commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
-  ) => {
-    openCommentForm({ lessonId: '', editingId: commentId, commentData: data });
+  const handleStartEditComment = async (commentId: string, comment: any) => {
+    try {
+      // Fetch the comment's tags
+      const response = await fetch(`/api/comments/${commentId}/tags`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+        },
+      });
+      const tags = response.ok ? await response.json() : [];
+      const tagIds = tags.map((tag: any) => tag.id);
+
+      openCommentForm({
+        lessonId: comment.lessonId,
+        editingId: commentId,
+        commentData: {
+          title: comment.title,
+          content: comment.content,
+          visibleToStudent: comment.visibleToStudent,
+          tagIds: tagIds,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching comment tags:", error);
+      // Still allow editing even if tags fail to load
+      openCommentForm({
+        lessonId: comment.lessonId,
+        editingId: commentId,
+        commentData: {
+          title: comment.title,
+          content: comment.content,
+          visibleToStudent: comment.visibleToStudent,
+          tagIds: [],
+        },
+      });
+    }
   };
 
   const handleEditComment = async (
     commentId: string,
-    data: { title: string; content: string; visibleToStudent: number },
+    data: { title: string; content: string; visibleToStudent: number; tagIds?: string[] }, // Added tagIds to edit data
   ) => {
     try {
       await updateCommentMutation.mutateAsync({ id: commentId, ...data });

@@ -1,8 +1,10 @@
 
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Eye, EyeOff } from "lucide-react";
 import { linkifyText } from "@/lib/linkify";
+import { useCommentTags } from "@/hooks/useTags";
 
 interface Comment {
   id: string;
@@ -28,12 +30,24 @@ export default function CommentDisplay({
   onEdit,
   onDelete,
 }: CommentDisplayProps) {
+  const { data: tags = [] } = useCommentTags(comment.id);
+
   return (
     <div className="border-l-2 border-primary/20 pl-2">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <p className="text-xs font-medium">{comment.title}</p>
+            {tags.map((tag: any) => (
+              <Badge
+                key={tag.id}
+                variant="outline"
+                className="text-[10px] px-1.5 py-0"
+                style={{ borderColor: tag.color, color: tag.color }}
+              >
+                {tag.name}
+              </Badge>
+            ))}
             {showVisibilityIcon && (
               comment.visibleToStudent === 1 ? (
                 <Eye

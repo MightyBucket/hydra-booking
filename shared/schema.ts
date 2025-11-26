@@ -4,6 +4,15 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
+// Parents table
+export const parents = pgTable("parents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").unique(),
+  phoneNumber: text("phone_number"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Students table
 export const students = pgTable("students", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -16,6 +25,7 @@ export const students = pgTable("students", {
   defaultRate: decimal("default_rate", { precision: 10, scale: 2 }).notNull(),
   defaultLink: text("default_link").notNull(),
   defaultColor: text("default_color").notNull().default("#3b82f6"), // Default blue color
+  parentId: varchar("parent_id").references(() => parents.id, { onDelete: 'set null' }),
 });
 
 // Lessons table
@@ -38,6 +48,14 @@ export const recurringLessons = pgTable("recurring_lessons", {
   endDate: timestamp("end_date"),
 });
 
+// Tags table
+export const tags = pgTable("tags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  color: text("color").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Comments table
 export const comments = pgTable("comments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -49,6 +67,13 @@ export const comments = pgTable("comments", {
   lastEdited: timestamp("last_edited"),
 });
 
+// Comment-Tags junction table
+export const commentTags = pgTable("comment_tags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  commentId: varchar("comment_id").notNull().references(() => comments.id, { onDelete: 'cascade' }),
+  tagId: varchar("tag_id").notNull().references(() => tags.id, { onDelete: 'cascade' }),
+});
+
 // Notes table
 export const notes = pgTable("notes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -58,8 +83,34 @@ export const notes = pgTable("notes", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// Payments table
+export const payments = pgTable("payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  payerType: text("payer_type").notNull(), // 'student' or 'parent'
+  payerId: varchar("payer_id").notNull(), // references either student or parent id
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  paymentDate: timestamp("payment_date").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+// Payment-Lesson junction table (many-to-many relationship)
+export const paymentLessons = pgTable("payment_lessons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  paymentId: varchar("payment_id").notNull().references(() => payments.id, { onDelete: 'cascade' }),
+  lessonId: varchar("lesson_id").notNull().references(() => lessons.id, { onDelete: 'cascade' }),
+});
+
 // Relations
-export const studentsRelations = relations(students, ({ many }) => ({
+export const parentsRelations = relations(parents, ({ many }) => ({
+  students: many(students),
+}));
+
+export const studentsRelations = relations(students, ({ one, many }) => ({
+  parent: one(parents, {
+    fields: [students.parentId],
+    references: [parents.id],
+  }),
   lessons: many(lessons),
   notes: many(notes),
 }));
@@ -80,10 +131,26 @@ export const recurringLessonsRelations = relations(recurringLessons, ({ one }) =
   }),
 }));
 
-export const commentsRelations = relations(comments, ({ one }) => ({
+export const commentsRelations = relations(comments, ({ one, many }) => ({
   lesson: one(lessons, {
     fields: [comments.lessonId],
     references: [lessons.id],
+  }),
+  commentTags: many(commentTags),
+}));
+
+export const tagsRelations = relations(tags, ({ many }) => ({
+  commentTags: many(commentTags),
+}));
+
+export const commentTagsRelations = relations(commentTags, ({ one }) => ({
+  comment: one(comments, {
+    fields: [commentTags.commentId],
+    references: [comments.id],
+  }),
+  tag: one(tags, {
+    fields: [commentTags.tagId],
+    references: [tags.id],
   }),
 }));
 
@@ -94,8 +161,36 @@ export const notesRelations = relations(notes, ({ one }) => ({
   }),
 }));
 
+export const paymentsRelations = relations(payments, ({ many }) => ({
+  paymentLessons: many(paymentLessons),
+}));
+
+export const paymentLessonsRelations = relations(paymentLessons, ({ one }) => ({
+  payment: one(payments, {
+    fields: [paymentLessons.paymentId],
+    references: [payments.id],
+  }),
+  lesson: one(lessons, {
+    fields: [paymentLessons.lessonId],
+    references: [lessons.id],
+  }),
+}));
+
 // Helper to transform empty strings to null
 const emptyStringToNull = z.string().transform(val => val === '' ? null : val).nullable().optional();
+
+// Insert schemas for parents
+export const insertParentSchema = createInsertSchema(parents).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Name is required"),
+  email: z.preprocess(
+    val => val === '' ? null : val,
+    z.string().email().nullable().optional()
+  ),
+  phoneNumber: emptyStringToNull,
+});
 
 // Insert schemas  
 export const insertStudentSchema = createInsertSchema(students).omit({
@@ -113,6 +208,7 @@ export const insertStudentSchema = createInsertSchema(students).omit({
     z.string().email().nullable().optional()
   ),
   phoneNumber: emptyStringToNull,
+  parentId: z.string().nullable().optional(),
 });
 
 export const insertLessonSchema = createInsertSchema(lessons).omit({
@@ -142,6 +238,18 @@ export const insertCommentSchema = createInsertSchema(comments).omit({
   visibleToStudent: z.number().int().min(0).max(1),
 });
 
+export const insertTagSchema = createInsertSchema(tags).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Tag name is required"),
+  color: z.string().regex(/^#[0-9A-F]{6}$/i, "Color must be a valid hex color"),
+});
+
+export const insertCommentTagSchema = createInsertSchema(commentTags).omit({
+  id: true,
+});
+
 // Types
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;
@@ -155,6 +263,11 @@ export type RecurringLesson = typeof recurringLessons.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Comment = typeof comments.$inferSelect;
 
+export type InsertTag = z.infer<typeof insertTagSchema>;
+export type Tag = typeof tags.$inferSelect;
+export type InsertCommentTag = z.infer<typeof insertCommentTagSchema>;
+export type CommentTag = typeof commentTags.$inferSelect;
+
 export const insertNoteSchema = createInsertSchema(notes).omit({
   id: true,
   createdAt: true,
@@ -165,6 +278,29 @@ export const insertNoteSchema = createInsertSchema(notes).omit({
 
 export type InsertNote = z.infer<typeof insertNoteSchema>;
 export type Note = typeof notes.$inferSelect;
+
+export type InsertParent = z.infer<typeof insertParentSchema>;
+export type Parent = typeof parents.$inferSelect;
+
+export const insertPaymentSchema = createInsertSchema(payments).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  payerType: z.enum(['student', 'parent']),
+  payerId: z.string().min(1, "Payer is required"),
+  amount: z.string().min(1, "Amount is required"),
+  paymentDate: z.coerce.date(),
+  notes: emptyStringToNull,
+});
+
+export const insertPaymentLessonSchema = createInsertSchema(paymentLessons).omit({
+  id: true,
+});
+
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type Payment = typeof payments.$inferSelect;
+export type InsertPaymentLesson = z.infer<typeof insertPaymentLessonSchema>;
+export type PaymentLesson = typeof paymentLessons.$inferSelect;
 
 // Legacy user schema for compatibility
 export const users = pgTable("users", {

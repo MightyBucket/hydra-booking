@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import LoginForm from "@/components/LoginForm";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -34,12 +35,19 @@ import ThemeToggle from "./components/ThemeToggle";
 import StudentCard from "./components/StudentCard";
 import ScheduleCommentsDialog from "./components/ScheduleCommentsDialog";
 import ScheduleView from "./components/ScheduleView";
-import { useStudents, useDeleteStudent } from "./hooks/useStudents";
+import { useStudents, useDeleteStudent, useUpdateStudent } from "./hooks/useStudents";
 import { useLessons } from "./hooks/useLessons";
+import { useParents } from "./hooks/useParents";
+// Updated imports to include delete and update payment hooks
+import { usePayments, useCreatePayment, useDeletePayment, useUpdatePayment, usePaymentLessons, useStudentPayments, useStudentPaymentLessons } from "./hooks/usePayments";
+import ParentForm from "./components/ParentForm";
+import PaymentForm from "./components/PaymentForm";
+import { useParentForm } from "./hooks/useParentForm";
 import NoteForm from "./components/NoteForm";
 import CommentFormDialog from "./components/CommentFormDialog";
+import { useTags, useCreateTag, useUpdateTag, useDeleteTag } from "./hooks/useTags";
 import DeleteLessonDialog from "./components/DeleteLessonDialog";
-import { format } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO, isBefore, isAfter, addDays } from 'date-fns';
 import NotFound from "@/pages/not-found";
 import { Lesson } from "./types/Lesson";
 import { Button } from "@/components/ui/button";
@@ -52,9 +60,23 @@ import { useStudentForm } from "./hooks/useStudentForm";
 import { useStudentNotes } from "./hooks/useStudentNotes";
 import { useLessonData } from "./hooks/useLessonData";
 import { useDialogState } from "./hooks/useDialogState";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Plus, Filter } from "lucide-react";
 import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
 import { handleJoinLessonLink, calculateStudentStats } from "@/utils/lessonHelpers";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 /**
  * CalendarPage: Main calendar view showing lessons in a month/week grid
@@ -158,6 +180,9 @@ function CalendarPage() {
         onUpdatePaymentStatus={handleUpdatePaymentStatus}
         onAddComment={handleAddComment}
         onEditComment={handleStartEditComment}
+        // The calendar navigation buttons (left/right arrows for month change)
+        // should have their click handlers modified to prevent default form submission behavior.
+        // This is assumed to be handled within the CalendarView component itself.
       />
 
       <Dialog open={showLessonForm} onOpenChange={handleCloseLessonForm}>
@@ -205,6 +230,7 @@ function CalendarPage() {
               title: data.title,
               content: data.content,
               visibleToStudent: data.visibleToStudent ? 1 : 0,
+              tagIds: data.tagIds,
             });
           } else {
             await handleCommentSubmit(data);
@@ -302,7 +328,7 @@ function StudentsPage() {
   const handleViewLessons = (studentId: string) => {
     const student = (studentsData as any[]).find((s: any) => s.id === studentId);
     if (student?.studentId) {
-      window.location.href = `/${student.studentId}/calendar`;
+      window.location.href = `/calendar/${student.studentId}`;
     }
   };
 
@@ -381,7 +407,7 @@ function StudentsPage() {
   }
 
   // Calculate lesson statistics (count, hours, earnings) for each student
-  const studentsWithStats = (studentsData as any[]).map((student: any) => 
+  const studentsWithStats = (studentsData as any[]).map((student: any) =>
     calculateStudentStats(student, lessonsData as any[])
   );
 
@@ -739,6 +765,7 @@ function SchedulePage() {
               title: data.title,
               content: data.content,
               visibleToStudent: data.visibleToStudent ? 1 : 0,
+              tagIds: data.tagIds,
             });
           } else {
             await handleCommentSubmit(data);
@@ -754,6 +781,942 @@ function SchedulePage() {
         onEditComment={handleStartEditComment}
         isStudentView={false}
       />
+    </>
+  );
+}
+
+function PaymentsPage() {
+  // Set page title
+  useState(() => {
+    document.title = "Hydra - Payments";
+  });
+
+  const { data: paymentsData = [], isLoading: paymentsLoading } = usePayments();
+  const { data: studentsData = [] } = useStudents();
+  const { data: parentsData = [] } = useParents();
+  const { data: lessonsData = [], isLoading: lessonsLoading } = useLessons();
+  const createPaymentMutation = useCreatePayment();
+  // Assume these are now available due to updated imports
+  const deletePaymentMutation = useDeletePayment();
+  const updatePaymentMutation = useUpdatePayment();
+  const { toast } = useToast();
+
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<any | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<any | null>(null);
+  const [showFilterSidebar, setShowFilterSidebar] = useState(false);
+
+  // Filter and grouping state
+  const [selectedPayerIds, setSelectedPayerIds] = useState<string[]>([]);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [groupBy, setGroupBy] = useState<'none' | 'month' | 'payer'>('month');
+
+
+  const handleAddPayment = () => {
+    setEditingPayment(null); // Ensure we're in create mode
+    setShowPaymentForm(true);
+  };
+
+  const handleEditPayment = async (payment: any) => {
+    setEditingPayment(payment);
+    setShowPaymentForm(true);
+  };
+
+  const handleDeletePayment = (payment: any) => {
+    setPaymentToDelete(payment);
+    setShowDeleteDialog(true);
+  };
+
+  const handleClosePaymentForm = () => {
+    setShowPaymentForm(false);
+    setEditingPayment(null); // Clear editing state
+  };
+
+  const handleConfirmDeletePayment = async () => {
+    if (!paymentToDelete) return;
+    try {
+      await deletePaymentMutation.mutateAsync(paymentToDelete.id);
+      toast({
+        title: "Success",
+        description: "Payment deleted successfully",
+      });
+      setShowDeleteDialog(false);
+      setPaymentToDelete(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete payment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelDeletePayment = () => {
+    setShowDeleteDialog(false);
+    setPaymentToDelete(null);
+  };
+
+  const handlePaymentSubmit = async (data: any) => {
+    try {
+      if (editingPayment) {
+        // Update existing payment
+        const { id, lessonIds, ...paymentData } = data;
+        await updatePaymentMutation.mutateAsync({
+          id: editingPayment.id,
+          data: {
+            ...paymentData,
+            lessonIds
+          }
+        });
+        toast({
+          title: "Success",
+          description: "Payment updated successfully",
+        });
+      } else {
+        // Create new payment
+        await createPaymentMutation.mutateAsync(data);
+        toast({
+          title: "Success",
+          description: "Payment added successfully",
+        });
+      }
+      setShowPaymentForm(false);
+      setEditingPayment(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: editingPayment ? "Failed to update payment" : "Failed to add payment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (paymentsLoading || lessonsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading...
+      </div>
+    );
+  }
+
+  // Ensure lessons data is loaded before rendering
+  if (!lessonsData || lessonsData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading lessons data...
+      </div>
+    );
+  }
+
+  // Filter payments
+  let filteredPayments = paymentsData;
+
+  // Filter by payer
+  if (selectedPayerIds.length > 0) {
+    filteredPayments = filteredPayments.filter(payment => 
+      selectedPayerIds.includes(payment.payerId)
+    );
+  }
+
+  // Filter by date range
+  if (dateFrom) {
+    filteredPayments = filteredPayments.filter(payment => 
+      new Date(payment.paymentDate) >= dateFrom
+    );
+  }
+  if (dateTo) {
+    filteredPayments = filteredPayments.filter(payment => 
+      new Date(payment.paymentDate) <= dateTo
+    );
+  }
+
+  // Group payments
+  const groupedPayments: { [key: string]: any[] } = {};
+
+  if (groupBy === 'month') {
+    filteredPayments.forEach(payment => {
+      const monthKey = format(new Date(payment.paymentDate), 'MMMM yyyy');
+      if (!groupedPayments[monthKey]) {
+        groupedPayments[monthKey] = [];
+      }
+      groupedPayments[monthKey].push(payment);
+    });
+  } else if (groupBy === 'payer') {
+    filteredPayments.forEach(payment => {
+      const payerName = payment.payerType === 'student'
+        ? (() => {
+            const student = studentsData.find(s => s.id === payment.payerId);
+            return student ? `${student.firstName} ${student.lastName || ''}` : 'Unknown';
+          })()
+        : (() => {
+            const parent = parentsData.find(p => p.id === payment.payerId);
+            return parent ? parent.name : 'Unknown';
+          })();
+
+      if (!groupedPayments[payerName]) {
+        groupedPayments[payerName] = [];
+      }
+      groupedPayments[payerName].push(payment);
+    });
+  } else {
+    groupedPayments['All Payments'] = filteredPayments;
+  }
+
+  // Sort groups
+  const sortedGroupKeys = Object.keys(groupedPayments).sort((a, b) => {
+    if (groupBy === 'month') {
+      // Sort months chronologically (most recent first)
+      const dateA = new Date(a);
+      const dateB = new Date(b);
+      return dateB.getTime() - dateA.getTime();
+    }
+    return a.localeCompare(b);
+  });
+
+  // All available payers for filter
+  const allPayers = [
+    ...studentsData.map((s: any) => ({
+      id: s.id,
+      type: 'student' as const,
+      name: `${s.firstName} ${s.lastName || ''}`,
+    })),
+    ...parentsData.map((p: any) => ({
+      id: p.id,
+      type: 'parent' as const,
+      name: p.name,
+    })),
+  ];
+
+  const togglePayerFilter = (payerId: string) => {
+    setSelectedPayerIds(prev =>
+      prev.includes(payerId)
+        ? prev.filter(id => id !== payerId)
+        : [...prev, payerId]
+    );
+  };
+
+  return (
+    <>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Payments ({filteredPayments.length})</CardTitle>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => setShowFilterSidebar(true)}>
+            <Filter className="h-4 w-4" />
+          </Button>
+          <Button onClick={handleAddPayment}>Add Payment</Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+
+        {/* Payments Table */}
+        {filteredPayments.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No payments found matching the current filters.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {sortedGroupKeys.map(groupKey => {
+              const groupPayments = groupedPayments[groupKey];
+              const totalAmount = groupPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+              return (
+                <div key={groupKey} className="space-y-3">
+                  {groupBy !== 'none' && (
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">{groupKey}</h3>
+                      <div className="text-sm text-muted-foreground">
+                        {groupPayments.length} payment{groupPayments.length !== 1 ? 's' : ''} • £{totalAmount.toFixed(2)}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="hidden md:table-header-group">
+                        <tr className="border-b">
+                          <th className="text-left p-3">Date</th>
+                          <th className="text-left p-3">Payer</th>
+                          <th className="text-left p-3">Amount</th>
+                          <th className="text-left p-3">Lessons</th>
+                          <th className="text-left p-3">Notes</th>
+                          <th className="text-left p-3">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {groupPayments.map((payment: any) => {
+                  const payerName = payment.payerType === 'student'
+                    ? (() => {
+                        const student = studentsData.find(s => s.id === payment.payerId);
+                        return student ? `${student.firstName} ${student.lastName || ''}` : 'Unknown';
+                      })()
+                    : (() => {
+                        const parent = parentsData.find(p => p.id === payment.payerId);
+                        return parent ? parent.name : 'Unknown';
+                      })();
+
+                  // Get student colors for the payer
+                  const payerColors = payment.payerType === 'student'
+                    ? (() => {
+                        const student = studentsData.find(s => s.id === payment.payerId);
+                        return student ? [student.defaultColor || '#3b82f6'] : [];
+                      })()
+                    : (() => {
+                        const parent = parentsData.find(p => p.id === payment.payerId);
+                        if (!parent) return [];
+                        const parentStudents = studentsData.filter(s => s.parentId === parent.id);
+                        return parentStudents.map(s => s.defaultColor || '#3b82f6');
+                      })();
+
+                  const amount = parseFloat(payment.amount);
+                  const hasDecimals = amount % 1 !== 0;
+                  const formattedAmount = hasDecimals ? `£${amount.toFixed(2)}` : `£${Math.floor(amount)}`;
+
+                  return (
+                    <tr key={payment.id} className="border-b hover:bg-muted/50">
+                      {/* Desktop View */}
+                      <td className="p-3 hidden md:table-cell">{format(new Date(payment.paymentDate), 'MMM d, yyyy')}</td>
+                      <td className="p-3 hidden md:table-cell">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center">
+                            {payerColors.map((color, index) => (
+                              <div
+                                key={index}
+                                className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                                style={{
+                                  backgroundColor: color,
+                                  marginLeft: index > 0 ? '-8px' : '0',
+                                  zIndex: payerColors.length - index,
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <div>
+                            <div>{payerName}</div>
+                            <div className="text-xs text-muted-foreground capitalize">{payment.payerType}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3 hidden md:table-cell">£{parseFloat(payment.amount).toFixed(2)}</td>
+                      <td className="p-3 hidden md:table-cell">
+                        <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData as any[]} isMobile={false} />
+                      </td>
+                      <td className="p-3 max-w-xs truncate hidden md:table-cell">{payment.notes || '-'}</td>
+                      <td className="p-3 flex gap-2 hidden md:table-cell">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditPayment(payment)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeletePayment(payment)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+
+                      {/* Mobile View - Compact */}
+                      <td className="p-2 md:hidden text-sm">{format(new Date(payment.paymentDate), 'dd/MM')}</td>
+                      <td className="p-2 md:hidden">
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <button className="flex items-center">
+                              {payerColors.map((color, index) => (
+                                <div
+                                  key={index}
+                                  className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
+                                  style={{
+                                    backgroundColor: color,
+                                    marginLeft: index > 0 ? '-10px' : '0',
+                                    zIndex: payerColors.length - index,
+                                  }}
+                                />
+                              ))}
+                            </button>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-auto">
+                            <div className="space-y-1">
+                              <p className="font-medium">{payerName}</p>
+                              <p className="text-xs text-muted-foreground capitalize">{payment.payerType}</p>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
+                      </td>
+                      <td className="p-2 md:hidden text-sm font-medium">{formattedAmount}</td>
+                      <td className="p-2 md:hidden text-xs text-muted-foreground">
+                        <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData as any[]} isMobile={true} />
+                      </td>
+                      <td className="p-2 md:hidden">
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditPayment(payment)} className="h-7 w-7 p-0">
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeletePayment(payment)} className="h-7 w-7 p-0 text-destructive hover:text-destructive">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+
+    <Dialog open={showPaymentForm} onOpenChange={handleClosePaymentForm}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{editingPayment ? "Edit Payment" : "Add New Payment"}</DialogTitle>
+        </DialogHeader>
+        <PaymentForm
+          students={studentsData as any[]}
+          parents={parentsData as any[]}
+          lessons={lessonsData as any[]}
+          initialData={editingPayment} // Pass editingPayment for pre-filled form
+          onSubmit={handlePaymentSubmit}
+          onCancel={handleClosePaymentForm}
+        />
+      </DialogContent>
+    </Dialog>
+
+    {/* Delete Confirmation Dialog for Payments */}
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Payment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this payment?
+              <br />
+              <br />
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDeletePayment}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeletePayment}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Payment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Filter Sidebar */}
+      <Sheet open={showFilterSidebar} onOpenChange={setShowFilterSidebar}>
+        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Filter & Group Payments</SheetTitle>
+            <SheetDescription>
+              Filter payments by payer, date range, or group them by different criteria.
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="space-y-6 mt-6">
+            {/* Filter by Payer */}
+            <div className="space-y-2">
+              <Label>Filter by Payer</Label>
+              <div className="border rounded-md p-2 bg-background max-h-64 overflow-y-auto space-y-1">
+                {allPayers.map(payer => (
+                  <div
+                    key={payer.id}
+                    className="flex items-center gap-2 p-2 hover:bg-accent rounded cursor-pointer"
+                    onClick={() => togglePayerFilter(payer.id)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedPayerIds.includes(payer.id)}
+                      onChange={() => togglePayerFilter(payer.id)}
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                    <span className="text-sm">{payer.name}</span>
+                    <span className="text-xs text-muted-foreground capitalize">({payer.type})</span>
+                  </div>
+                ))}
+              </div>
+              {selectedPayerIds.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedPayerIds([])}
+                  className="w-full"
+                >
+                  Clear ({selectedPayerIds.length})
+                </Button>
+              )}
+            </div>
+
+            {/* Filter by Date Range */}
+            <div className="space-y-2">
+              <Label>Date From</Label>
+              <Input
+                type="date"
+                value={dateFrom ? format(dateFrom, 'yyyy-MM-dd') : ''}
+                onChange={(e) => setDateFrom(e.target.value ? new Date(e.target.value) : undefined)}
+              />
+              <Label className="mt-4 block">Date To</Label>
+              <Input
+                type="date"
+                value={dateTo ? format(dateTo, 'yyyy-MM-dd') : ''}
+                onChange={(e) => setDateTo(e.target.value ? new Date(e.target.value) : undefined)}
+              />
+              {(dateFrom || dateTo) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setDateFrom(undefined);
+                    setDateTo(undefined);
+                  }}
+                  className="w-full mt-2"
+                >
+                  Clear Dates
+                </Button>
+              )}
+            </div>
+
+            {/* Group By */}
+            <div className="space-y-2">
+              <Label>Group By</Label>
+              <div className="space-y-2">
+                <Button
+                  variant={groupBy === 'none' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setGroupBy('none')}
+                  className="w-full"
+                >
+                  No Grouping
+                </Button>
+                <Button
+                  variant={groupBy === 'month' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setGroupBy('month')}
+                  className="w-full"
+                >
+                  By Month
+                </Button>
+                <Button
+                  variant={groupBy === 'payer' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setGroupBy('payer')}
+                  className="w-full"
+                >
+                  By Payer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}
+
+function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false, studentId }: { paymentId: string; lessonsData: any[]; isMobile?: boolean; studentId?: string }) {
+  // Use student-specific hook if studentId is provided (for student view)
+  const { data: lessonIds = [], isLoading } = studentId 
+    ? useStudentPaymentLessons(studentId, paymentId)
+    : usePaymentLessons(paymentId);
+
+  if (isLoading) {
+    return <span className="text-muted-foreground text-xs">Loading...</span>;
+  }
+
+  if (!lessonIds || lessonIds.length === 0) {
+    return <span className="text-muted-foreground">-</span>;
+  }
+
+  // Debug: Log what we're working with
+  console.log('PaymentLessonsCell debug:', {
+    paymentId,
+    lessonIds,
+    lessonsDataCount: lessonsData?.length || 0,
+    lessonsDataSample: lessonsData?.slice(0, 3).map(l => l.id) || []
+  });
+
+  // Find lessons that match the IDs
+  const lessons = lessonIds
+    .map(id => {
+      const lesson = lessonsData.find(l => l.id === id);
+      if (!lesson) {
+        console.log('Lesson ID not found in lessonsData:', id);
+      }
+      return lesson;
+    })
+    .filter(Boolean);
+
+  console.log('Matched lessons:', lessons.length, 'out of', lessonIds.length);
+
+  if (lessons.length === 0) {
+    // Show count if we have IDs but can't find the lessons
+    return <span className="text-muted-foreground text-xs">{lessonIds.length} lesson{lessonIds.length !== 1 ? 's' : ''}</span>;
+  }
+
+  if (isMobile) {
+    return (
+      <div className="text-xs space-y-0.5">
+        {lessons.map((lesson: any) => (
+          <div key={lesson.id}>
+            {format(new Date(lesson.dateTime), 'MMM d, yyyy')} - {lesson.subject}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="text-sm space-y-1">
+      {lessons.map((lesson: any) => (
+        <div key={lesson.id}>
+          {format(new Date(lesson.dateTime), 'MMM d, yyyy')} - {lesson.subject}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ParentsPage() {
+  // Set page title
+  useState(() => {
+    document.title = "Hydra - Parents";
+  });
+
+  const { data: parentsData = [], isLoading: parentsLoading } = useParents();
+  const { data: studentsData = [] } = useStudents();
+  const updateStudentMutation = useUpdateStudent();
+  const { toast } = useToast();
+
+  const {
+    showParentForm,
+    selectedParent,
+    handleOpenForm: handleOpenParentForm,
+    handleCloseForm: handleCloseParentForm,
+    handleSubmit: handleParentSubmit,
+  } = useParentForm();
+
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+  const [showStudentSelectDialog, setShowStudentSelectDialog] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [showRemoveStudentDialog, setShowRemoveStudentDialog] = useState(false);
+  const [studentToRemove, setStudentToRemove] = useState<{ studentId: string; studentName: string; parentName: string } | null>(null);
+
+  const handleAddStudentToParent = (parentId: string) => {
+    setSelectedParentId(parentId);
+    setSelectedStudentIds(new Set());
+    setShowStudentSelectDialog(true);
+  };
+
+  const handleStudentSelectClose = () => {
+    setShowStudentSelectDialog(false);
+    setSelectedParentId(null);
+    setSelectedStudentIds(new Set());
+  };
+
+  const handleToggleStudent = (studentId: string) => {
+    setSelectedStudentIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(studentId)) {
+        newSet.delete(studentId);
+      } else {
+        newSet.add(studentId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleAssignStudents = async () => {
+    if (!selectedParentId || selectedStudentIds.size === 0) return;
+
+    try {
+      // Update each selected student with the parent ID
+      await Promise.all(
+        Array.from(selectedStudentIds).map(studentId =>
+          updateStudentMutation.mutateAsync({
+            id: studentId,
+            parentId: selectedParentId,
+          })
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: `${selectedStudentIds.size} student(s) assigned successfully`,
+      });
+
+      handleStudentSelectClose();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to assign students",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveStudentClick = (studentId: string, studentName: string, parentName: string) => {
+    setStudentToRemove({ studentId, studentName, parentName });
+    setShowRemoveStudentDialog(true);
+  };
+
+  const handleConfirmRemoveStudent = async () => {
+    if (!studentToRemove) return;
+
+    try {
+      await updateStudentMutation.mutateAsync({
+        id: studentToRemove.studentId,
+        parentId: null,
+      });
+
+      toast({
+        title: "Success",
+        description: `${studentToRemove.studentName} removed from parent`,
+      });
+
+      setShowRemoveStudentDialog(false);
+      setStudentToRemove(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove student from parent",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelRemoveStudent = () => {
+    setShowRemoveStudentDialog(false);
+    setStudentToRemove(null);
+  };
+
+  if (parentsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading parents...
+      </div>
+    );
+  }
+
+  // Group students by parent
+  const parentsWithStudents = (parentsData as any[]).map((parent: any) => ({
+    ...parent,
+    students: (studentsData as any[]).filter((s: any) => s.parentId === parent.id),
+  }));
+
+  // Get students without parents
+  const studentsWithoutParents = (studentsData as any[]).filter((s: any) => !s.parentId);
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Parents ({parentsWithStudents.length})</CardTitle>
+          <Button onClick={() => handleOpenParentForm()}>Add Parent</Button>
+        </CardHeader>
+        <CardContent>
+        {parentsWithStudents.length === 0 && studentsWithoutParents.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No parents or students added yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {parentsWithStudents.map((parent: any) => (
+              <div key={parent.id} className="border rounded-lg p-4">
+                <div className="mb-3 flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">{parent.name}</h3>
+                    {parent.email && (
+                      <p className="text-sm text-muted-foreground">{parent.email}</p>
+                    )}
+                    {parent.phoneNumber && (
+                      <p className="text-sm text-muted-foreground">{parent.phoneNumber}</p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleAddStudentToParent(parent.id)}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Student
+                  </Button>
+                </div>
+
+                {parent.students.length > 0 ? (
+                  <div className="ml-4 space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Students:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {parent.students.map((student: any) => (
+                        <div
+                          key={student.id}
+                          className="flex items-center gap-2 p-2 border rounded"
+                        >
+                          <div
+                            className="w-3 h-3 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: student.defaultColor }}
+                          />
+                          <span className="text-sm flex-1">
+                            {student.firstName} {student.lastName || ''}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveStudentClick(
+                              student.id,
+                              `${student.firstName} ${student.lastName || ''}`,
+                              parent.name
+                            )}
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="ml-4 text-sm text-muted-foreground">No students assigned</p>
+                )}
+              </div>
+            ))}
+
+            {studentsWithoutParents.length > 0 && (
+              <div className="border rounded-lg p-4 bg-muted/50">
+                <h3 className="text-lg font-semibold mb-3">Students Without Parents</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {studentsWithoutParents.map((student: any) => (
+                    <div
+                      key={student.id}
+                      className="flex items-center gap-2 p-2 border rounded bg-background"
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: student.defaultColor }}
+                      />
+                      <span className="text-sm">
+                        {student.firstName} {student.lastName || ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+
+    <Dialog open={showParentForm} onOpenChange={handleCloseParentForm}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {selectedParent ? "Edit Parent" : "Add New Parent"}
+          </DialogTitle>
+        </DialogHeader>
+        <ParentForm
+          initialData={selectedParent || undefined}
+          onSubmit={handleParentSubmit}
+          onCancel={handleCloseParentForm}
+        />
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={showStudentSelectDialog} onOpenChange={handleStudentSelectClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            Assign Students to {parentsWithStudents.find((p: any) => p.id === selectedParentId)?.name || 'Parent'}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          {studentsWithoutParents.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No students without parents available.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Select students to assign to this parent:
+              </p>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {studentsWithoutParents.map((student: any) => (
+                  <div
+                    key={student.id}
+                    className="flex items-center gap-3 p-3 border rounded hover:bg-accent cursor-pointer"
+                    onClick={() => handleToggleStudent(student.id)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedStudentIds.has(student.id)}
+                      onChange={() => handleToggleStudent(student.id)}
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: student.defaultColor }}
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium">
+                        {student.firstName} {student.lastName || ''}
+                      </span>
+                      {student.email && (
+                        <span className="text-sm text-muted-foreground ml-2">
+                          ({student.email})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={handleStudentSelectClose}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAssignStudents}
+              disabled={selectedStudentIds.size === 0}
+            >
+              Assign {selectedStudentIds.size > 0 ? `(${selectedStudentIds.size})` : ''}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <AlertDialog open={showRemoveStudentDialog} onOpenChange={setShowRemoveStudentDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove Student from Parent</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to remove <strong>{studentToRemove?.studentName}</strong> from{" "}
+            <strong>{studentToRemove?.parentName}</strong>?
+            <br />
+            <br />
+            The student will not be deleted, only unlinked from this parent.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleCancelRemoveStudent}>
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmRemoveStudent}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Remove Student
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
@@ -784,15 +1747,161 @@ function SettingsPage() {
     document.title = "Hydra - Settings";
   });
 
+  const { data: tags = [] } = useTags();
+  const createTagMutation = useCreateTag();
+  const updateTagMutation = useUpdateTag();
+  const deleteTagMutation = useDeleteTag();
+  const { toast } = useToast();
+
+  const [showTagForm, setShowTagForm] = useState(false);
+  const [editingTag, setEditingTag] = useState<any | null>(null);
+  const [tagFormData, setTagFormData] = useState({ name: '', color: '#3b82f6' });
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [tagToDelete, setTagToDelete] = useState<any | null>(null);
+
+  const handleAddTag = () => {
+    setEditingTag(null);
+    setTagFormData({ name: '', color: '#3b82f6' });
+    setShowTagForm(true);
+  };
+
+  const handleEditTag = (tag: any) => {
+    setEditingTag(tag);
+    setTagFormData({ name: tag.name, color: tag.color });
+    setShowTagForm(true);
+  };
+
+  const handleSubmitTag = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingTag) {
+        await updateTagMutation.mutateAsync({ id: editingTag.id, ...tagFormData });
+        toast({ title: "Success", description: "Tag updated successfully" });
+      } else {
+        await createTagMutation.mutateAsync(tagFormData);
+        toast({ title: "Success", description: "Tag created successfully" });
+      }
+      setShowTagForm(false);
+      setTagFormData({ name: '', color: '#3b82f6' });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to save tag", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteTag = (tag: any) => {
+    setTagToDelete(tag);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteTag = async () => {
+    if (!tagToDelete) return;
+    try {
+      await deleteTagMutation.mutateAsync(tagToDelete.id);
+      toast({ title: "Success", description: "Tag deleted successfully" });
+      setShowDeleteDialog(false);
+      setTagToDelete(null);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete tag", variant: "destructive" });
+    }
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Settings</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">Settings panel coming soon...</p>
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Comment Tags</h3>
+              <Button onClick={handleAddTag}>Add Tag</Button>
+            </div>
+            {tags.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No tags created yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag: any) => (
+                  <div key={tag.id} className="inline-flex items-center gap-1 p-2 border rounded">
+                    <Badge variant="outline" style={{ borderColor: tag.color, color: tag.color }}>
+                      {tag.name}
+                    </Badge>
+                    <Button variant="ghost" size="sm" onClick={() => handleEditTag(tag)} className="h-6 w-6 p-0">
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteTag(tag)} className="h-6 w-6 p-0 text-destructive hover:text-destructive">
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showTagForm} onOpenChange={setShowTagForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingTag ? 'Edit Tag' : 'Create Tag'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmitTag} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tag-name">Tag Name</Label>
+              <Input
+                id="tag-name"
+                value={tagFormData.name}
+                onChange={(e) => setTagFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Important, Follow-up"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tag-color">Color</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="tag-color"
+                  type="color"
+                  value={tagFormData.color}
+                  onChange={(e) => setTagFormData(prev => ({ ...prev, color: e.target.value }))}
+                  className="w-20"
+                />
+                <Input
+                  type="text"
+                  value={tagFormData.color}
+                  onChange={(e) => setTagFormData(prev => ({ ...prev, color: e.target.value }))}
+                  placeholder="#3b82f6"
+                  pattern="^#[0-9A-Fa-f]{6}$"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setShowTagForm(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">{editingTag ? 'Update' : 'Create'} Tag</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Tag</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the tag "{tagToDelete?.name}"? This will remove it from all comments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteTag} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -892,12 +2001,15 @@ function StudentCalendarPage() {
         onDateClick={() => {}}
         onUpdatePaymentStatus={() => {}}
         focusedStudentId={student.id}
+        // The calendar navigation buttons (left/right arrows for month change)
+        // should have their click handlers modified to prevent default form submission behavior.
+        // This is assumed to be handled within the CalendarView component itself.
       />
     </>
   );
 }
 
-function StudentSchedulePage() {
+function StudentScheduleView() {
   const params = useParams<{ studentId: string }>();
 
   const { data: student, isLoading: studentLoading } = useStudentByStudentId(params.studentId);
@@ -1008,11 +2120,202 @@ function StudentSchedulePage() {
               title: data.title,
               content: data.content,
               visibleToStudent: data.visibleToStudent ? 1 : 0,
+              tagIds: data.tagIds,
             });
           }
         }}
         onCancel={resetCommentForm}
       />
+    </>
+  );
+}
+
+function StudentPaymentsView() {
+  const params = useParams<{ studentId: string }>();
+  const studentId = params.studentId as string;
+
+  const { data: student, isLoading: studentLoading } = useStudentByStudentId(studentId);
+  const { data: paymentsData = [], isLoading: paymentsLoading } = useStudentPayments(studentId);
+  const { data: lessonsResponse, isLoading: lessonsLoading } = useStudentLessonsByStudentId(studentId);
+
+  // Extract lessons array from response
+  const lessonsData = Array.isArray(lessonsResponse?.lessons) ? lessonsResponse.lessons : [];
+
+  // State for grouping
+  const [groupBy, setGroupBy] = useState<'none' | 'month'>('month');
+
+  // Set page title when student data is loaded
+  useState(() => {
+    if (student) {
+      document.title = `Hydra - ${student.firstName}'s Payments`;
+    } else {
+      document.title = "Hydra - Student Payments";
+    }
+  });
+
+  if (studentLoading || paymentsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading payments...
+      </div>
+    );
+  }
+
+  if (!student) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">Student Not Found</h2>
+            <p className="text-muted-foreground">
+              No student found with ID: {studentId}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Filter payments for this student or their parent
+  let filteredPayments = paymentsData.filter(payment => {
+    if (payment.payerType === 'student' && payment.payerId === student.id) {
+      return true;
+    }
+    if (payment.payerType === 'parent' && student.parentId && payment.payerId === student.parentId) {
+      return true;
+    }
+    return false;
+  });
+
+  // Sort payments by date (most recent first)
+  filteredPayments = filteredPayments.sort((a, b) => 
+    new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+  );
+
+  // Group payments
+  const groupedPayments: Record<string, any[]> = {};
+
+  if (groupBy === 'none') {
+    groupedPayments['All Payments'] = filteredPayments;
+  } else if (groupBy === 'month') {
+    filteredPayments.forEach(payment => {
+      const date = new Date(payment.paymentDate);
+      const monthKey = format(date, 'MMMM yyyy');
+      if (!groupedPayments[monthKey]) {
+        groupedPayments[monthKey] = [];
+      }
+      groupedPayments[monthKey].push(payment);
+    });
+  }
+
+  // Sort groups
+  const sortedGroupKeys = Object.keys(groupedPayments).sort((a, b) => {
+    if (groupBy === 'month') {
+      const dateA = new Date(a);
+      const dateB = new Date(b);
+      return dateB.getTime() - dateA.getTime();
+    }
+    return a.localeCompare(b);
+  });
+
+  return (
+    <>
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold">
+          Payments for {student.firstName} {student.lastName || ""} (ID: {student.studentId})
+        </h1>
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>My Payments ({filteredPayments.length})</CardTitle>
+          <div className="flex gap-2 items-center">
+            <Select value={groupBy} onValueChange={(value: 'none' | 'month') => setGroupBy(value)}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No grouping</SelectItem>
+                <SelectItem value="month">By month</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {filteredPayments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No payments found.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {sortedGroupKeys.map(groupKey => {
+                const groupPayments = groupedPayments[groupKey];
+                const totalAmount = groupPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+                return (
+                  <div key={groupKey} className="space-y-3">
+                    {groupBy !== 'none' && (
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">{groupKey}</h3>
+                        <div className="text-sm text-muted-foreground">
+                          {groupPayments.length} payment{groupPayments.length !== 1 ? 's' : ''} • £{totalAmount.toFixed(2)}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="hidden md:table-header-group">
+                          <tr className="border-b">
+                            <th className="text-left p-3">Date</th>
+                            <th className="text-left p-3">Amount</th>
+                            <th className="text-left p-3">Lessons</th>
+                            <th className="text-left p-3">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {groupPayments.map((payment: any) => {
+                            const formattedDate = format(new Date(payment.paymentDate), 'MMM d, yyyy');
+                            const formattedAmount = `£${parseFloat(payment.amount).toFixed(2)}`;
+
+                            return (
+                              <tr key={payment.id} className="border-b hover:bg-accent/50">
+                                {/* Mobile view */}
+                                <td className="p-2 md:hidden">
+                                  <div className="space-y-1">
+                                    <div className="font-medium">{formattedDate}</div>
+                                    <div className="text-sm font-semibold">{formattedAmount}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData as any[]} isMobile={true} studentId={studentId} />
+                                    </div>
+                                    {payment.notes && (
+                                      <div className="text-xs text-muted-foreground">{payment.notes}</div>
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* Desktop view */}
+                                <td className="hidden md:table-cell p-3">{formattedDate}</td>
+                                <td className="hidden md:table-cell p-3 font-semibold">{formattedAmount}</td>
+                                <td className="hidden md:table-cell p-3">
+                                  <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData as any[]} isMobile={false} studentId={studentId} />
+                                </td>
+                                <td className="hidden md:table-cell p-3 text-sm text-muted-foreground max-w-xs truncate">
+                                  {payment.notes || '-'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </>
   );
 }
@@ -1023,10 +2326,13 @@ function Router() {
       <Route path="/" component={CalendarPage} />
       <Route path="/schedule" component={SchedulePage} />
       <Route path="/students" component={StudentsPage} />
+      <Route path="/parents" component={ParentsPage} />
+      <Route path="/payments" component={PaymentsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/settings" component={SettingsPage} />
-      <Route path="/:studentId/calendar" component={StudentCalendarPage} />
-      <Route path="/:studentId/schedule" component={StudentSchedulePage} />
+      <Route path="/calendar/:studentId" component={StudentCalendarPage} />
+      <Route path="/schedule/:studentId" component={StudentScheduleView} />
+      <Route path="/payments/:studentId" component={StudentPaymentsView} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -1035,7 +2341,14 @@ function Router() {
 function AppContent() {
   const [location, setLocation] = useLocation();
 
-  const { studentsData, lessonsData } = useLessonData();
+  const studentViewMatch = location.match(/^\/(calendar|schedule|payments)\/([^/]+)$/);
+  const isStudentView = !!studentViewMatch;
+  const studentId = studentViewMatch?.[2];
+
+  // Only fetch admin data when not in student view
+  const { studentsData, lessonsData } = isStudentView 
+    ? { studentsData: [], lessonsData: [] }
+    : useLessonData();
 
   const {
     showStudentForm,
@@ -1051,9 +2364,6 @@ function AppContent() {
     handleSubmit: handleLessonSubmit,
   } = useLessonForm();
 
-  const studentViewMatch = location.match(/^\/(\d{6})\/(calendar|schedule)$/);
-  const isStudentView = !!studentViewMatch;
-  const studentId = studentViewMatch?.[1];
   const shouldShowNavigation = true;
 
   const handleAddLesson = () => {
@@ -1122,9 +2432,11 @@ function AuthenticatedApp() {
   const [location] = useLocation();
   const { data: authData, isLoading } = useAuth();
 
-  // Allow access to student calendar and schedule views without authentication
-  const isStudentCalendarView = location.match(/^\/\d{6}\/calendar$/);
-  const isStudentScheduleView = location.match(/^\/\d{6}\/schedule$/);
+  // Allow access to student calendar, schedule, and payments views without authentication
+  const isStudentCalendarView = location.match(/^\/calendar\/[^/]+$/);
+  const isStudentScheduleView = location.match(/^\/schedule\/[^/]+$/);
+  const isStudentPaymentsView = location.match(/^\/payments\/[^/]+$/);
+
 
   if (isLoading) {
     return (
@@ -1138,6 +2450,7 @@ function AuthenticatedApp() {
   if (
     !isStudentCalendarView &&
     !isStudentScheduleView &&
+    !isStudentPaymentsView &&
     !authData?.authenticated
   ) {
     return <LoginForm />;

@@ -4,6 +4,11 @@ import {
   recurringLessons,
   comments,
   notes,
+  parents,
+  payments,
+  paymentLessons,
+  tags, // Assuming tags table is defined in schema
+  commentTags, // Assuming commentTags table is defined in schema
   type Student,
   type InsertStudent,
   type Lesson,
@@ -15,7 +20,15 @@ import {
   type User,
   type InsertUser,
   type Note,
-  type InsertNote
+  type InsertNote,
+  type Parent,
+  type InsertParent,
+  type Payment,
+  type InsertPayment,
+  type PaymentLesson,
+  type InsertPaymentLesson,
+  type Tag, // Assuming Tag type is defined in schema
+  type InsertTag // Assuming InsertTag type is defined in schema
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -84,6 +97,34 @@ export interface IStorage {
   createNote(note: InsertNote): Promise<Note>;
   updateNote(id: string, note: Partial<InsertNote>): Promise<Note | undefined>;
   deleteNote(id: string): Promise<void>;
+
+  // Parent methods
+  getParent(id: string): Promise<Parent | undefined>;
+  getParents(): Promise<Parent[]>;
+  createParent(parent: InsertParent): Promise<Parent>;
+  updateParent(id: string, parent: Partial<InsertParent>): Promise<Parent | undefined>;
+  deleteParent(id: string): Promise<void>;
+
+  // Payment methods
+  getPayment(id: string): Promise<Payment | undefined>;
+  getPayments(): Promise<Payment[]>;
+  createPayment(payment: InsertPayment, lessonIds: string[]): Promise<Payment>;
+  updatePayment(id: string, payment: Partial<InsertPayment>, lessonIds?: string[]): Promise<Payment | undefined>;
+  deletePayment(id: string): Promise<void>;
+  getPaymentLessons(paymentId: string): Promise<PaymentLesson[]>;
+  deletePaymentLessons(paymentId: string): Promise<void>;
+
+  // Tag methods
+  getTags(): Promise<Tag[]>;
+  getTag(id: string): Promise<Tag | undefined>;
+  createTag(data: InsertTag): Promise<Tag>;
+  updateTag(id: string, data: Partial<InsertTag>): Promise<Tag | undefined>;
+  deleteTag(id: string): Promise<void>;
+
+  // Comment-Tag methods
+  getCommentTags(commentId: string): Promise<Tag[]>;
+  addCommentTag(commentId: string, tagId: string): Promise<void>;
+  removeCommentTags(commentId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -307,6 +348,157 @@ export class DatabaseStorage implements IStorage {
 
   async deleteNote(id: string): Promise<void> {
     await db.delete(notes).where(eq(notes.id, id));
+  }
+
+  // Parent methods
+  async getParent(id: string): Promise<Parent | undefined> {
+    const [parent] = await db.select().from(parents).where(eq(parents.id, id));
+    return parent || undefined;
+  }
+
+  async getParents(): Promise<Parent[]> {
+    return await db.select().from(parents).orderBy(parents.name);
+  }
+
+  async createParent(data: InsertParent): Promise<Parent> {
+    const [parent] = await db.insert(parents).values(data).returning();
+    return parent;
+  }
+
+  async updateParent(id: string, updateData: Partial<InsertParent>): Promise<Parent | undefined> {
+    const [parent] = await db
+      .update(parents)
+      .set(updateData)
+      .where(eq(parents.id, id))
+      .returning();
+    return parent || undefined;
+  }
+
+  async deleteParent(id: string): Promise<void> {
+    await db.delete(parents).where(eq(parents.id, id));
+  }
+
+  // Payment methods
+  async getPayment(id: string): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.id, id));
+    return payment || undefined;
+  }
+
+  async getPayments(): Promise<Payment[]> {
+    return await db.select().from(payments).orderBy(desc(payments.paymentDate));
+  }
+
+  async createPayment(data: InsertPayment, lessonIds: string[] = []): Promise<Payment> {
+    const [payment] = await db
+      .insert(payments)
+      .values(data)
+      .returning();
+
+    // Create payment-lesson associations and update lesson status to 'paid'
+    if (lessonIds.length > 0) {
+      await db.insert(paymentLessons).values(
+        lessonIds.map(lessonId => ({
+          paymentId: payment.id,
+          lessonId,
+        }))
+      );
+
+      // Update each lesson's payment status to 'paid'
+      for (const lessonId of lessonIds) {
+        await db
+          .update(lessons)
+          .set({ paymentStatus: 'paid' })
+          .where(eq(lessons.id, lessonId));
+      }
+    }
+
+    return payment;
+  }
+
+  async updatePayment(id: string, payment: Partial<InsertPayment>, lessonIds?: string[]): Promise<Payment | undefined> {
+    const [updatedPayment] = await db
+      .update(payments)
+      .set(payment)
+      .where(eq(payments.id, id))
+      .returning();
+
+    // Update payment-lesson associations if provided
+    if (lessonIds !== undefined) {
+      // Delete existing associations
+      await db.delete(paymentLessons).where(eq(paymentLessons.paymentId, id));
+
+      // Create new associations
+      if (lessonIds.length > 0) {
+        await db.insert(paymentLessons).values(
+          lessonIds.map(lessonId => ({
+            paymentId: id,
+            lessonId,
+          }))
+        );
+      }
+    }
+
+    return updatedPayment || undefined;
+  }
+
+  async deletePayment(id: string): Promise<void> {
+    await db.delete(payments).where(eq(payments.id, id));
+  }
+
+  async getPaymentLessons(paymentId: string): Promise<PaymentLesson[]> {
+    const links = await db
+      .select()
+      .from(paymentLessons)
+      .where(eq(paymentLessons.paymentId, paymentId));
+    return links;
+  }
+
+  async deletePaymentLessons(paymentId: string): Promise<void> {
+    await db.delete(paymentLessons).where(eq(paymentLessons.paymentId, paymentId));
+  }
+
+  // Tag methods
+  async getTags(): Promise<Tag[]> {
+    return await db.select().from(tags).orderBy(tags.name);
+  }
+
+  async getTag(id: string): Promise<Tag | undefined> {
+    const results = await db.select().from(tags).where(eq(tags.id, id));
+    return results[0];
+  }
+
+  async createTag(data: InsertTag): Promise<Tag> {
+    const results = await db.insert(tags).values(data).returning();
+    return results[0];
+  }
+
+  async updateTag(id: string, data: Partial<InsertTag>): Promise<Tag | undefined> {
+    const results = await db.update(tags).set(data).where(eq(tags.id, id)).returning();
+    return results[0];
+  }
+
+  async deleteTag(id: string): Promise<void> {
+    await db.delete(tags).where(eq(tags.id, id));
+  }
+
+  // Comment-Tag methods
+  async getCommentTags(commentId: string): Promise<Tag[]> {
+    const results = await db
+      .select({
+        tag: tags,
+      })
+      .from(commentTags)
+      .innerJoin(tags, eq(commentTags.tagId, tags.id))
+      .where(eq(commentTags.commentId, commentId));
+    return results.map(r => r.tag);
+  }
+
+  async addCommentTag(commentId: string, tagId: string): Promise<void> {
+    await db.insert(commentTags).values({ commentId, tagId });
+  }
+
+  async removeCommentTags(commentId: string): Promise<void> {
+    await db.delete(commentTags).where(eq(commentTags.commentId, commentId));
   }
 }
 

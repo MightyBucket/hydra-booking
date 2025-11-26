@@ -45,6 +45,13 @@ export async function setupVite(app: Express, server: Server) {
       return next();
     }
 
+    // Only serve index.html for navigation requests (browser navigation)
+    // Asset requests will have different Accept headers
+    const acceptsHtml = req.headers.accept?.includes('text/html');
+    if (!acceptsHtml) {
+      return next();
+    }
+
     const url = req.originalUrl;
 
     try {
@@ -60,6 +67,7 @@ export async function setupVite(app: Express, server: Server) {
 
       res.status(200).set({ "Content-Type": "text/html" }).end(indexHtml);
     } catch (e) {
+      vite.ssrFixStacktrace(e as Error);
       next(e);
     }
   });

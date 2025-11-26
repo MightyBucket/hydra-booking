@@ -1,4 +1,3 @@
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface Comment {
@@ -10,10 +9,12 @@ interface Comment {
   createdAt: string;
 }
 
-export function useCommentsByLesson(lessonId: string) {
+export function useCommentsByLesson(lessonId: string | null) {
   return useQuery<Comment[]>({
     queryKey: ["comments", lessonId],
     queryFn: async () => {
+      if (!lessonId) return [];
+      
       const response = await fetch(`/api/lessons/${lessonId}/comments`, {
         credentials: "include",
         headers: {
@@ -27,6 +28,7 @@ export function useCommentsByLesson(lessonId: string) {
 
       return response.json();
     },
+    enabled: !!lessonId,
   });
 }
 
@@ -66,29 +68,21 @@ export function useUpdateComment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { id: string; title: string; content: string; visibleToStudent: number }) => {
-      const response = await fetch(`/api/comments/${data.id}`, {
+    mutationFn: async ({ id, ...data }: { id: string; title?: string; content?: string; visibleToStudent?: number; tagIds?: string[] }) => {
+      const response = await fetch(`/api/comments/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${localStorage.getItem('sessionId') || ''}`,
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
         },
-        body: JSON.stringify({
-          title: data.title,
-          content: data.content,
-          visibleToStudent: data.visibleToStudent,
-        }),
-        credentials: "include",
+        body: JSON.stringify(data),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to update comment");
-      }
-
+      if (!response.ok) throw new Error("Failed to update comment");
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments"] });
+      queryClient.invalidateQueries({ queryKey: ["commentTags"] });
     },
   });
 }
