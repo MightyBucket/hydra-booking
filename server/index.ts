@@ -5,6 +5,31 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
+// CORS configuration
+app.use((req, res, next) => {
+  // Allow requests from any origin in development, or from specific origins in production
+  const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['*'];
+  
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes('*') || (origin && allowedOrigins.includes(origin))) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  
+  next();
+});
+
 // Add security headers in production
 if (app.get("env") === "production") {
   app.use(helmet({
@@ -12,10 +37,21 @@ if (app.get("env") === "production") {
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'", "https:", "data:"],
       },
     },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }));
+} else {
+  // In development, use more permissive settings
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   }));
 }
 
