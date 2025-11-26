@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Save, X, Plus } from 'lucide-react';
+import { Save, X } from 'lucide-react';
 import { useTags } from '@/hooks/useTags';
 import { Badge } from '@/components/ui/badge';
 import {

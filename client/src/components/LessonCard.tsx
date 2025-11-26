@@ -202,60 +202,24 @@ export default function LessonCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => onUpdatePaymentStatus(lesson.id, "pending")}
-                  className={
-                    lesson.paymentStatus === "pending" ? "bg-accent" : ""
-                  }
-                  data-testid={`payment-option-pending-${lesson.id}`}
-                >
-                  <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
-                  Pending
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onUpdatePaymentStatus(lesson.id, "paid")}
-                  className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
-                  data-testid={`payment-option-paid-${lesson.id}`}
-                >
-                  <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
-                  Paid
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onUpdatePaymentStatus(lesson.id, "overdue")}
-                  className={
-                    lesson.paymentStatus === "overdue" ? "bg-accent" : ""
-                  }
-                  data-testid={`payment-option-overdue-${lesson.id}`}
-                >
-                  <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
-                  Overdue
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onUpdatePaymentStatus(lesson.id, "unpaid")}
-                  className={
-                    lesson.paymentStatus === "unpaid" ? "bg-accent" : ""
-                  }
-                  data-testid={`payment-option-unpaid-${lesson.id}`}
-                >
-                  <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
-                  Unpaid
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onUpdatePaymentStatus(lesson.id, "free")}
-                  className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
-                  data-testid={`payment-option-free-${lesson.id}`}
-                >
-                  <span className="w-3 h-3 rounded-full bg-blue-400 mr-2"></span>
-                  Free
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onUpdatePaymentStatus(lesson.id, "cancelled")}
-                  className={lesson.paymentStatus === "cancelled" ? "bg-accent" : ""}
-                  data-testid={`payment-option-cancelled-${lesson.id}`}
-                >
-                  <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
-                  Cancelled
-                </DropdownMenuItem>
+                {[
+                  { status: "pending", label: "Pending", color: "bg-lesson-pending" },
+                  { status: "paid", label: "Paid", color: "bg-lesson-confirmed" },
+                  { status: "overdue", label: "Overdue", color: "bg-lesson-cancelled" },
+                  { status: "unpaid", label: "Unpaid", color: "bg-lesson-cancelled" },
+                  { status: "free", label: "Free", color: "bg-blue-400" },
+                  { status: "cancelled", label: "Cancelled", color: "bg-gray-400" },
+                ].map(({ status, label, color }) => (
+                  <DropdownMenuItem
+                    key={status}
+                    onClick={() => onUpdatePaymentStatus(lesson.id, status as any)}
+                    className={lesson.paymentStatus === status ? "bg-accent" : ""}
+                    data-testid={`payment-option-${status}-${lesson.id}`}
+                  >
+                    <span className={`w-3 h-3 rounded-full ${color} mr-2`}></span>
+                    {label}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (

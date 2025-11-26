@@ -254,70 +254,35 @@ export default function LessonWithComments({
         {onUpdatePaymentStatus && !isStudentView ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              {
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-7 text-xs font-medium border-0`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  &nbsp;&nbsp;&nbsp;
-                </Button>
-              }
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-7 text-xs font-medium border-0`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                &nbsp;&nbsp;&nbsp;
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-24">
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onUpdatePaymentStatus(lesson.id, "pending");
-                }}
-                className={
-                  lesson.paymentStatus === "pending" ? "bg-accent" : ""
-                }
-              >
-                <span className="w-3 h-3 rounded-full bg-lesson-pending mr-2"></span>
-                Pending
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onUpdatePaymentStatus(lesson.id, "paid");
-                }}
-                className={lesson.paymentStatus === "paid" ? "bg-accent" : ""}
-              >
-                <span className="w-3 h-3 rounded-full bg-lesson-confirmed mr-2"></span>
-                Paid
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onUpdatePaymentStatus(lesson.id, "unpaid");
-                }}
-                className={lesson.paymentStatus === "unpaid" ? "bg-accent" : ""}
-              >
-                <span className="w-3 h-3 rounded-full bg-lesson-cancelled mr-2"></span>
-                Unpaid
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onUpdatePaymentStatus(lesson.id, "free");
-                }}
-                className={lesson.paymentStatus === "free" ? "bg-accent" : ""}
-              >
-                <span className="w-3 h-3 rounded-full bg-blue-400 mr-2"></span>
-                Free
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onUpdatePaymentStatus(lesson.id, "cancelled");
-                }}
-                className={lesson.paymentStatus === "cancelled" ? "bg-accent" : ""}
-              >
-                <span className="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
-                Cancelled
-              </DropdownMenuItem>
+              {[
+                { status: "pending", label: "Pending", color: "bg-lesson-pending" },
+                { status: "paid", label: "Paid", color: "bg-lesson-confirmed" },
+                { status: "unpaid", label: "Unpaid", color: "bg-lesson-cancelled" },
+                { status: "free", label: "Free", color: "bg-blue-400" },
+                { status: "cancelled", label: "Cancelled", color: "bg-gray-400" },
+              ].map(({ status, label, color }) => (
+                <DropdownMenuItem
+                  key={status}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUpdatePaymentStatus(lesson.id, status as any);
+                  }}
+                  className={lesson.paymentStatus === status ? "bg-accent" : ""}
+                >
+                  <span className={`w-3 h-3 rounded-full ${color} mr-2`}></span>
+                  {label}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         ) : isStudentView ? (
@@ -326,9 +291,7 @@ export default function LessonWithComments({
           >
             &nbsp;&nbsp;&nbsp;
           </div>
-        ) : (
-          <div />
-        )}
+        ) : null}
       </div>
     </div>
   );

@@ -41,13 +41,14 @@ export default function LessonForm({ students, initialData, onSubmit, onCancel }
     return now;
   };
 
+  const toLocalISOString = (date: Date) => 
+    new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
   const [formData, setFormData] = useState({
     subject: initialData?.subject || '',
-    dateTime: initialData?.dateTime ? 
-      new Date(initialData.dateTime.getTime() - (initialData.dateTime.getTimezoneOffset() * 60000))
-        .toISOString().slice(0, 16) : 
-      new Date(getDefaultDateTime().getTime() - (getDefaultDateTime().getTimezoneOffset() * 60000))
-        .toISOString().slice(0, 16),
+    dateTime: initialData?.dateTime 
+      ? toLocalISOString(initialData.dateTime)
+      : toLocalISOString(getDefaultDateTime()),
     studentId: initialData?.studentId || '',
     duration: initialData?.duration || 60,
     pricePerHour: initialData?.pricePerHour || 50,
