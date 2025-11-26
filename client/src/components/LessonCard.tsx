@@ -1,14 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import CommentForm from "@/components/CommentForm";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -20,24 +13,19 @@ import {
   DollarSign,
   Trash2,
   Edit,
-  ChevronDown,
   Link as LinkIcon,
   MessageSquare,
   Eye,
   EyeOff,
-  X,
 } from "lucide-react";
 import { format } from "date-fns";
-import { getPaymentStatusColor, PaymentStatus } from "@/lib/paymentStatus";
-import { useCommentTags } from "@/hooks/useTags";
-
-interface Comment {
-  id: string;
-  title: string;
-  content: string;
-  visibleToStudent: number;
-  createdAt: string;
-}
+import { PaymentStatus } from "@/lib/paymentStatus";
+import {
+  CommentWithTags,
+  PaymentStatusDropdown,
+  PaymentStatusBadge,
+  Comment,
+} from "@/components/shared/LessonComponents";
 
 interface LessonCardProps {
   lesson: {
@@ -47,7 +35,7 @@ interface LessonCardProps {
     studentName: string;
     studentColor?: string;
     duration: number;
-    paymentStatus: "pending" | "paid" | "overdue" | "unpaid" | "free" | "cancelled";
+    paymentStatus: PaymentStatus;
     pricePerHour: number;
     lessonLink?: string;
   };
@@ -55,10 +43,7 @@ interface LessonCardProps {
   onEdit: (lessonId: string) => void;
   onDelete: (lessonId: string) => void;
   onJoinLesson?: (link: string) => void;
-  onUpdatePaymentStatus?: (
-    lessonId: string,
-    status: "pending" | "paid" | "overdue" | "unpaid" | "free" | "cancelled",
-  ) => void;
+  onUpdatePaymentStatus?: (lessonId: string, status: PaymentStatus) => void;
   onAddComment?: (lessonId: string) => void;
   onDeleteComment?: (commentId: string) => void;
   onEditComment?: (
@@ -87,88 +72,6 @@ export default function LessonCard({
 
   const totalPrice = (lesson.pricePerHour * lesson.duration) / 60;
 
-  // Component to display a single comment with its tags
-  function CommentWithTags({ comment }: { comment: Comment }) {
-    const { data: tags = [] } = useCommentTags(comment.id);
-
-    return (
-      <div className="text-xs bg-muted/50 p-2 rounded space-y-1">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1">
-            <div className="font-medium flex items-center gap-1 flex-wrap">
-              {comment.title}
-              {tags.map((tag: any) => (
-                <Badge
-                  key={tag.id}
-                  variant="outline"
-                  className="text-[10px] px-1.5 py-0"
-                  style={{ borderColor: tag.color, color: tag.color }}
-                >
-                  {tag.name}
-                </Badge>
-              ))}
-              {comment.visibleToStudent === 1 ? (
-                <Eye
-                  className="h-3 w-3 text-muted-foreground"
-                  title="Visible to student"
-                />
-              ) : (
-                <EyeOff
-                  className="h-3 w-3 text-muted-foreground"
-                  title="Not visible to student"
-                />
-              )}
-            </div>
-            <div className="text-muted-foreground">{comment.content}</div>
-            <div className="text-[10px] text-muted-foreground">
-              {format(new Date(comment.createdAt), "MMM d, yyyy h:mm a")}
-              {comment.lastEdited && (
-                <span className="ml-2 italic">
-                  (edited{" "}
-                  {format(new Date(comment.lastEdited), "MMM d, h:mm a")})
-                </span>
-              )}
-            </div>
-          </div>
-          {showCommentActions && (
-            <div className="flex gap-1">
-              {onEditComment && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEditingCommentId(comment.id);
-                    onEditComment(comment.id, {
-                      title: comment.title,
-                      content: comment.content,
-                      visibleToStudent: comment.visibleToStudent,
-                      tagIds: tags.map((tag: any) => tag.id),
-                    });
-                  }}
-                  className="h-5 w-5 p-0"
-                  data-testid={`button-edit-comment-${comment.id}`}
-                >
-                  <Edit className="h-3 w-3" />
-                </Button>
-              )}
-              {onDeleteComment && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDeleteComment(comment.id)}
-                  className="h-5 w-5 p-0 text-destructive hover:text-destructive"
-                  data-testid={`button-delete-comment-${comment.id}`}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <Card
       className="hover-elevate border-l-4 border-l-primary/20"
@@ -189,45 +92,13 @@ export default function LessonCard({
             </div>
           </div>
           {onUpdatePaymentStatus ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-1 h-auto text-xs font-medium flex-shrink-0`}
-                  data-testid={`dropdown-payment-status-${lesson.id}`}
-                >
-                  {lesson.paymentStatus}
-                  <ChevronDown className="ml-1 h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {[
-                  { status: "pending", label: "Pending", color: "bg-lesson-pending" },
-                  { status: "paid", label: "Paid", color: "bg-lesson-confirmed" },
-                  { status: "overdue", label: "Overdue", color: "bg-lesson-cancelled" },
-                  { status: "unpaid", label: "Unpaid", color: "bg-lesson-cancelled" },
-                  { status: "free", label: "Free", color: "bg-blue-400" },
-                  { status: "cancelled", label: "Cancelled", color: "bg-gray-400" },
-                ].map(({ status, label, color }) => (
-                  <DropdownMenuItem
-                    key={status}
-                    onClick={() => onUpdatePaymentStatus(lesson.id, status as any)}
-                    className={lesson.paymentStatus === status ? "bg-accent" : ""}
-                    data-testid={`payment-option-${status}-${lesson.id}`}
-                  >
-                    <span className={`w-3 h-3 rounded-full ${color} mr-2`}></span>
-                    {label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <PaymentStatusDropdown
+              lessonId={lesson.id}
+              currentStatus={lesson.paymentStatus}
+              onUpdateStatus={onUpdatePaymentStatus}
+            />
           ) : (
-            <Badge
-              className={`${getPaymentStatusColor(lesson.paymentStatus)} text-xs flex-shrink-0`}
-            >
-              {lesson.paymentStatus}
-            </Badge>
+            <PaymentStatusBadge status={lesson.paymentStatus} />
           )}
         </div>
       </CardHeader>
@@ -318,7 +189,16 @@ export default function LessonCard({
               Comments ({comments.length})
             </div>
             {comments.map((comment) => (
-              <CommentWithTags key={comment.id} comment={comment} />
+              <CommentWithTags
+                key={comment.id}
+                comment={comment}
+                showActions={showCommentActions}
+                onEdit={onEditComment ? (id, data) => {
+                  setEditingCommentId(id);
+                  onEditComment(id, data);
+                } : undefined}
+                onDelete={onDeleteComment}
+              />
             ))}
           </div>
         )}
@@ -335,25 +215,23 @@ export default function LessonCard({
                 key={comment.id}
                 className="border-l-2 border-primary/20 pl-3"
               >
-                {editingCommentId === comment.id ? (
+                {editingCommentId === comment.id && onEditComment ? (
                   <CommentForm
                     initialData={{
                       title: comment.title,
                       content: comment.content,
                       visibleToStudent: comment.visibleToStudent === 1,
-                      tagIds: tags.map((tag: any) => tag.id),
+                      tagIds: [],
                     }}
                     isEditing={true}
                     onSubmit={async (data) => {
-                      if (onEditComment) {
-                        await onEditComment(comment.id, {
-                          title: data.title,
-                          content: data.content,
-                          visibleToStudent: data.visibleToStudent ? 1 : 0,
-                          tagIds: data.tagIds,
-                        });
-                        setEditingCommentId(null);
-                      }
+                      await onEditComment(comment.id, {
+                        title: data.title,
+                        content: data.content,
+                        visibleToStudent: data.visibleToStudent ? 1 : 0,
+                        tagIds: data.tagIds,
+                      });
+                      setEditingCommentId(null);
                     }}
                     onCancel={() => setEditingCommentId(null)}
                   />
@@ -364,34 +242,22 @@ export default function LessonCard({
                         <h4 className="text-sm font-semibold">
                           {comment.title}
                         </h4>
-                        {comment.visibleToStudent === 1 ? (
-                          <Badge variant="outline" className="text-xs">
-                            <Eye className="h-3 w-3 mr-1" />
-                            Visible to Student
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">
-                            <EyeOff className="h-3 w-3 mr-1" />
-                            Private
-                          </Badge>
-                        )}
+                        <span title={comment.visibleToStudent === 1 ? "Visible to Student" : "Private"}>
+                          {comment.visibleToStudent === 1 ? (
+                            <Eye className="h-3 w-3 mr-1 text-muted-foreground" />
+                          ) : (
+                            <EyeOff className="h-3 w-3 mr-1 text-muted-foreground" />
+                          )}
+                        </span>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {comment.content}
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {format(
-                          new Date(comment.createdAt),
-                          "MMM d, yyyy h:mm a",
-                        )}
+                        {format(new Date(comment.createdAt), "MMM d, yyyy h:mm a")}
                         {comment.lastEdited && (
                           <span className="ml-2 italic">
-                            (edited{" "}
-                            {format(
-                              new Date(comment.lastEdited),
-                              "MMM d, h:mm a",
-                            )}
-                            )
+                            (edited {format(new Date(comment.lastEdited), "MMM d, h:mm a")})
                           </span>
                         )}
                       </p>
@@ -403,10 +269,8 @@ export default function LessonCard({
                             variant="ghost"
                             size="sm"
                             onClick={async () => {
-                              // Fetch tags for this comment
                               const response = await fetch(`/api/comments/${comment.id}/tags`);
                               const commentTags = response.ok ? await response.json() : [];
-                              
                               onEditComment(comment.id, {
                                 title: comment.title,
                                 content: comment.content,

@@ -1,31 +1,23 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   MessageSquare,
   Clock,
   Trash2,
-  ChevronDown,
   ExternalLink,
-  Edit,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import { useCommentsByLesson } from "@/hooks/useComments";
-import { useCommentTags } from "@/hooks/useTags";
 import { format as formatDate } from "date-fns";
 import { getPaymentStatusColor, PaymentStatus } from "@/lib/paymentStatus";
-import { linkifyText } from "@/lib/linkify";
+import {
+  CommentWithTags,
+  PaymentStatusDropdown,
+  Comment,
+} from "@/components/shared/LessonComponents";
 
 interface Lesson {
   id: string;
@@ -43,7 +35,7 @@ interface Lesson {
 interface LessonWithCommentsProps {
   lesson: Lesson;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
   onJoinLesson?: () => void;
   onUpdatePaymentStatus?: (
     lessonId: string,
@@ -73,91 +65,6 @@ export default function LessonWithComments({
 }: LessonWithCommentsProps) {
   const { data: comments = [] } = useCommentsByLesson(lesson.id);
   const hasComments = comments.length > 0;
-
-  // Component to display a single comment with its tags
-  function CommentWithTags({ comment }: { comment: any }) {
-    const { data: tags = [] } = useCommentTags(comment.id);
-
-    return (
-      <div className="border-l-2 border-primary/20 pl-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-xs font-medium">{comment.title}</p>
-              {tags.map((tag: any) => (
-                <Badge
-                  key={tag.id}
-                  variant="outline"
-                  className="text-[10px] px-1.5 py-0"
-                  style={{ borderColor: tag.color, color: tag.color }}
-                >
-                  {tag.name}
-                </Badge>
-              ))}
-              {comment.visibleToStudent === 1 ? (
-                <Eye
-                  className="h-3 w-3 text-muted-foreground"
-                  title="Visible to student"
-                />
-              ) : (
-                <EyeOff
-                  className="h-3 w-3 text-muted-foreground"
-                  title="Not visible to student"
-                />
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {linkifyText(comment.content)}
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              {formatDate(new Date(comment.createdAt), "MMM d, h:mm a")}
-              {comment.lastEdited && (
-                <span className="ml-2 italic">
-                  (edited{" "}
-                  {formatDate(
-                    new Date(comment.lastEdited),
-                    "MMM d, h:mm a",
-                  )}
-                  )
-                </span>
-              )}
-            </p>
-          </div>
-          {!isStudentView && onEditComment && onDeleteComment && (
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditComment(comment.id, {
-                    title: comment.title,
-                    content: comment.content,
-                    visibleToStudent: comment.visibleToStudent,
-                    tagIds: tags.map((tag: any) => tag.id),
-                  });
-                }}
-                className="h-6 w-6 p-0"
-              >
-                <Edit className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteComment(comment.id);
-                }}
-                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   const lessonContent = (
     <div
@@ -238,7 +145,7 @@ export default function LessonWithComments({
             <MessageSquare className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
           </Button>
         )}
-        {!isStudentView && (
+        {!isStudentView && onDelete && (
           <Button
             variant="outline"
             size="sm"
@@ -252,39 +159,12 @@ export default function LessonWithComments({
           </Button>
         )}
         {onUpdatePaymentStatus && !isStudentView ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`${getPaymentStatusColor(lesson.paymentStatus)} hover:opacity-80 px-2 py-0.5 h-7 text-xs font-medium border-0`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                &nbsp;&nbsp;&nbsp;
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-24">
-              {[
-                { status: "pending", label: "Pending", color: "bg-lesson-pending" },
-                { status: "paid", label: "Paid", color: "bg-lesson-confirmed" },
-                { status: "unpaid", label: "Unpaid", color: "bg-lesson-cancelled" },
-                { status: "free", label: "Free", color: "bg-blue-400" },
-                { status: "cancelled", label: "Cancelled", color: "bg-gray-400" },
-              ].map(({ status, label, color }) => (
-                <DropdownMenuItem
-                  key={status}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onUpdatePaymentStatus(lesson.id, status as any);
-                  }}
-                  className={lesson.paymentStatus === status ? "bg-accent" : ""}
-                >
-                  <span className={`w-3 h-3 rounded-full ${color} mr-2`}></span>
-                  {label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <PaymentStatusDropdown
+            lessonId={lesson.id}
+            currentStatus={lesson.paymentStatus}
+            onUpdateStatus={onUpdatePaymentStatus}
+            variant="compact"
+          />
         ) : isStudentView ? (
           <div
             className={`${getPaymentStatusColor(lesson.paymentStatus)} px-2 py-0.5 h-7 text-xs font-medium rounded inline-flex items-center`}
@@ -317,8 +197,15 @@ export default function LessonWithComments({
             Comments ({comments.length})
           </h4>
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {comments.map((comment) => (
-              <CommentWithTags key={comment.id} comment={comment} />
+            {comments.map((comment: Comment) => (
+              <CommentWithTags
+                key={comment.id}
+                comment={comment}
+                compact={true}
+                showActions={!isStudentView && !!onEditComment && !!onDeleteComment}
+                onEdit={onEditComment}
+                onDelete={onDeleteComment}
+              />
             ))}
           </div>
         </div>

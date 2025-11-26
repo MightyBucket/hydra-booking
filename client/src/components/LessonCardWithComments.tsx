@@ -3,16 +3,17 @@ import LessonCard from './LessonCard';
 import { useCommentsByLesson } from '@/hooks/useComments';
 import { useStudentLessonComments } from '@/hooks/useStudentData';
 import { useParams } from 'wouter';
+import { PaymentStatus } from '@/lib/paymentStatus';
 
 interface LessonCardWithCommentsProps {
   lesson: any;
   onEdit: (lessonId: string) => void;
   onDelete: (lessonId: string) => void;
   onJoinLesson?: (link: string) => void;
-  onUpdatePaymentStatus?: (lessonId: string, status: 'pending' | 'paid' | 'overdue' | 'unpaid' | 'free') => void;
+  onUpdatePaymentStatus?: (lessonId: string, status: PaymentStatus) => void;
   onAddComment?: (lessonId: string) => void;
   onDeleteComment?: (commentId: string) => void;
-  onEditComment?: (commentId: string, data: { title: string; content: string; visibleToStudent: number }) => void;
+  onEditComment?: (commentId: string, data: { title: string; content: string; visibleToStudent: number; tagIds?: string[] }) => void;
   showCommentActions?: boolean;
   isStudentView?: boolean;
 }

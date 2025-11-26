@@ -19,11 +19,11 @@ import {
   addDays,
   isSameDay,
   startOfMonth,
-  endOfMonth,
   addMonths,
   subMonths,
   isSameMonth,
 } from "date-fns";
+import { PaymentStatus } from "@/lib/paymentStatus";
 
 interface Lesson {
   id: string;
@@ -33,7 +33,7 @@ interface Lesson {
   studentColor?: string;
   studentId?: string;
   duration: number;
-  paymentStatus: "pending" | "paid" | "unpaid" | "free";
+  paymentStatus: PaymentStatus;
   pricePerHour: number;
   lessonLink?: string;
 }

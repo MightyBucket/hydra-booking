@@ -13,7 +13,7 @@ interface ScheduleCommentsDialogProps {
   lessonId: string | null;
   onClose: () => void;
   onDeleteComment: (commentId: string) => void;
-  onEditComment: (
+  onEditComment?: (
     commentId: string,
     data: { title: string; content: string; visibleToStudent: number }
   ) => void;
@@ -35,7 +35,7 @@ export default function ScheduleCommentsDialog({
 
   const { data: studentComments = [] } = useStudentLessonComments(
     studentId,
-    lessonId
+    lessonId || undefined
   );
 
   const comments = isStudentView ? studentComments : regularComments;
@@ -49,7 +49,7 @@ export default function ScheduleCommentsDialog({
         {comments.length > 0 ? (
           <div className="grid gap-4 py-4">
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {comments.map((comment) => (
+              {comments.map((comment: any) => (
                 <CommentDisplay
                   key={comment.id}
                   comment={comment}
