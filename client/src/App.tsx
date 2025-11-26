@@ -1284,7 +1284,7 @@ function PaymentsPage() {
             </div>
 
             {/* Group By */}
-            <div className="space-y-2">
+            {<div className="space-y-2">
               <Label>Group By</Label>
               <div className="space-y-2">
                 <Button
@@ -1312,7 +1312,7 @@ function PaymentsPage() {
                   By Payer
                 </Button>
               </div>
-            </div>
+            </div>}
           </div>
         </SheetContent>
       </Sheet>
@@ -2229,7 +2229,7 @@ function StudentPaymentsView() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>My Payments ({filteredPayments.length})</CardTitle>
-          <div className="flex gap-2 items-center">
+          {/*<div className="flex gap-2 items-center">
             <Select value={groupBy} onValueChange={(value: 'none' | 'month') => setGroupBy(value)}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue />
@@ -2239,7 +2239,7 @@ function StudentPaymentsView() {
                 <SelectItem value="month">By month</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </div>*/}
         </CardHeader>
         <CardContent className="space-y-4">
           {filteredPayments.length === 0 ? (
