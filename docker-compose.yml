@@ -21,6 +21,7 @@ services:
       - DATABASE_URL=postgresql://${ADMIN_USERNAME}:${ADMIN_PASSWORD}@db:5432/hydra_db
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
     depends_on:
       - db
     restart: unless-stopped
