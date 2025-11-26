@@ -5,28 +5,9 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
-// CORS configuration
+// CORS configuration - Allow all origins in both dev and production
 app.use((req, res, next) => {
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-  
-  if (isDevelopment) {
-    // In development, allow all origins
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-  } else {
-    // In production, use specific allowed origins or allow all if not set
-    const allowedOrigins = process.env.ALLOWED_ORIGINS 
-      ? process.env.ALLOWED_ORIGINS.split(',')
-      : ['*'];
-    
-    const origin = req.headers.origin;
-    
-    if (allowedOrigins.includes('*')) {
-      res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    } else if (origin && allowedOrigins.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    }
-  }
-  
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
