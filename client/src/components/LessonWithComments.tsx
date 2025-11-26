@@ -45,7 +45,7 @@ interface LessonWithCommentsProps {
   onEdit: () => void;
   onDelete: () => void;
   onJoinLesson?: () => void;
-  onUpdatePaymentStatus: (
+  onUpdatePaymentStatus?: (
     lessonId: string,
     status: Lesson["paymentStatus"],
   ) => void;

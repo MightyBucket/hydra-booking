@@ -165,7 +165,9 @@ export default function ScheduleView({
                               : undefined
                           }
                           onUpdatePaymentStatus={
-                            onUpdatePaymentStatus || (() => {})
+                            !isStudentView && onUpdatePaymentStatus
+                              ? onUpdatePaymentStatus
+                              : undefined
                           }
                           onAddComment={
                             onAddComment ? () => onAddComment(lesson.id) : undefined
@@ -186,7 +188,11 @@ export default function ScheduleView({
                               ? () => onJoinLesson(lesson)
                               : undefined
                           }
-                          onUpdatePaymentStatus={onUpdatePaymentStatus || (() => {})}
+                          onUpdatePaymentStatus={
+                            !isStudentView && onUpdatePaymentStatus
+                              ? onUpdatePaymentStatus
+                              : undefined
+                          }
                           onAddComment={
                             onAddComment ? () => onAddComment(lesson.id) : undefined
                           }
