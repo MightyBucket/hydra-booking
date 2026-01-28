@@ -1,13 +1,12 @@
-
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Save, X } from 'lucide-react';
-import { useTags } from '@/hooks/useTags';
-import { Badge } from '@/components/ui/badge';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Save, X, Plus } from "lucide-react";
+import { useTags } from "@/hooks/useTags";
+import { Badge } from "@/components/ui/badge";
 import {
   Popover,
   PopoverContent,
@@ -15,7 +14,12 @@ import {
 } from "@/components/ui/popover";
 
 interface CommentFormProps {
-  onSubmit: (data: { title: string; content: string; visibleToStudent: boolean; tagIds: string[] }) => void;
+  onSubmit: (data: {
+    title: string;
+    content: string;
+    visibleToStudent: boolean;
+    tagIds: string[];
+  }) => void;
   onCancel: () => void;
   initialData?: {
     title: string;
@@ -26,51 +30,64 @@ interface CommentFormProps {
   isEditing?: boolean;
 }
 
-export default function CommentForm({ onSubmit, onCancel, initialData, isEditing = false }: CommentFormProps) {
+export default function CommentForm({
+  onSubmit,
+  onCancel,
+  initialData,
+  isEditing = false,
+}: CommentFormProps) {
   const { data: tags = [] } = useTags();
   const [formData, setFormData] = useState({
-    title: initialData?.title || '',
-    content: initialData?.content || '',
+    title: initialData?.title || "",
+    content: initialData?.content || "",
     visibleToStudent: initialData?.visibleToStudent || false,
-    tagIds: initialData?.tagIds || [] as string[],
+    tagIds: initialData?.tagIds || ([] as string[]),
   });
   const [showTagPicker, setShowTagPicker] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim()) {
-      alert('Please enter a title');
+      alert("Please enter a title");
       return;
     }
-    
+
     if (!formData.content.trim()) {
-      alert('Please enter a comment');
+      alert("Please enter a comment");
       return;
     }
-    
+
     onSubmit(formData);
   };
 
   const toggleTag = (tagId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       tagIds: prev.tagIds.includes(tagId)
-        ? prev.tagIds.filter(id => id !== tagId)
-        : [...prev.tagIds, tagId]
+        ? prev.tagIds.filter((id) => id !== tagId)
+        : [...prev.tagIds, tagId],
     }));
   };
 
-  const selectedTags = tags.filter((tag: any) => formData.tagIds.includes(tag.id));
+  const selectedTags = tags.filter((tag: any) =>
+    formData.tagIds.includes(tag.id),
+  );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" data-testid="comment-form">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4"
+      data-testid="comment-form"
+    >
       <div className="space-y-2">
         <Label htmlFor="comment-title">Title</Label>
         <Input
           id="comment-title"
           value={formData.title}
-          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, title: e.target.value }))
+          }
           placeholder="Enter title"
           required
           data-testid="input-comment-title"
@@ -82,7 +99,9 @@ export default function CommentForm({ onSubmit, onCancel, initialData, isEditing
         <Textarea
           id="comment-content"
           value={formData.content}
-          onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, content: e.target.value }))
+          }
           placeholder="Enter your comment"
           rows={4}
           required
@@ -94,8 +113,8 @@ export default function CommentForm({ onSubmit, onCancel, initialData, isEditing
         <Checkbox
           id="visible-to-student"
           checked={formData.visibleToStudent}
-          onCheckedChange={(checked) => 
-            setFormData(prev => ({ ...prev, visibleToStudent: !!checked }))
+          onCheckedChange={(checked) =>
+            setFormData((prev) => ({ ...prev, visibleToStudent: !!checked }))
           }
           data-testid="checkbox-visible-to-student"
         />
@@ -130,7 +149,9 @@ export default function CommentForm({ onSubmit, onCancel, initialData, isEditing
               <div className="space-y-2">
                 <p className="text-sm font-medium">Select tags</p>
                 {tags.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No tags available. Create tags in Settings.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No tags available. Create tags in Settings.
+                  </p>
                 ) : (
                   <div className="space-y-1">
                     {tags.map((tag: any) => (
@@ -172,12 +193,9 @@ export default function CommentForm({ onSubmit, onCancel, initialData, isEditing
           <X className="h-4 w-4 mr-2" />
           Cancel
         </Button>
-        <Button
-          type="submit"
-          data-testid="button-save-comment"
-        >
+        <Button type="submit" data-testid="button-save-comment">
           <Save className="h-4 w-4 mr-2" />
-          {isEditing ? 'Update Comment' : 'Add Comment'}
+          {isEditing ? "Update Comment" : "Add Comment"}
         </Button>
       </div>
     </form>
