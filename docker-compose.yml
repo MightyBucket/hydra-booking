@@ -1,17 +1,18 @@
 services:
-  proxy:
-    image: nginx:latest
-    container_name: nginx-proxy
-    ports:
-      - "80:80"
-      # Uncomment the next line if you want HTTPS later
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./certs:/etc/nginx/certs:ro   # mount SSL certificates
-    depends_on:
-      - app
-    restart: unless-stopped
+  # proxy:
+  #   image: nginx:latest
+  #   #container_name: nginx-proxy
+  #   ports:
+  #     - "80:80"
+  #     # Uncomment the next line if you want HTTPS later
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+  #     - ./certs:/etc/nginx/certs:ro   # mount SSL certificates
+  #   depends_on:
+  #     - app
+  #   restart: unless-stopped
+
   app:
     build: .
     ports:
@@ -39,5 +40,62 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
+  dev_db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: hydra_db
+    volumes:
+      - dev_db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"   # dev exposed on host 5433 (prod might be 5432)
+    restart: unless-stopped
+
+  db_refresh:
+    image: postgres:16
+    depends_on:
+      - dev_db
+        #condition: service_healthy
+    environment:
+      # Prod connection (point this at your prod DB container or host)
+      PROD_HOST: db        # if reachable by docker network name
+      PROD_PORT: "5432"
+      PROD_DB: hydra_db
+      PROD_USER: ${ADMIN_USERNAME}
+      PROD_PASSWORD: ${ADMIN_PASSWORD}
+
+      # Dev connection
+      DEV_HOST: dev_db
+      DEV_PORT: "5432"
+      DEV_DB: app
+      DEV_USER: ${DEV_USERNAME}
+      DEV_PASSWORD: ${DEV_PASSWORD}
+
+      # Schedule (cron format) — default hourly at minute 7
+      CRON: "0 4 * * *"
+      JOBS: "2"                 # Pi-friendly parallel restore
+      MASK_SQL_PATH: "/mask/mask.sql"
+    volumes:
+      - ./db-refresh:/scripts:ro
+      - ./mask:/mask:ro
+      - db_refresh_tmp:/tmp
+    entrypoint: ["/bin/bash", "/scripts/entrypoint.sh"]
+    restart: unless-stopped
+
+
+  
+  # tunnel:
+  #   image: cloudflare/cloudflared:latest
+  #   command: tunnel --no-autoupdate run
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - proxy
+  #   volumes:
+  #     - ./cloudflared:/etc/cloudflared
+
+
 volumes:
   postgres_data:
+  dev_db_data:
+  db_refresh_tmp:
