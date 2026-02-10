@@ -9,7 +9,8 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Henry123";
 
 export function login(username: string, password: string): string | null {
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+  const normalizedUsername = username.trim().toLowerCase();
+  if (normalizedUsername === ADMIN_USERNAME.toLowerCase() && password === ADMIN_PASSWORD) {
     const sessionId = Math.random().toString(36).substring(2);
     sessions.set(sessionId, {
       userId: "admin",
