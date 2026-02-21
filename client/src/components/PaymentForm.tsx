@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,6 +60,7 @@ export default function PaymentForm({
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
   const [hasChangedPaymentDate, setHasChangedPaymentDate] = useState(!!initialData?.paymentDate);
+  const lastPayerRef = useRef<string | null>(null);
 
   // Load existing lesson IDs if editing
   useEffect(() => {
@@ -102,8 +103,9 @@ export default function PaymentForm({
         // Show all lessons
         return true;
       } else {
-        // Show only pending lessons
-        return lesson.paymentStatus === 'pending';
+        // Show pending lessons, and when editing also show lessons already linked to this payment
+        const isLinkedToThisPayment = initialData?.id && selectedLessonIds.includes(lesson.id);
+        return lesson.paymentStatus === 'pending' || isLinkedToThisPayment;
       }
     });
 
@@ -111,8 +113,30 @@ export default function PaymentForm({
     filtered.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
     setFilteredLessons(filtered);
-    setSelectedLessonIds([]);
-  }, [formData.payerType, formData.payerId, students, parents, lessons, showPaidLessons]);
+    // Only clear selectedLessonIds when the payer has changed (e.g. switched from one student to another).
+    // Don't clear on every run or when the user selects a lesson.
+    const currentPayerKey = `${formData.payerType}:${formData.payerId}`;
+    const payerChanged = lastPayerRef.current !== null && lastPayerRef.current !== currentPayerKey;
+    lastPayerRef.current = currentPayerKey;
+    if (payerChanged) {
+      setSelectedLessonIds([]);
+    }
+  }, [formData.payerType, formData.payerId, students, parents, lessons, showPaidLessons, selectedLessonIds, initialData?.id]);
+
+  // When editing, navigate calendar to the month of the earliest selected lesson
+  useEffect(() => {
+    if (initialData?.id && selectedLessonIds.length > 0 && filteredLessons.length > 0) {
+      const selectedLessons = filteredLessons.filter(l => selectedLessonIds.includes(l.id));
+      const first = selectedLessons[0];
+      if (first) {
+        const earliest = selectedLessons.reduce((min, lesson) => {
+          const date = new Date(lesson.dateTime).getTime();
+          return date < min ? date : min;
+        }, new Date(first.dateTime).getTime());
+        setCurrentDate(startOfMonth(new Date(earliest)));
+      }
+    }
+  }, [initialData?.id, selectedLessonIds, filteredLessons]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

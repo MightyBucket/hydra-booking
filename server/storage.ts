@@ -423,18 +423,36 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     // Update payment-lesson associations if provided
-    if (lessonIds !== undefined) {
+    const ids = lessonIds !== undefined ? (Array.isArray(lessonIds) ? lessonIds : []) : undefined;
+    if (ids !== undefined) {
+      const existingLinks = await db
+        .select()
+        .from(paymentLessons)
+        .where(eq(paymentLessons.paymentId, id));
+      const oldLessonIds = existingLinks.map((pl) => pl.lessonId);
+
       // Delete existing associations
       await db.delete(paymentLessons).where(eq(paymentLessons.paymentId, id));
 
-      // Create new associations
-      if (lessonIds.length > 0) {
+      // Set unlinked lessons back to 'pending'
+      const newLessonIdsSet = new Set(ids);
+      for (const lessonId of oldLessonIds) {
+        if (!newLessonIdsSet.has(lessonId)) {
+          await db.update(lessons).set({ paymentStatus: 'pending' }).where(eq(lessons.id, lessonId));
+        }
+      }
+
+      // Create new associations and set linked lessons to 'paid'
+      if (ids.length > 0) {
         await db.insert(paymentLessons).values(
-          lessonIds.map(lessonId => ({
+          ids.map((lessonId) => ({
             paymentId: id,
             lessonId,
           }))
         );
+        for (const lessonId of ids) {
+          await db.update(lessons).set({ paymentStatus: 'paid' }).where(eq(lessons.id, lessonId));
+        }
       }
     }
 

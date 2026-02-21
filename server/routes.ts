@@ -702,8 +702,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/payments/:id/lessons", requireAuth, async (req, res) => {
     try {
-      const lessonIds = await storage.getPaymentLessons(req.params.id);
-      res.json(lessonIds);
+      const paymentLessons = await storage.getPaymentLessons(req.params.id);
+      res.json(paymentLessons.map((pl: { lessonId: string }) => pl.lessonId));
     } catch (error) {
       console.error('Error fetching payment lessons:', error);
       res.status(500).json({ error: "Failed to fetch payment lessons" });
@@ -796,31 +796,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update a payment
+  // Update a payment (same pattern as PUT - updatePayment handles all relationship logic)
   app.patch("/api/payments/:paymentId", requireAuth, async (req, res) => {
     try {
+      const { insertPaymentSchema } = await import('@shared/schema');
       const { paymentId } = req.params;
       const { lessonIds, ...paymentData } = req.body;
+      const updateData = insertPaymentSchema.partial().parse(paymentData);
 
-      // Update the payment
-      const updatedPayment = await storage.updatePayment(paymentId, paymentData);
-
-      // If lessonIds are provided, update the payment-lesson relationships
-      if (lessonIds !== undefined) {
-        // Delete existing relationships
-        await storage.deletePaymentLessons(paymentId);
-
-        // Create new relationships
-        for (const lessonId of lessonIds) {
-          await storage.createPaymentLesson(paymentId, lessonId);
-          // Update lesson payment status to 'paid'
-          await storage.updateLesson(lessonId, { paymentStatus: 'paid' });
-        }
+      const updatedPayment = await storage.updatePayment(paymentId, updateData, lessonIds);
+      if (!updatedPayment) {
+        return res.status(404).json({ error: "Payment not found" });
       }
-
       res.json(updatedPayment);
     } catch (error) {
       console.error(`Error updating payment: ${error}`);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
       res.status(500).json({ error: "Failed to update payment" });
     }
   });
