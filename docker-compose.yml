@@ -67,12 +67,12 @@ services:
 
       # Dev connection
       DEV_HOST: dev_db
-      DEV_PORT: "5432"
-      DEV_DB: app
-      DEV_USER: ${DEV_USERNAME}
-      DEV_PASSWORD: ${DEV_PASSWORD}
+      DEV_PORT: "5433"
+      DEV_DB: hydra_db
+      DEV_USER: dev
+      DEV_PASSWORD: devpass
 
-      # Schedule (cron format) — default hourly at minute 7
+      # Schedule (cron format) — default daily at 4am
       CRON: "0 4 * * *"
       JOBS: "2"                 # Pi-friendly parallel restore
       MASK_SQL_PATH: "/mask/mask.sql"
