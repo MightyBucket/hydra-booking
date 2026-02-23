@@ -141,6 +141,42 @@ export function useStudentPaymentLessons(studentId: string, paymentId: string) {
   });
 }
 
+async function fetchParentPayments(parentId: string): Promise<Payment[]> {
+  const response = await fetch(`/api/parent/${parentId}/payments`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch parent payments");
+  }
+  return response.json();
+}
+
+export function useParentPayments(parentId: string) {
+  return useQuery({
+    queryKey: ["/api/parent", parentId, "payments"],
+    queryFn: () => fetchParentPayments(parentId),
+    enabled: !!parentId,
+  });
+}
+
+async function fetchParentPaymentLessons(parentId: string, paymentId: string): Promise<string[]> {
+  const response = await fetch(`/api/parent/${parentId}/payments/${paymentId}/lessons`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch parent payment lessons");
+  }
+  return response.json();
+}
+
+export function useParentPaymentLessons(parentId: string, paymentId: string) {
+  return useQuery({
+    queryKey: ["/api/parent", parentId, "payments", paymentId, "lessons"],
+    queryFn: () => fetchParentPaymentLessons(parentId, paymentId),
+    enabled: !!parentId && !!paymentId,
+  });
+}
+
 export function useCreatePayment() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -7,6 +7,7 @@ import { relations } from "drizzle-orm";
 // Parents table
 export const parents = pgTable("parents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentId: varchar("parent_id", { length: 6 }).unique(),
   name: text("name").notNull(),
   email: text("email").unique(),
   phoneNumber: text("phone_number"),
@@ -182,6 +183,7 @@ const emptyStringToNull = z.string().transform(val => val === '' ? null : val).n
 // Insert schemas for parents
 export const insertParentSchema = createInsertSchema(parents).omit({
   id: true,
+  parentId: true,
   createdAt: true,
 }).extend({
   name: z.string().min(1, "Name is required"),

@@ -13,11 +13,13 @@ interface NavigationProps {
   studentCount?: number;
   isStudentView?: boolean;
   studentId?: string;
+  isParentView?: boolean;
+  parentId?: string;
 }
 
 /**
  * Main navigation sidebar component
- * Shows different navigation items based on whether it's a teacher or student view
+ * Shows different navigation items based on whether it's a teacher, student, or parent view
  * Includes quick actions for adding lessons and students (teacher view only)
  */
 export default function Navigation({ 
@@ -26,13 +28,19 @@ export default function Navigation({
   lessonCount = 0, 
   studentCount = 0,
   isStudentView = false,
-  studentId
+  studentId,
+  isParentView = false,
+  parentId
 }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
 
-  // Define navigation items based on view type (student vs teacher)
-  const navItems = isStudentView && studentId ? [
+  // Define navigation items based on view type (student, parent, or teacher)
+  const navItems = isParentView && parentId ? [
+    { path: `/calendar/parent/${parentId}`, label: 'Calendar', icon: Calendar },
+    { path: `/schedule/parent/${parentId}`, label: 'Schedule', icon: GraduationCap },
+    { path: `/payments/parent/${parentId}`, label: 'Payments', icon: ReceiptPoundSterling },
+  ] : isStudentView && studentId ? [
     { path: `/calendar/${studentId}`, label: 'Calendar', icon: Calendar },
     { path: `/schedule/${studentId}`, label: 'Schedule', icon: GraduationCap },
     { path: `/payments/${studentId}`, label: 'Payments', icon: ReceiptPoundSterling },
@@ -71,7 +79,7 @@ export default function Navigation({
         </div>
 
         {/* Quick Actions */}
-        {!isStudentView && (
+        {!isStudentView && !isParentView && (
           <div className="p-4 border-b space-y-2">
             <Button className="w-full justify-start" onClick={() => { onAddLesson(); setIsOpen(false); }} data-testid="button-add-lesson">
               <Plus className="h-4 w-4 mr-2" />

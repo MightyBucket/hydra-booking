@@ -31,7 +31,7 @@ import {
   type InsertTag // Assuming InsertTag type is defined in schema
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 // Generate a unique 6-digit student ID
 async function generateUniqueStudentId(): Promise<string> {
@@ -53,6 +53,23 @@ async function generateUniqueStudentId(): Promise<string> {
   }
 
   throw new Error('Failed to generate unique student ID after multiple attempts');
+}
+
+// Generate a unique 6-digit parent ID
+async function generateUniqueParentId(): Promise<string> {
+  let attempts = 0;
+  const maxAttempts = 100;
+
+  while (attempts < maxAttempts) {
+    const parentId = Math.floor(100000 + Math.random() * 900000).toString();
+    const existing = await db.select().from(parents).where(eq(parents.parentId, parentId));
+    if (existing.length === 0) {
+      return parentId;
+    }
+    attempts++;
+  }
+
+  throw new Error('Failed to generate unique parent ID after multiple attempts');
 }
 
 export interface IStorage {
@@ -100,6 +117,8 @@ export interface IStorage {
 
   // Parent methods
   getParent(id: string): Promise<Parent | undefined>;
+  getParentByParentId(parentId: string): Promise<Parent | undefined>;
+  getStudentsByParent(parentUuid: string): Promise<Student[]>;
   getParents(): Promise<Parent[]>;
   createParent(parent: InsertParent): Promise<Parent>;
   updateParent(id: string, parent: Partial<InsertParent>): Promise<Parent | undefined>;
@@ -361,8 +380,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createParent(data: InsertParent): Promise<Parent> {
-    const [parent] = await db.insert(parents).values(data).returning();
+    const parentId = await generateUniqueParentId();
+    const [parent] = await db.insert(parents).values({ ...data, parentId }).returning();
     return parent;
+  }
+
+  async getParentByParentId(parentId: string): Promise<Parent | undefined> {
+    const [parent] = await db.select().from(parents).where(eq(parents.parentId, parentId));
+    return parent || undefined;
+  }
+
+  async getStudentsByParent(parentUuid: string): Promise<Student[]> {
+    return await db
+      .select()
+      .from(students)
+      .where(eq(students.parentId, parentUuid))
+      .orderBy(students.firstName, students.lastName);
   }
 
   async updateParent(id: string, updateData: Partial<InsertParent>): Promise<Parent | undefined> {

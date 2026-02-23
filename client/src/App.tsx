@@ -39,7 +39,7 @@ import { useStudents, useDeleteStudent, useUpdateStudent } from "./hooks/useStud
 import { useLessons } from "./hooks/useLessons";
 import { useParents } from "./hooks/useParents";
 // Updated imports to include delete and update payment hooks
-import { usePayments, useCreatePayment, useDeletePayment, useUpdatePayment, usePaymentLessons, useStudentPayments, useStudentPaymentLessons } from "./hooks/usePayments";
+import { usePayments, useCreatePayment, useDeletePayment, useUpdatePayment, usePaymentLessons, useStudentPayments, useStudentPaymentLessons, useParentPayments, useParentPaymentLessons } from "./hooks/usePayments";
 import ParentForm from "./components/ParentForm";
 import PaymentForm from "./components/PaymentForm";
 import { useParentForm } from "./hooks/useParentForm";
@@ -60,8 +60,9 @@ import { useStudentForm } from "./hooks/useStudentForm";
 import { useStudentNotes } from "./hooks/useStudentNotes";
 import { useLessonData } from "./hooks/useLessonData";
 import { useDialogState } from "./hooks/useDialogState";
-import { Edit, Trash2, Plus, Filter } from "lucide-react";
+import { Edit, Trash2, Plus, Filter, Calendar, GraduationCap } from "lucide-react";
 import { useStudentByStudentId, useStudentLessonsByStudentId } from "@/hooks/useStudentData";
+import { useParentByParentId, useParentLessonsByParentId, useParentLessonComments } from "@/hooks/useParentData";
 import { handleJoinLessonLink, calculateStudentStats } from "@/utils/lessonHelpers";
 import {
   Sheet,
@@ -1320,11 +1321,13 @@ function PaymentsPage() {
   );
 }
 
-function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false, studentId }: { paymentId: string; lessonsData: any[]; isMobile?: boolean; studentId?: string }) {
-  // Use student-specific hook if studentId is provided (for student view)
-  const { data: lessonIds = [], isLoading } = studentId 
-    ? useStudentPaymentLessons(studentId, paymentId)
-    : usePaymentLessons(paymentId);
+function PaymentLessonsCell({ paymentId, lessonsData, isMobile = false, studentId, parentId }: { paymentId: string; lessonsData: any[]; isMobile?: boolean; studentId?: string; parentId?: string }) {
+  // Use appropriate hook based on view type
+  const { data: lessonIds = [], isLoading } = parentId
+    ? useParentPaymentLessons(parentId, paymentId)
+    : studentId
+      ? useStudentPaymentLessons(studentId, paymentId)
+      : usePaymentLessons(paymentId);
 
   if (isLoading) {
     return <span className="text-muted-foreground text-xs">Loading...</span>;
@@ -1532,6 +1535,9 @@ function ParentsPage() {
                 <div className="mb-3 flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold">{parent.name}</h3>
+                    {parent.parentId && (
+                      <p className="text-xs text-muted-foreground">ID: {parent.parentId}</p>
+                    )}
                     {parent.email && (
                       <p className="text-sm text-muted-foreground">{parent.email}</p>
                     )}
@@ -1539,14 +1545,40 @@ function ParentsPage() {
                       <p className="text-sm text-muted-foreground">{parent.phoneNumber}</p>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleAddStudentToParent(parent.id)}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Student
-                  </Button>
+                  <div className="flex gap-2">
+                    {parent.parentId && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          asChild
+                        >
+                          <a href={`/calendar/parent/${parent.parentId}`} target="_blank" rel="noopener noreferrer">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            Calendar
+                          </a>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          asChild
+                        >
+                          <a href={`/schedule/parent/${parent.parentId}`} target="_blank" rel="noopener noreferrer">
+                            <GraduationCap className="h-4 w-4 mr-1" />
+                            Schedule
+                          </a>
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleAddStudentToParent(parent.id)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Student
+                    </Button>
+                  </div>
                 </div>
 
                 {parent.students.length > 0 ? (
@@ -2320,6 +2352,354 @@ function StudentPaymentsView() {
   );
 }
 
+function ParentCalendarPage() {
+  const params = useParams<{ parentId: string }>();
+
+  const { data: parentData, isLoading: parentLoading } = useParentByParentId(params.parentId);
+  const { data: lessonsResponse, isLoading: lessonsLoading } = useParentLessonsByParentId(params.parentId);
+
+  const lessonsData = lessonsResponse?.lessons || [];
+  const blockedSlots = lessonsResponse?.blockedSlots || [];
+  const students = parentData?.students || [];
+
+  useState(() => {
+    if (parentData) {
+      document.title = `Hydra - ${parentData.name}'s Calendar`;
+    } else {
+      document.title = "Hydra - Parent Calendar";
+    }
+  });
+
+  if (lessonsLoading || parentLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading calendar...
+      </div>
+    );
+  }
+
+  if (!parentData) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">Parent Not Found</h2>
+            <p className="text-muted-foreground">
+              No parent found with ID: {params.parentId}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const studentMap = Object.fromEntries(students.map((s: any) => [s.id, s]));
+  const parentLessons = (lessonsData as any[]).map((lesson: any) => {
+    const student = studentMap[lesson.studentId];
+    return {
+      ...lesson,
+      dateTime: new Date(lesson.dateTime),
+      studentName: student ? `${student.firstName} ${student.lastName || ""}`.trim() : "Unknown",
+      studentColor: student?.defaultColor || "#3b82f6",
+      studentId: lesson.studentId,
+      pricePerHour: parseFloat(lesson.pricePerHour),
+    };
+  });
+
+  const blockedLessons = (blockedSlots as any[]).map((slot: any) => ({
+    id: slot.id,
+    dateTime: new Date(slot.dateTime),
+    duration: slot.duration,
+    isBlocked: true,
+    studentName: "Occupied",
+    studentColor: "#9ca3af",
+    subject: "",
+    paymentStatus: "pending",
+    pricePerHour: 0,
+  }));
+
+  const displayLessons = [...parentLessons, ...blockedLessons];
+  const parentStudentIds = new Set(students.map((s: any) => s.id));
+
+  const handleLessonClick = (lesson: any) => {
+    if (parentStudentIds.has(lesson.studentId) && lesson.lessonLink) {
+      window.open(lesson.lessonLink, "_blank");
+    }
+  };
+
+  return (
+    <>
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold">
+          Calendar for {parentData.name} (ID: {parentData.parentId})
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Students: {students.map((s: any) => `${s.firstName} ${s.lastName || ""}`.trim()).join(", ")}
+        </p>
+      </div>
+      <CalendarView
+        lessons={displayLessons}
+        onLessonClick={handleLessonClick}
+        onDateClick={() => {}}
+        onUpdatePaymentStatus={() => {}}
+        focusedStudentId={undefined}
+      />
+    </>
+  );
+}
+
+function ParentScheduleView() {
+  const params = useParams<{ parentId: string }>();
+
+  const { data: parentData, isLoading: parentLoading } = useParentByParentId(params.parentId);
+  const { data: lessonsResponse, isLoading: lessonsLoading } = useParentLessonsByParentId(params.parentId);
+
+  const lessonsData = lessonsResponse?.lessons || [];
+  const students = parentData?.students || [];
+
+  useState(() => {
+    if (parentData) {
+      document.title = `Hydra - ${parentData.name}'s Schedule`;
+    } else {
+      document.title = "Hydra - Parent Schedule";
+    }
+  });
+
+  const {
+    showCommentForm,
+    setShowCommentForm,
+    viewCommentsLessonId,
+    setViewCommentsLessonId,
+    editingCommentId,
+    editingCommentData,
+    handleStartEditComment,
+    handleEditComment,
+    handleDeleteComment,
+    resetCommentForm,
+  } = useCommentHandlers();
+
+  const studentMap = Object.fromEntries(students.map((s: any) => [s.id, s]));
+  const displayLessons = (lessonsData as any[]).map((lesson: any) => {
+    const student = studentMap[lesson.studentId];
+    return {
+      ...lesson,
+      dateTime: new Date(lesson.dateTime),
+      studentName: student ? `${student.firstName} ${student.lastName || ""}`.trim() : "Unknown",
+      studentColor: student?.defaultColor || "#3b82f6",
+      studentId: lesson.studentId,
+      pricePerHour: parseFloat(lesson.pricePerHour),
+    };
+  });
+
+  if (lessonsLoading || parentLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading schedule...
+      </div>
+    );
+  }
+
+  if (!parentData) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">Parent Not Found</h2>
+            <p className="text-muted-foreground">
+              No parent found with ID: {params.parentId}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const handleJoinLesson = (lesson: Lesson) => {
+    if (lesson.lessonLink) {
+      window.open(lesson.lessonLink, "_blank");
+    }
+  };
+
+  return (
+    <>
+      <ScheduleView
+        lessons={displayLessons}
+        onJoinLesson={handleJoinLesson}
+        onViewComments={setViewCommentsLessonId}
+        onEditComment={handleStartEditComment}
+        onDeleteComment={handleDeleteComment}
+        isStudentView={true}
+        title={`Schedule for ${parentData.name}`}
+        showCommentActions={false}
+      />
+
+      <ScheduleCommentsDialog
+        lessonId={viewCommentsLessonId}
+        onClose={() => setViewCommentsLessonId(null)}
+        onDeleteComment={handleDeleteComment}
+        onEditComment={handleStartEditComment}
+        isParentView={true}
+        parentId={params.parentId}
+      />
+
+      <CommentFormDialog
+        open={showCommentForm}
+        onOpenChange={setShowCommentForm}
+        editingCommentData={editingCommentData}
+        isEditing={true}
+        onSubmit={async () => {}}
+        onCancel={resetCommentForm}
+      />
+    </>
+  );
+}
+
+function ParentPaymentsView() {
+  const params = useParams<{ parentId: string }>();
+  const parentId = params.parentId as string;
+
+  const { data: parentData, isLoading: parentLoading } = useParentByParentId(parentId);
+  const { data: paymentsData = [], isLoading: paymentsLoading } = useParentPayments(parentId);
+  const { data: lessonsResponse } = useParentLessonsByParentId(parentId);
+
+  const lessonsData = Array.isArray(lessonsResponse?.lessons) ? lessonsResponse.lessons : [];
+  const [groupBy, setGroupBy] = useState<'none' | 'month'>('month');
+
+  useState(() => {
+    if (parentData) {
+      document.title = `Hydra - ${parentData.name}'s Payments`;
+    } else {
+      document.title = "Hydra - Parent Payments";
+    }
+  });
+
+  if (parentLoading || paymentsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        Loading payments...
+      </div>
+    );
+  }
+
+  if (!parentData) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">Parent Not Found</h2>
+            <p className="text-muted-foreground">
+              No parent found with ID: {parentId}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  let filteredPayments = [...paymentsData].sort((a, b) =>
+    new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+  );
+
+  const groupedPayments: Record<string, any[]> = {};
+  if (groupBy === 'none') {
+    groupedPayments['All Payments'] = filteredPayments;
+  } else {
+    filteredPayments.forEach((payment: any) => {
+      const date = new Date(payment.paymentDate);
+      const monthKey = format(date, 'MMMM yyyy');
+      if (!groupedPayments[monthKey]) groupedPayments[monthKey] = [];
+      groupedPayments[monthKey].push(payment);
+    });
+  }
+
+  const sortedGroupKeys = Object.keys(groupedPayments).sort((a, b) => {
+    if (groupBy === 'month') {
+      return new Date(b).getTime() - new Date(a).getTime();
+    }
+    return a.localeCompare(b);
+  });
+
+  return (
+    <>
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold">
+          Payments for {parentData.name} (ID: {parentData.parentId})
+        </h1>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>My Payments ({filteredPayments.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {filteredPayments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No payments found.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {sortedGroupKeys.map((groupKey) => {
+                const groupPayments = groupedPayments[groupKey];
+                const totalAmount = groupPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+                return (
+                  <div key={groupKey} className="space-y-3">
+                    {groupBy !== 'none' && (
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">{groupKey}</h3>
+                        <div className="text-sm text-muted-foreground">
+                          {groupPayments.length} payment{groupPayments.length !== 1 ? 's' : ''} • £{totalAmount.toFixed(2)}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="hidden md:table-header-group">
+                          <tr className="border-b">
+                            <th className="text-left p-3">Date</th>
+                            <th className="text-left p-3">Amount</th>
+                            <th className="text-left p-3">Lessons</th>
+                            <th className="text-left p-3">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {groupPayments.map((payment: any) => (
+                            <tr key={payment.id} className="border-b hover:bg-accent/50">
+                              <td className="p-2 md:hidden">
+                                <div className="space-y-1">
+                                  <div className="font-medium">{format(new Date(payment.paymentDate), 'MMM d, yyyy')}</div>
+                                  <div className="text-sm font-semibold">£{parseFloat(payment.amount).toFixed(2)}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={true} parentId={parentId} />
+                                  </div>
+                                  {payment.notes && <div className="text-xs text-muted-foreground">{payment.notes}</div>}
+                                </div>
+                              </td>
+                              <td className="hidden md:table-cell p-3">{format(new Date(payment.paymentDate), 'MMM d, yyyy')}</td>
+                              <td className="hidden md:table-cell p-3 font-semibold">£{parseFloat(payment.amount).toFixed(2)}</td>
+                              <td className="hidden md:table-cell p-3">
+                                <PaymentLessonsCell paymentId={payment.id} lessonsData={lessonsData} isMobile={false} parentId={parentId} />
+                              </td>
+                              <td className="hidden md:table-cell p-3 text-sm text-muted-foreground max-w-xs truncate">
+                                {payment.notes || '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
 function Router() {
   return (
     <Switch>
@@ -2330,6 +2710,9 @@ function Router() {
       <Route path="/payments" component={PaymentsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/settings" component={SettingsPage} />
+      <Route path="/calendar/parent/:parentId" component={ParentCalendarPage} />
+      <Route path="/schedule/parent/:parentId" component={ParentScheduleView} />
+      <Route path="/payments/parent/:parentId" component={ParentPaymentsView} />
       <Route path="/calendar/:studentId" component={StudentCalendarPage} />
       <Route path="/schedule/:studentId" component={StudentScheduleView} />
       <Route path="/payments/:studentId" component={StudentPaymentsView} />
@@ -2342,11 +2725,14 @@ function AppContent() {
   const [location, setLocation] = useLocation();
 
   const studentViewMatch = location.match(/^\/(calendar|schedule|payments)\/([^/]+)$/);
-  const isStudentView = !!studentViewMatch;
+  const parentViewMatch = location.match(/^\/(calendar|schedule|payments)\/parent\/([^/]+)$/);
+  const isStudentView = !!studentViewMatch && !parentViewMatch;
+  const isParentView = !!parentViewMatch;
   const studentId = studentViewMatch?.[2];
+  const parentId = parentViewMatch?.[2];
 
-  // Only fetch admin data when not in student view
-  const { studentsData, lessonsData } = isStudentView 
+  // Only fetch admin data when not in student or parent view
+  const { studentsData, lessonsData } = (isStudentView || isParentView)
     ? { studentsData: [], lessonsData: [] }
     : useLessonData();
 
@@ -2384,6 +2770,8 @@ function AppContent() {
           studentCount={(studentsData as any[]).length}
           isStudentView={isStudentView}
           studentId={studentId}
+          isParentView={isParentView}
+          parentId={parentId}
         />
       )}
 
@@ -2432,11 +2820,15 @@ function AuthenticatedApp() {
   const [location] = useLocation();
   const { data: authData, isLoading } = useAuth();
 
-  // Allow access to student calendar, schedule, and payments views without authentication
+  // Allow access to student and parent calendar, schedule, and payments views without authentication
   const isStudentCalendarView = location.match(/^\/calendar\/[^/]+$/);
   const isStudentScheduleView = location.match(/^\/schedule\/[^/]+$/);
   const isStudentPaymentsView = location.match(/^\/payments\/[^/]+$/);
-
+  const isParentCalendarView = location.match(/^\/calendar\/parent\/[^/]+$/);
+  const isParentScheduleView = location.match(/^\/schedule\/parent\/[^/]+$/);
+  const isParentPaymentsView = location.match(/^\/payments\/parent\/[^/]+$/);
+  const isPublicView = isStudentCalendarView || isStudentScheduleView || isStudentPaymentsView ||
+    isParentCalendarView || isParentScheduleView || isParentPaymentsView;
 
   if (isLoading) {
     return (
@@ -2447,12 +2839,7 @@ function AuthenticatedApp() {
   }
 
   // Show login form if not authenticated and not on public route
-  if (
-    !isStudentCalendarView &&
-    !isStudentScheduleView &&
-    !isStudentPaymentsView &&
-    !authData?.authenticated
-  ) {
+  if (!isPublicView && !authData?.authenticated) {
     return <LoginForm />;
   }
 
