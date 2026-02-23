@@ -212,6 +212,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single parent by their 6-digit parentId (public for parent view)
+  app.get("/api/parent/:parentId", async (req, res) => {
+    try {
+      const parent = await storage.getParentByParentId(req.params.parentId);
+      if (!parent) {
+        return res.status(404).json({ error: "Parent not found" });
+      }
+      const parentStudents = await storage.getStudentsByParent(parent.id);
+      res.json({ ...parent, students: parentStudents });
+    } catch (error) {
+      console.error('Error fetching parent:', error);
+      res.status(500).json({ error: "Failed to fetch parent" });
+    }
+  });
+
+  // Get lessons for all of parent's students (public for parent view)
+  app.get("/api/parent/:parentId/lessons", async (req, res) => {
+    try {
+      const parent = await storage.getParentByParentId(req.params.parentId);
+      if (!parent) {
+        return res.status(404).json({ error: "Parent not found" });
+      }
+      const parentStudents = await storage.getStudentsByParent(parent.id);
+      const parentStudentIds = parentStudents.map((s: any) => s.id);
+
+      if (parentStudentIds.length === 0) {
+        return res.json({ lessons: [], blockedSlots: [] });
+      }
+
+      // Get lessons for all parent's students
+      const allLessons = await storage.getLessons();
+      const parentLessons = allLessons.filter((l: any) => parentStudentIds.includes(l.studentId));
+
+      // Blocked slots = lessons from OTHER students (not parent's)
+      const blockedSlots = allLessons
+        .filter((l: any) => !parentStudentIds.includes(l.studentId))
+        .map((l: any) => ({
+          dateTime: l.dateTime,
+          duration: l.duration,
+          isBlocked: true
+        }));
+
+      res.json({ lessons: parentLessons, blockedSlots });
+    } catch (error) {
+      console.error('Error fetching parent lessons:', error);
+      res.status(500).json({ error: "Failed to fetch parent lessons" });
+    }
+  });
+
+  // Get comments for a lesson (parent view - verify lesson belongs to parent's student)
+  app.get("/api/parent/:parentId/lessons/:lessonId/comments", async (req, res) => {
+    try {
+      const { parentId, lessonId } = req.params;
+      const parent = await storage.getParentByParentId(parentId);
+      if (!parent) {
+        return res.status(404).json({ error: "Parent not found" });
+      }
+      const parentStudents = await storage.getStudentsByParent(parent.id);
+      const parentStudentIds = parentStudents.map((s: any) => s.id);
+
+      const lesson = await storage.getLesson(lessonId);
+      if (!lesson || !parentStudentIds.includes(lesson.studentId)) {
+        return res.status(404).json({ error: "Lesson not found" });
+      }
+
+      const comments = await storage.getCommentsByLesson(lessonId);
+      const sessionId = req.headers.authorization?.replace('Bearer ', '');
+      const { validateSession } = await import('./auth');
+      const isAuthenticated = sessionId ? validateSession(sessionId) : false;
+      const filteredComments = comments.filter((c: any) => c.visibleToStudent === 1 || isAuthenticated);
+      res.json(filteredComments);
+    } catch (error) {
+      console.error('Error fetching lesson comments:', error);
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
+
+  // Get payments for parent (public for parent view)
+  app.get("/api/parent/:parentId/payments", async (req, res) => {
+    try {
+      const parent = await storage.getParentByParentId(req.params.parentId);
+      if (!parent) {
+        return res.status(404).json({ error: "Parent not found" });
+      }
+      const allPayments = await storage.getPayments();
+      const parentPayments = allPayments.filter(
+        (p: any) => p.payerType === 'parent' && p.payerId === parent.id
+      );
+      res.json(parentPayments);
+    } catch (error) {
+      console.error('Error fetching parent payments:', error);
+      res.status(500).json({ error: "Failed to fetch parent payments" });
+    }
+  });
+
+  // Get payment lessons for parent view
+  app.get("/api/parent/:parentId/payments/:paymentId/lessons", async (req, res) => {
+    try {
+      const { parentId, paymentId } = req.params;
+      const parent = await storage.getParentByParentId(parentId);
+      if (!parent) {
+        return res.status(404).json({ error: "Parent not found" });
+      }
+      const payment = await storage.getPayment(paymentId);
+      if (!payment) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+      if (payment.payerType !== 'parent' || payment.payerId !== parent.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const paymentLessons = await storage.getPaymentLessons(paymentId);
+      res.json(paymentLessons.map((pl: any) => pl.lessonId));
+    } catch (error) {
+      console.error('Error fetching parent payment lessons:', error);
+      res.status(500).json({ error: "Failed to fetch parent payment lessons" });
+    }
+  });
+
   // Lesson routes (global endpoint requires auth, student-specific endpoint is public)
   app.get("/api/lessons", requireAuth, async (req, res) => {
     try {
@@ -911,9 +1029,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // For student-specific routes in development, we need to ensure they're handled by the SPA
+  // For student/parent-specific routes in development, we need to ensure they're handled by the SPA
   // This should be registered before Vite's middleware in development
-  app.get(['/calendar/:studentId', '/schedule/:studentId'], (req, res, next) => {
+  app.get([
+    '/calendar/:studentId',
+    '/schedule/:studentId',
+    '/calendar/parent/:parentId',
+    '/schedule/parent/:parentId',
+    '/payments/parent/:parentId'
+  ], (req, res, next) => {
     // Let Vite handle this in development, or serve index.html in production
     next();
   });

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCommentsByLesson } from "@/hooks/useComments";
 import { useStudentLessonComments } from "@/hooks/useStudentData";
+import { useParentLessonComments } from "@/hooks/useParentData";
 import CommentDisplay from "./CommentDisplay";
 
 interface ScheduleCommentsDialogProps {
@@ -19,6 +20,8 @@ interface ScheduleCommentsDialogProps {
   ) => void;
   isStudentView?: boolean;
   studentId?: string;
+  isParentView?: boolean;
+  parentId?: string;
 }
 
 export default function ScheduleCommentsDialog({
@@ -28,9 +31,11 @@ export default function ScheduleCommentsDialog({
   onEditComment,
   isStudentView = false,
   studentId,
+  isParentView = false,
+  parentId,
 }: ScheduleCommentsDialogProps) {
   const { data: regularComments = [] } = useCommentsByLesson(
-    !isStudentView && lessonId ? lessonId : null
+    !isStudentView && !isParentView && lessonId ? lessonId : null
   );
 
   const { data: studentComments = [] } = useStudentLessonComments(
@@ -38,7 +43,12 @@ export default function ScheduleCommentsDialog({
     lessonId || undefined
   );
 
-  const comments = isStudentView ? studentComments : regularComments;
+  const { data: parentComments = [] } = useParentLessonComments(
+    parentId,
+    lessonId || undefined
+  );
+
+  const comments = isStudentView ? studentComments : isParentView ? parentComments : regularComments;
 
   return (
     <Dialog open={!!lessonId} onOpenChange={onClose}>
@@ -53,8 +63,8 @@ export default function ScheduleCommentsDialog({
                 <CommentDisplay
                   key={comment.id}
                   comment={comment}
-                  showActions={!isStudentView}
-                  showVisibilityIcon={!isStudentView}
+                  showActions={!isStudentView && !isParentView}
+                  showVisibilityIcon={!isStudentView && !isParentView}
                   onEdit={onEditComment}
                   onDelete={onDeleteComment}
                 />

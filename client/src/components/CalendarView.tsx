@@ -297,14 +297,16 @@ export default function CalendarView({
                 {isMobile ? (
                   <div className="space-y-[2px]">
                     {dayLessons.slice(0, 2).map((lesson) => {
+                      const isBlockedSlot = (lesson as Lesson & { isBlocked?: boolean }).isBlocked;
                       const isOtherStudent = focusedStudentId && lesson.studentId !== focusedStudentId;
+                      const showAsOccupied = isBlockedSlot || isOtherStudent;
 
                       return (
                         <div
                           key={lesson.id}
                           className="h-1 rounded-full"
                           style={{
-                            backgroundColor: isOtherStudent
+                            backgroundColor: showAsOccupied
                               ? "#9ca3af"
                               : lesson.studentColor || "#3b82f6",
                           }}
@@ -320,9 +322,11 @@ export default function CalendarView({
                 ) : (
                   <div className="space-y-0.5 sm:space-y-1">
                     {dayLessons.slice(0, 3).map((lesson) => {
+                      const isBlockedSlot = (lesson as Lesson & { isBlocked?: boolean }).isBlocked;
                       const isOtherStudent = focusedStudentId && lesson.studentId !== focusedStudentId;
+                      const showAsOccupiedSlot = isBlockedSlot || isOtherStudent;
 
-                      if (isOtherStudent) {
+                      if (showAsOccupiedSlot) {
                         return (
                           <div
                             key={lesson.id}
@@ -400,10 +404,12 @@ export default function CalendarView({
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {selectedMobileLessons.map((lesson) => {
+                  const isBlockedSlot = (lesson as Lesson & { isBlocked?: boolean }).isBlocked;
                   const isOtherStudent =
                     focusedStudentId && lesson.studentId !== focusedStudentId;
+                  const showAsOccupiedSlot = isBlockedSlot || isOtherStudent;
 
-                  if (isOtherStudent) {
+                  if (showAsOccupiedSlot) {
                     return (
                       <div
                         key={lesson.id}

@@ -67,13 +67,22 @@ services:
 
       # Dev connection
       DEV_HOST: dev_db
-      DEV_PORT: "5432"
-      DEV_DB: app
-      DEV_USER: ${DEV_USERNAME}
-      DEV_PASSWORD: ${DEV_PASSWORD}
+      DEV_PORT: "5433"
+      DEV_DB: hydra_db
+      DEV_USER: dev
+      DEV_PASSWORD: devpass
 
-      # Schedule (cron format) — default hourly at minute 7
-      CRON: "0 4 * * *"
+      # Schedule (cron format) — update the dev db from production db daily at 4am
+      REFRESH_CRON: "0 4 * * *"
+      # Schedule (cron format) — backup db to google drive every tuesday at 5am
+      BACKUP_CRON: "0 5 * * 2"
+      # DB environment variables for the backup script (points to production db)
+      DB_NAME: hydra_db
+      DB_HOST:  db
+      DB_PORT: "5432"
+      DB_USER: ${ADMIN_USERNAME}
+      PGPASSWORD: ${ADMIN_PASSWORD}
+      
       JOBS: "2"                 # Pi-friendly parallel restore
       MASK_SQL_PATH: "/mask/mask.sql"
     volumes:
